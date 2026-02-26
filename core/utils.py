@@ -26,6 +26,8 @@ def safe_redirect_url(request, url, fallback='/dashboard/'):
 def rate_limit(max_requests=10, window=60, key_func=None):
     """Simple cache-based rate limiter for Django views.
 
+    Works with both function-based views and class-based view methods.
+
     Args:
         max_requests: Maximum requests allowed within the window.
         window: Time window in seconds.
@@ -34,7 +36,17 @@ def rate_limit(max_requests=10, window=60, key_func=None):
     """
     def decorator(view_func):
         @functools.wraps(view_func)
-        def wrapper(request, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            # Support both FBVs (request, ...) and CBV methods (self, request, ...)
+            from django.http import HttpRequest
+            if args and isinstance(args[0], HttpRequest):
+                request = args[0]
+            elif len(args) >= 2 and isinstance(args[1], HttpRequest):
+                request = args[1]
+            else:
+                # Fallback: skip rate limiting if we can't find the request
+                return view_func(*args, **kwargs)
+
             if key_func:
                 ident = key_func(request)
             else:
@@ -60,7 +72,7 @@ def rate_limit(max_requests=10, window=60, key_func=None):
 
             history.append(now)
             cache.set(cache_key, history, timeout=window)
-            return view_func(request, *args, **kwargs)
+            return view_func(*args, **kwargs)
 
         return wrapper
     return decorator
