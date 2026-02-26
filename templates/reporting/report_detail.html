@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with report_type=report.get_report_type_display %}{{ report_type }} Report{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'reporting:list' %}">{% trans "Reports" %}</a></li>
+            <li class="breadcrumb-item active">{% blocktrans with report_type=report.get_report_type_display %}{{ report_type }} Report{% endblocktrans %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>{% blocktrans with report_type=report.get_report_type_display %}{{ report_type }} Report{% endblocktrans %}
+        </h1>
+        <p class="text-muted mb-0">
+            <a href="{% url 'awards:detail' report.award.pk %}">{{ report.award.award_number }}</a>
+            &middot;
+            {{ report.reporting_period_start|date:"M d, Y" }} &ndash; {{ report.reporting_period_end|date:"M d, Y" }}
+            &middot;
+            {% if report.status == 'draft' %}
+                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+            {% elif report.status == 'submitted' %}
+                <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+            {% elif report.status == 'under_review' %}
+                <span class="badge bg-info text-dark">{% trans "Under Review" %}</span>
+            {% elif report.status == 'revision_requested' %}
+                <span class="badge bg-danger">{% trans "Revision Requested" %}</span>
+            {% elif report.status == 'approved' %}
+                <span class="badge bg-success">{% trans "Approved" %}</span>
+            {% elif report.status == 'rejected' %}
+                <span class="badge bg-danger">{% trans "Rejected" %}</span>
+            {% endif %}
+            {% if report.is_overdue %}
+                <span class="badge bg-danger">{% trans "Overdue" %}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if report.status == 'draft' or report.status == 'revision_requested' %}
+        <a href="{% url 'reporting:edit' report.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>{% trans "Edit" %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <!-- Report Details Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Report Details" %}</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">{% trans "Report Type" %}</dt>
+                    <dd class="col-sm-8">{{ report.get_report_type_display }}</dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Award" %}</dt>
+                    <dd class="col-sm-8">
+                        <a href="{% url 'awards:detail' report.award.pk %}">
+                            {{ report.award.award_number }} - {{ report.award.title }}
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Reporting Period" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ report.reporting_period_start|date:"M d, Y" }} &ndash;
+                        {{ report.reporting_period_end|date:"M d, Y" }}
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Due Date" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ report.due_date|date:"M d, Y" }}
+                        {% if report.is_overdue %}
+                            <span class="text-danger fw-bold">{% trans "(Overdue)" %}</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if report.submitted_by %}
+                    <dt class="col-sm-4 text-muted">{% trans "Submitted By" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ report.submitted_by.get_full_name }}
+                        {% if report.submitted_at %}
+                        <span class="text-muted small">({{ report.submitted_at|date:"M d, Y g:i A" }})</span>
+                        {% endif %}
+                    </dd>
+                    {% endif %}
+
+                    {% if report.reviewed_by %}
+                    <dt class="col-sm-4 text-muted">{% trans "Reviewed By" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ report.reviewed_by.get_full_name }}
+                        <span class="text-muted small">({{ report.reviewed_at|date:"M d, Y g:i A" }})</span>
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Report Data -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Report Content" %}</h5>
+            </div>
+            <div class="card-body">
+                {% if report.report_type == 'progress' or report.report_type == 'final_progress' %}
+                    <!-- Progress Report Content -->
+                    {% if report.data.narrative %}
+                    <h6 class="fw-bold">{% trans "Narrative Summary" %}</h6>
+                    <p>{{ report.data.narrative|linebreaksbr }}</p>
+                    {% endif %}
+                    {% if report.data.accomplishments %}
+                    <h6 class="fw-bold mt-3">{% trans "Key Accomplishments" %}</h6>
+                    <p>{{ report.data.accomplishments|linebreaksbr }}</p>
+                    {% endif %}
+                    {% if report.data.challenges %}
+                    <h6 class="fw-bold mt-3">{% trans "Challenges" %}</h6>
+                    <p>{{ report.data.challenges|linebreaksbr }}</p>
+                    {% endif %}
+                    {% if report.data.goals_next_period %}
+                    <h6 class="fw-bold mt-3">{% trans "Goals for Next Period" %}</h6>
+                    <p>{{ report.data.goals_next_period|linebreaksbr }}</p>
+                    {% endif %}
+
+                {% elif report.report_type == 'fiscal' or report.report_type == 'final_fiscal' %}
+                    <!-- Fiscal Report Content -->
+                    {% if report.data.expenditures %}
+                    <h6 class="fw-bold">{% trans "Expenditure Summary" %}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Category" %}</th>
+                                    <th class="text-end">{% trans "Budget" %}</th>
+                                    <th class="text-end">{% trans "Expended" %}</th>
+                                    <th class="text-end">{% trans "Balance" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exp in report.data.expenditures %}
+                                <tr>
+                                    <td>{{ exp.category }}</td>
+                                    <td class="text-end">${{ exp.budget|intcomma }}</td>
+                                    <td class="text-end">${{ exp.expended|intcomma }}</td>
+                                    <td class="text-end">${{ exp.balance|intcomma }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    {% if report.data.fiscal_narrative %}
+                    <h6 class="fw-bold mt-3">{% trans "Fiscal Narrative" %}</h6>
+                    <p>{{ report.data.fiscal_narrative|linebreaksbr }}</p>
+                    {% endif %}
+
+                {% elif report.report_type == 'sf425' %}
+                    <!-- SF-425 link -->
+                    <p>{% trans "This is an SF-425 Federal Financial Report." %}</p>
+                    <a href="{% url 'reporting:sf425' report.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-text me-1"></i>{% trans "View SF-425 Form" %}
+                    </a>
+
+                {% else %}
+                    <!-- Generic / Custom / Programmatic Report -->
+                    {% if report.data %}
+                    {% for key, value in report.data.items %}
+                    <div class="mb-3">
+                        <h6 class="fw-bold">{{ key|title }}</h6>
+                        <p>{{ value|linebreaksbr }}</p>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">{% trans "No report data has been entered." %}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reviewer Comments -->
+        {% if report.reviewer_comments %}
+        <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+            <div class="card-body">
+                <h5 class="fw-bold"><i class="bi bi-chat-text me-1"></i>{% trans "Reviewer Comments" %}</h5>
+                <p class="mb-0">{{ report.reviewer_comments|linebreaksbr }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Attached Documents -->
+        {% if report.documents.all %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Attached Documents" %}</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for doc in report.documents.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-file-earmark me-1 text-muted"></i>
+                            {{ doc.title }}
+                        </div>
+                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="bi bi-download me-1"></i>{% trans "Download" %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit button for draft reports -->
+        {% if report.status == 'draft' %}
+        <div class="card border-0 shadow-sm border-top border-4 border-success">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-1">{% trans "Ready to Submit?" %}</h5>
+                    <p class="text-muted mb-0 small">{% trans "Once submitted, you will not be able to edit this report unless it is returned for revisions." %}</p>
+                </div>
+                <form method="post" action="{% url 'reporting:submit' report.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send me-1"></i>{% trans "Submit Report" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Staff Review Actions -->
+        {% if user.can_manage_grants and report.status == 'submitted' or report.status == 'under_review' %}
+        <div class="card border-0 shadow-sm border-top border-4 border-primary mt-4">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3">{% trans "Review Actions" %}</h5>
+                <form method="post" action="{% url 'reporting:review' report.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="reviewer_comments" class="form-label fw-semibold">{% trans "Comments (optional)" %}</label>
+                        <textarea name="reviewer_comments" id="reviewer_comments" class="form-control" rows="3"
+                                  placeholder="{% trans "Add comments about this report..." %}"></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="approve" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i>{% trans "Approve" %}
+                        </button>
+                        <button type="submit" name="action" value="request_revision" class="btn btn-warning">
+                            <i class="bi bi-arrow-return-left me-1"></i>{% trans "Request Revision" %}
+                        </button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                            <i class="bi bi-x-circle me-1"></i>{% trans "Reject" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Summary -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Quick Info" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted text-uppercase d-block">{% trans "Status" %}</small>
+                    {% if report.status == 'draft' %}
+                        <span class="badge bg-secondary fs-6">{% trans "Draft" %}</span>
+                    {% elif report.status == 'submitted' %}
+                        <span class="badge bg-warning text-dark fs-6">{% trans "Submitted" %}</span>
+                    {% elif report.status == 'under_review' %}
+                        <span class="badge bg-info text-dark fs-6">{% trans "Under Review" %}</span>
+                    {% elif report.status == 'revision_requested' %}
+                        <span class="badge bg-danger fs-6">{% trans "Revision Requested" %}</span>
+                    {% elif report.status == 'approved' %}
+                        <span class="badge bg-success fs-6">{% trans "Approved" %}</span>
+                    {% elif report.status == 'rejected' %}
+                        <span class="badge bg-danger fs-6">{% trans "Rejected" %}</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted text-uppercase d-block">{% trans "Due Date" %}</small>
+                    <span class="fw-semibold {% if report.is_overdue %}text-danger{% endif %}">
+                        {{ report.due_date|date:"M d, Y" }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted text-uppercase d-block">{% trans "Award" %}</small>
+                    <a href="{% url 'awards:detail' report.award.pk %}" class="text-decoration-none fw-semibold">
+                        {{ report.award.award_number }}
+                    </a>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted text-uppercase d-block">{% trans "Created" %}</small>
+                    <span>{{ report.created_at|date:"M d, Y" }}</span>
+                </div>
+
+                <div>
+                    <small class="text-muted text-uppercase d-block">{% trans "Last Updated" %}</small>
+                    <span>{{ report.updated_at|date:"M d, Y g:i A" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

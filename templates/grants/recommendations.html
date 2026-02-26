@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans "Recommended Opportunities" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Recommendations" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-lightbulb me-2"></i>{% trans "Recommended Opportunities" %}</h2>
+        <p class="text-muted mb-0">
+            {% blocktrans with count=total_matches %}{{ count }} opportunities matched to your preferences{% endblocktrans %}
+        </p>
+    </div>
+    <a href="{% url 'grants:preferences' %}" class="btn btn-outline-primary">
+        <i class="bi bi-gear me-1"></i>{% trans "Edit Preferences" %}
+    </a>
+</div>
+
+{% if not has_preferences %}
+<div class="alert alert-info d-flex align-items-center" role="alert">
+    <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+    <div>
+        <strong>{% trans "Set Up Your Preferences" %}</strong><br>
+        {% trans "You haven't configured your matching preferences yet. Set them up to get personalized recommendations." %}
+        <a href="{% url 'grants:preferences' %}" class="alert-link ms-1">{% trans "Get Started" %} &rarr;</a>
+    </div>
+</div>
+{% endif %}
+
+{# Source filter #}
+<div class="mb-3">
+    <div class="btn-group" role="group" aria-label="{% trans 'Filter by source' %}">
+        <a href="{% url 'grants:recommendations' %}"
+           class="btn btn-sm {% if not current_source %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {% trans "All" %}
+        </a>
+        <a href="{% url 'grants:recommendations' %}?source=federal"
+           class="btn btn-sm {% if current_source == 'federal' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            <i class="bi bi-globe me-1"></i>{% trans "Federal" %}
+        </a>
+        <a href="{% url 'grants:recommendations' %}?source=state"
+           class="btn btn-sm {% if current_source == 'state' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            <i class="bi bi-building me-1"></i>{% trans "State" %}
+        </a>
+    </div>
+</div>
+
+{% if matches %}
+<div class="row g-3">
+    {% for match in matches %}
+    <div class="col-12">
+        <div class="card grant-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1 me-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <h5 class="mb-0 me-2">
+                                <a href="{{ match.opportunity_url }}" class="text-decoration-none">
+                                    {{ match.opportunity_title|truncatewords:15 }}
+                                </a>
+                            </h5>
+                            <span class="badge {% if match.source == 'federal' %}bg-primary{% else %}bg-info text-dark{% endif %} me-1">
+                                {{ match.get_source_display }}
+                            </span>
+                            {% if match.status == 'new' %}
+                            <span class="badge bg-danger">{% trans "New" %}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if match.federal_opportunity %}
+                        <p class="text-muted small mb-1">
+                            <i class="bi bi-building me-1"></i>{{ match.federal_opportunity.agency_name }}
+                            {% if match.federal_opportunity.close_date %}
+                                <span class="ms-2"><i class="bi bi-calendar me-1"></i>{% trans "Closes:" %} {{ match.federal_opportunity.close_date|date:"M d, Y" }}</span>
+                            {% endif %}
+                            {% if match.federal_opportunity.funding_range_display %}
+                                <span class="ms-2"><i class="bi bi-currency-dollar me-1"></i>{{ match.federal_opportunity.funding_range_display }}</span>
+                            {% endif %}
+                        </p>
+                        {% elif match.grant_program %}
+                        <p class="text-muted small mb-1">
+                            <i class="bi bi-building me-1"></i>{{ match.grant_program.agency.name }}
+                            {% if match.grant_program.application_deadline %}
+                                <span class="ms-2"><i class="bi bi-calendar me-1"></i>{% trans "Deadline:" %} {{ match.grant_program.application_deadline|date:"M d, Y" }}</span>
+                            {% endif %}
+                            <span class="ms-2"><i class="bi bi-currency-dollar me-1"></i>${{ match.grant_program.min_award|intcomma }} – ${{ match.grant_program.max_award|intcomma }}</span>
+                        </p>
+                        {% endif %}
+
+                        <p class="mb-0">
+                            <i class="bi bi-robot me-1 text-primary"></i>
+                            <em>{{ match.explanation }}</em>
+                        </p>
+                    </div>
+
+                    <div class="text-center" style="min-width: 130px;">
+                        <div class="fs-3 fw-bold {% if match.relevance_score >= 85 %}text-success{% elif match.relevance_score >= 70 %}text-warning{% else %}text-muted{% endif %}">
+                            {{ match.relevance_score }}%
+                        </div>
+                        <small class="text-muted">{% trans "match" %}</small>
+
+                        {# Action buttons #}
+                        <div class="mt-2">
+                            {# 1. View #}
+                            <a href="{{ match.opportunity_url }}" class="btn btn-sm btn-outline-primary d-block mb-1">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+
+                            {# 2. Track / Tracked (federal) or Save / Saved (state) #}
+                            {% if match.source == 'federal' and match.federal_opportunity %}
+                                {% if match.is_tracked %}
+                                <button class="btn btn-sm btn-success d-block w-100 mb-1" disabled>
+                                    <i class="bi bi-bookmark-check-fill me-1"></i>{% trans "Tracked" %}
+                                </button>
+                                {% else %}
+                                <form method="post" action="{% url 'grants:tracked-add' %}" class="mb-1">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="federal_opportunity_id" value="{{ match.federal_opportunity.pk }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success d-block w-100" title="{% trans 'Add to Tracked Opportunities' %}">
+                                        <i class="bi bi-bookmark-plus me-1"></i>{% trans "Track" %}
+                                    </button>
+                                </form>
+                                {% endif %}
+                            {% elif match.source == 'state' and match.grant_program %}
+                                {% if match.is_saved %}
+                                <button class="btn btn-sm btn-success d-block w-100 mb-1" disabled>
+                                    <i class="bi bi-bookmark-check-fill me-1"></i>{% trans "Saved" %}
+                                </button>
+                                {% else %}
+                                <form method="post" action="{% url 'grants:saved-toggle' %}" class="mb-1">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="grant_program_id" value="{{ match.grant_program.pk }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success d-block w-100" title="{% trans 'Save to watchlist' %}">
+                                        <i class="bi bi-bookmark-plus me-1"></i>{% trans "Save" %}
+                                    </button>
+                                </form>
+                                {% endif %}
+                            {% endif %}
+
+                            {# 3. Track & Dismiss (federal only, not yet tracked) #}
+                            {% if match.source == 'federal' and match.federal_opportunity and not match.is_tracked %}
+                            <form method="post" action="{% url 'grants:track-and-dismiss' match.pk %}" class="mb-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning d-block w-100"
+                                        title="{% trans 'Track and remove from recommendations' %}">
+                                    <i class="bi bi-bookmark-star me-1"></i>{% trans "Track & Dismiss" %}
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {# 4. Dismiss #}
+                            <form method="post" action="{% url 'grants:dismiss-match' match.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary d-block w-100"
+                                        title="{% trans 'Dismiss this recommendation' %}">
+                                    <i class="bi bi-x-lg me-1"></i>{% trans "Dismiss" %}
+                                </button>
+                            </form>
+                        </div>
+
+                        {# Feedback widget #}
+                        <div class="mt-2 pt-2 border-top feedback-widget" data-match-id="{{ match.pk }}">
+                            <div class="d-flex justify-content-center gap-1">
+                                <button type="button"
+                                        class="btn btn-sm {% if match.feedback == 'positive' %}btn-success{% else %}btn-outline-secondary{% endif %} feedback-btn"
+                                        data-feedback="positive"
+                                        title="{% trans 'Good recommendation' %}">
+                                    <i class="bi bi-hand-thumbs-up"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm {% if match.feedback == 'negative' %}btn-danger{% else %}btn-outline-secondary{% endif %} feedback-btn"
+                                        data-feedback="negative"
+                                        title="{% trans 'Not relevant' %}">
+                                    <i class="bi bi-hand-thumbs-down"></i>
+                                </button>
+                            </div>
+                            <div class="feedback-reason mt-1 {% if match.feedback != 'negative' %}d-none{% endif %}">
+                                <select class="form-select form-select-sm feedback-reason-select">
+                                    <option value="">{% trans "Why?" %}</option>
+                                    <option value="wrong_focus" {% if match.feedback_reason == 'wrong_focus' %}selected{% endif %}>{% trans "Wrong focus area" %}</option>
+                                    <option value="budget_too_large" {% if match.feedback_reason == 'budget_too_large' %}selected{% endif %}>{% trans "Budget too large" %}</option>
+                                    <option value="budget_too_small" {% if match.feedback_reason == 'budget_too_small' %}selected{% endif %}>{% trans "Budget too small" %}</option>
+                                    <option value="already_aware" {% if match.feedback_reason == 'already_aware' %}selected{% endif %}>{% trans "Already aware" %}</option>
+                                    <option value="not_eligible" {% if match.feedback_reason == 'not_eligible' %}selected{% endif %}>{% trans "Not eligible" %}</option>
+                                    <option value="not_relevant" {% if match.feedback_reason == 'not_relevant' %}selected{% endif %}>{% trans "Not relevant" %}</option>
+                                    <option value="other" {% if match.feedback_reason == 'other' %}selected{% endif %}>{% trans "Other" %}</option>
+                                </select>
+                            </div>
+                            <div class="feedback-hint mt-1 {% if match.feedback != 'negative' or not match.feedback_reason %}d-none{% endif %}">
+                                <small>
+                                    <a href="{% url 'grants:preferences' %}" class="text-decoration-none text-muted">
+                                        <i class="bi bi-gear me-1"></i>{% trans "Update preferences" %}
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# Pagination #}
+{% if is_paginated %}
+<nav aria-label="{% trans 'Recommendations pagination' %}" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_source %}&source={{ current_source }}{% endif %}">
+                &laquo; {% trans "Previous" %}
+            </a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if current_source %}&source={{ current_source }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_source %}&source={{ current_source }}{% endif %}">
+                {% trans "Next" %} &raquo;
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-lightbulb fs-1 d-block mb-3 text-muted"></i>
+        <h5>{% trans "No recommendations yet" %}</h5>
+        <p class="text-muted mb-3">
+            {% if has_preferences %}
+                {% trans "We'll match new opportunities against your preferences. Check back soon!" %}
+            {% else %}
+                {% trans "Set up your preferences so we can find the best opportunities for you." %}
+            {% endif %}
+        </p>
+        {% if not has_preferences %}
+        <a href="{% url 'grants:preferences' %}" class="btn btn-primary">
+            <i class="bi bi-gear me-1"></i>{% trans "Set Up Preferences" %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfInput) return;
+    const csrfToken = csrfInput.value;
+
+    document.querySelectorAll('.feedback-widget').forEach(function(widget) {
+        const matchId = widget.dataset.matchId;
+        const reasonContainer = widget.querySelector('.feedback-reason');
+        const reasonSelect = widget.querySelector('.feedback-reason-select');
+        const hintContainer = widget.querySelector('.feedback-hint');
+        const buttons = widget.querySelectorAll('.feedback-btn');
+
+        function sendFeedback(feedback, reason) {
+            const formData = new FormData();
+            formData.append('feedback', feedback);
+            if (reason) formData.append('feedback_reason', reason);
+
+            fetch('/grants/matching/feedback/' + matchId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.show_preferences_hint) {
+                    hintContainer.classList.remove('d-none');
+                } else {
+                    hintContainer.classList.add('d-none');
+                }
+            });
+        }
+
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var feedback = btn.dataset.feedback;
+
+                buttons.forEach(function(b) {
+                    b.classList.remove('btn-success', 'btn-danger');
+                    b.classList.add('btn-outline-secondary');
+                });
+
+                if (feedback === 'positive') {
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-success');
+                    reasonContainer.classList.add('d-none');
+                    hintContainer.classList.add('d-none');
+                    sendFeedback('positive', '');
+                } else {
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-danger');
+                    reasonContainer.classList.remove('d-none');
+                    sendFeedback('negative', reasonSelect.value);
+                }
+            });
+        });
+
+        if (reasonSelect) {
+            reasonSelect.addEventListener('change', function() {
+                sendFeedback('negative', reasonSelect.value);
+                if (reasonSelect.value) {
+                    hintContainer.classList.remove('d-none');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "My Assignments" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "My Assignments" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-person-check me-2"></i>{% trans "My Assignments" %}</h2>
+        <p class="text-muted mb-0">
+            {% blocktrans with count=active_count %}{{ count }} active assignment(s){% endblocktrans %}
+        </p>
+    </div>
+    <a href="{% url 'applications:list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-folder me-1"></i>{% trans "All Applications" %}
+    </a>
+</div>
+
+{# -- Filter Bar -- #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="status-filter" class="form-label small fw-bold">{% trans "Assignment Status" %}</label>
+                <select name="status" id="status-filter" class="form-select form-select-sm">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-8 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                </button>
+                <a href="{% url 'applications:my-assignments' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>{% trans "Clear" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# -- Assignments Table -- #}
+{% if assignments %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        {% sortable_th 'application' _("Application") %}
+                        <th>{% trans "Organization" %}</th>
+                        <th>{% trans "Program" %}</th>
+                        {% sortable_th 'app_status' _("App Status") %}
+                        {% sortable_th 'assignment_status' _("Assignment") %}
+                        <th>{% trans "Type" %}</th>
+                        {% sortable_th 'assigned_at' _("Assigned") %}
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in assignments %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'applications:detail' assignment.application.pk %}" class="text-decoration-none fw-bold">
+                                {{ assignment.application.project_title|truncatewords:8 }}
+                            </a>
+                            <br><small class="text-muted">{{ assignment.application.id|truncatechars:13 }}</small>
+                        </td>
+                        <td class="small text-muted">
+                            {{ assignment.application.organization.name|default:"--" }}
+                        </td>
+                        <td class="small text-muted">
+                            {{ assignment.application.grant_program.title|truncatewords:5 }}
+                        </td>
+                        <td>
+                            {% with app_status=assignment.application.status %}
+                            {% if app_status == "submitted" %}
+                                <span class="badge bg-info text-dark">{% trans "Submitted" %}</span>
+                            {% elif app_status == "under_review" %}
+                                <span class="badge bg-primary">{% trans "Under Review" %}</span>
+                            {% elif app_status == "approved" %}
+                                <span class="badge bg-success">{% trans "Approved" %}</span>
+                            {% elif app_status == "denied" %}
+                                <span class="badge bg-danger">{% trans "Denied" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ assignment.application.get_status_display }}</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if assignment.status == 'assigned' and assignment.assignment_type == 'claimed' %}
+                                <span class="badge badge-claimed"><i class="bi bi-check-circle-fill me-1"></i>{% trans "Claimed" %}</span>
+                            {% elif assignment.status == 'assigned' %}
+                                <span class="badge bg-info text-dark">{% trans "Assigned" %}</span>
+                            {% elif assignment.status == 'in_progress' %}
+                                <span class="badge bg-primary">{% trans "In Progress" %}</span>
+                            {% elif assignment.status == 'completed' %}
+                                <span class="badge bg-success">{% trans "Completed" %}</span>
+                            {% elif assignment.status == 'reassigned' %}
+                                <span class="badge bg-secondary">{% trans "Reassigned" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if assignment.assignment_type == 'claimed' %}
+                                <span class="text-muted"><i class="bi bi-check-circle-fill text-success me-1"></i>{% trans "Self-Claimed" %}</span>
+                            {% else %}
+                                <span class="text-muted">
+                                    {% trans "By" %} {{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.username|default:"--" }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">
+                            {{ assignment.assigned_at|date:"M d, Y" }}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'applications:detail' assignment.application.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'View' %}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if assignment.status == 'assigned' %}
+                                <form method="post" action="{% url 'applications:assignment-status' assignment.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="in_progress">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="{% trans 'Start Working' %}">
+                                        <i class="bi bi-play-fill"></i>
+                                    </button>
+                                </form>
+                                {% elif assignment.status == 'in_progress' %}
+                                <form method="post" action="{% url 'applications:assignment-status' assignment.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="completed">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="{% trans 'Mark Complete' %}">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Pagination #}
+{% if is_paginated %}
+<nav class="mt-4" aria-label="{% trans 'Assignments pagination' %}">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i> {% trans "Previous" %}
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> {% trans "Previous" %}</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                {% trans "Next" %} <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">{% trans "Next" %} <i class="bi bi-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+{# Empty State #}
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="bi bi-person-x d-block"></i>
+        <h5>{% trans "No Assignments" %}</h5>
+        <p class="text-muted">
+            {% if current_status %}
+                {% trans "No assignments match your current filter." %}
+            {% else %}
+                {% trans "You don't have any assignments yet. Visit the applications list to claim one." %}
+            {% endif %}
+        </p>
+        <a href="{% url 'applications:list' %}" class="btn btn-primary">
+            <i class="bi bi-folder me-1"></i>{% trans "View Applications" %}
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

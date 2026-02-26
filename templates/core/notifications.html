@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "Notifications" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-bell me-2"></i>{% trans "Notifications" %}
+            {% if notifications %}
+            {% with unread=notifications|dictsort:"is_read" %}
+                <span class="badge bg-danger fs-6 align-middle">
+                    {{ unread_notifications_count|default:"0" }}
+                </span>
+            {% endwith %}
+            {% endif %}
+        </h2>
+    </div>
+    {% if notifications %}
+    <form method="post" action="" id="mark-all-read-form">
+        {% csrf_token %}
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="mark-all-read-btn" disabled>
+            <i class="bi bi-check-all me-1"></i>{% trans "Mark All as Read" %}
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+{% if notifications %}
+<div class="list-group">
+    {% for notification in notifications %}
+    {% if notification.link %}
+    <a href="{{ notification.link }}" class="list-group-item list-group-item-action text-decoration-none {% if not notification.is_read %}bg-light{% endif %}" id="notification-{{ notification.id }}">
+    {% else %}
+    <div class="list-group-item {% if not notification.is_read %}bg-light{% endif %}" id="notification-{{ notification.id }}">
+    {% endif %}
+        <div class="d-flex w-100 justify-content-between align-items-start">
+            <div class="d-flex align-items-start">
+                {# Icon based on priority #}
+                <div class="me-3 mt-1">
+                    {% if notification.priority == 'urgent' %}
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    {% elif notification.priority == 'high' %}
+                        <i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>
+                    {% elif notification.priority == 'medium' %}
+                        <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                    {% else %}
+                        <i class="bi bi-bell text-muted fs-5"></i>
+                    {% endif %}
+                </div>
+                <div>
+                    {# Title: bold if unread #}
+                    <h6 class="mb-1 {% if not notification.is_read %}fw-bold{% else %}text-muted{% endif %}">
+                        {{ notification.title }}
+                    </h6>
+                    <p class="mb-1 small {% if notification.is_read %}text-muted{% endif %}">
+                        {{ notification.message }}
+                    </p>
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>{% blocktrans with time=notification.created_at|timesince %}{{ time }} ago{% endblocktrans %}
+                        {% if notification.is_read and notification.read_at %}
+                            <span class="ms-2"><i class="bi bi-check2 me-1"></i>{% blocktrans with time=notification.read_at|timesince %}Read {{ time }} ago{% endblocktrans %}</span>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+            <div class="ms-3 flex-shrink-0">
+                {% if not notification.is_read %}
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary mark-read-btn"
+                        data-notification-id="{{ notification.id }}"
+                        data-url="{% url 'core:notification-read' notification.pk %}"
+                        title="{% trans "Mark as read" %}">
+                    <i class="bi bi-check2"></i>
+                </button>
+                {% else %}
+                <span class="badge bg-secondary">{% trans "Read" %}</span>
+                {% endif %}
+            </div>
+        </div>
+    {% if notification.link %}
+    </a>
+    {% else %}
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+{# Pagination #}
+{% if is_paginated %}
+<nav class="mt-4" aria-label="{% trans "Notification pagination" %}">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                <i class="bi bi-chevron-left"></i> {% trans "Previous" %}
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> {% trans "Previous" %}</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                {% trans "Next" %} <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">{% trans "Next" %} <i class="bi bi-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+{# Empty State #}
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="bi bi-bell-slash d-block"></i>
+        <h5>{% trans "No Notifications" %}</h5>
+        <p class="text-muted">{% trans "You are all caught up. New notifications will appear here when there are updates to your applications, awards, or other activity." %}</p>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+            <i class="bi bi-speedometer2 me-1"></i>{% trans "Back to Dashboard" %}
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark individual notification as read
+    document.querySelectorAll('.mark-read-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = this.dataset.url;
+            const notificationId = this.dataset.notificationId;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    const item = document.getElementById('notification-' + notificationId);
+                    item.classList.remove('bg-light');
+                    const title = item.querySelector('h6');
+                    title.classList.remove('fw-bold');
+                    title.classList.add('text-muted');
+                    const message = item.querySelector('p');
+                    message.classList.add('text-muted');
+                    btn.outerHTML = '<span class="badge bg-secondary">Read</span>';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{{ program.title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'grants:program-list' %}">Grant Programs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ program.title|truncatewords:6 }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{# -- Header -- #}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">{{ program.title }}</h2>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-{{ program.status|slugify }} fs-6">{{ program.get_status_display }}</span>
+            <span class="badge bg-light text-dark">{{ program.agency.abbreviation }}</span>
+            <span class="text-muted small">{{ program.get_grant_type_display }}</span>
+        </div>
+    </div>
+    {% if user.can_manage_grants %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'grants:program-update' program.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+        <form method="post" action="{% url 'grants:program-publish' program.pk %}" class="d-inline">
+            {% csrf_token %}
+            {% if program.is_published %}
+            <button type="submit" class="btn btn-outline-warning" onclick="return confirm('Are you sure you want to unpublish this program?');">
+                <i class="bi bi-eye-slash me-1"></i>Unpublish
+            </button>
+            {% else %}
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-send me-1"></i>Publish
+            </button>
+            {% endif %}
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{# -- Progress Tracker -- #}
+<ul class="progress-tracker mb-4">
+    <li class="{% if program.status == 'draft' %}active{% elif program.status != 'draft' %}completed{% endif %}">
+        Draft
+    </li>
+    <li class="{% if program.status == 'posted' %}active{% elif program.status in 'accepting_applications,under_review,awards_pending,closed' %}completed{% endif %}">
+        Posted
+    </li>
+    <li class="{% if program.status == 'accepting_applications' %}active{% elif program.status in 'under_review,awards_pending,closed' %}completed{% endif %}">
+        Accepting Applications
+    </li>
+    <li class="{% if program.status == 'under_review' %}active{% elif program.status in 'awards_pending,closed' %}completed{% endif %}">
+        Under Review
+    </li>
+    <li class="{% if program.status == 'awards_pending' %}active{% elif program.status == 'closed' %}completed{% endif %}">
+        Awards Pending
+    </li>
+    <li class="{% if program.status == 'closed' %}active{% endif %}">
+        Closed
+    </li>
+</ul>
+
+<div class="row g-4">
+    {# -- Left Column (8 cols) -- #}
+    <div class="col-lg-8">
+
+        {# Description Card #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-text-paragraph me-2"></i>Program Description
+            </div>
+            <div class="card-body">
+                {{ program.description|linebreaks }}
+            </div>
+        </div>
+
+        {# Eligibility Card #}
+        {% if program.eligibility_criteria %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person-check me-2"></i>Eligibility Criteria
+            </div>
+            <div class="card-body">
+                {{ program.eligibility_criteria|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Documents Card #}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-paperclip me-2"></i>Documents</span>
+                {% if user.can_manage_grants %}
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                    <i class="bi bi-upload me-1"></i>Upload
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if documents %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Type</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark me-2"></i>
+                                    <strong>{{ doc.title }}</strong>
+                                    {% if doc.description %}
+                                    <br><small class="text-muted">{{ doc.description|truncatewords:10 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-light text-dark">{{ doc.get_document_type_display }}</span></td>
+                                <td class="text-muted small">{{ doc.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-file-earmark-x d-block"></i>
+                    <p class="mb-0 text-muted">No documents uploaded yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Applications Table #}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-file-earmark-text me-2"></i>Applications
+                    <span class="badge bg-secondary rounded-pill ms-1">{{ applications|length }}</span>
+                </span>
+            </div>
+            <div class="card-body p-0">
+                {% if applications %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Project Title</th>
+                                <th>Applicant</th>
+                                <th>Organization</th>
+                                <th>Requested Amount</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in applications %}
+                            <tr>
+                                <td><strong>{{ app.project_title|truncatewords:6 }}</strong></td>
+                                <td>{{ app.applicant.get_full_name|default:app.applicant.username }}</td>
+                                <td class="text-muted small">{{ app.organization.name }}</td>
+                                <td class="fw-bold">${{ app.requested_amount|intcomma }}</td>
+                                <td>
+                                    <span class="badge badge-{{ app.status|slugify }}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if app.submitted_at %}
+                                        {{ app.submitted_at|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-0 text-muted">No applications received yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# -- Right Column (4 cols) -- #}
+    <div class="col-lg-4">
+
+        {# Details Sidebar #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Program Details
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Total Funding</small>
+                        <span class="fs-5 fw-bold text-success">${{ program.total_funding|intcomma }}</span>
+                    </li>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Award Range</small>
+                        <span>${{ program.min_award|intcomma }} &ndash; ${{ program.max_award|intcomma }}</span>
+                    </li>
+                    {% if program.match_required %}
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Match Requirement</small>
+                        <span>{{ program.match_percentage }}%</span>
+                    </li>
+                    {% endif %}
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Funding Source</small>
+                        <span>{{ program.funding_source.name }}</span>
+                        <br><small class="text-muted">{{ program.funding_source.get_source_type_display }}</small>
+                    </li>
+                    <hr>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Fiscal Year</small>
+                        <span>{{ program.fiscal_year }}</span>
+                    </li>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Duration</small>
+                        <span>{{ program.duration_months }} months{% if program.multi_year %} (Multi-year){% endif %}</span>
+                    </li>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Posting Date</small>
+                        <span>{{ program.posting_date|date:"M d, Y g:i A" }}</span>
+                    </li>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Application Deadline</small>
+                        <span class="{% if program.days_until_deadline is not None and program.days_until_deadline < 7 %}text-danger fw-bold{% endif %}">
+                            {{ program.application_deadline|date:"M d, Y g:i A" }}
+                        </span>
+                        {% if program.days_until_deadline is not None %}
+                        <br><small class="{% if program.days_until_deadline < 7 %}text-danger{% else %}text-muted{% endif %}">
+                            {{ program.days_until_deadline }} day{{ program.days_until_deadline|pluralize }} remaining
+                        </small>
+                        {% elif program.application_deadline %}
+                        <br><small class="text-danger">Deadline has passed</small>
+                        {% endif %}
+                    </li>
+                    {% if program.contact_name or program.contact_email or program.contact_phone %}
+                    <hr>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">Contact</small>
+                        {% if program.contact_name %}<span class="d-block">{{ program.contact_name }}</span>{% endif %}
+                        {% if program.contact_email %}
+                        <a href="mailto:{{ program.contact_email }}" class="d-block small">
+                            <i class="bi bi-envelope me-1"></i>{{ program.contact_email }}
+                        </a>
+                        {% endif %}
+                        {% if program.contact_phone %}
+                        <span class="d-block small">
+                            <i class="bi bi-telephone me-1"></i>{{ program.contact_phone }}
+                        </span>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        {# Stats Card #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-bar-chart me-2"></i>Statistics
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Applications Received</span>
+                    <span class="badge bg-primary rounded-pill fs-6">{{ program.applications_count }}</span>
+                </div>
+                {% if applications %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Avg. Requested Amount</span>
+                    <span class="fw-bold">
+                        {% widthratio applications|length 1 1 as app_count %}
+                        {% if avg_requested_amount %}
+                            ${{ avg_requested_amount|intcomma }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </span>
+                </div>
+                <hr>
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Submitted</span>
+                        <span class="badge badge-submitted">{{ submitted_count|default:"0" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Under Review</span>
+                        <span class="badge badge-under-review">{{ under_review_count|default:"0" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Approved</span>
+                        <span class="badge badge-approved">{{ approved_count|default:"0" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Denied</span>
+                        <span class="badge badge-denied">{{ denied_count|default:"0" }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No application data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Audit Info #}
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-2"></i>Audit Information
+            </div>
+            <div class="card-body small text-muted">
+                <div class="mb-2">
+                    <strong>Created by:</strong> {{ program.created_by.get_full_name|default:program.created_by.username }}
+                </div>
+                <div class="mb-2">
+                    <strong>Created:</strong> {{ program.created_at|date:"M d, Y g:i A" }}
+                </div>
+                <div class="mb-2">
+                    <strong>Last Updated:</strong> {{ program.updated_at|date:"M d, Y g:i A" }}
+                </div>
+                {% if program.published_at %}
+                <div class="mb-0">
+                    <strong>Published:</strong> {{ program.published_at|date:"M d, Y g:i A" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# -- Upload Document Modal -- #}
+{% if user.can_manage_grants %}
+<div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadDocumentModalLabel">
+                    <i class="bi bi-upload me-2"></i>Upload Document
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="doc-title" class="form-label required-field">Title</label>
+                        <input type="text" class="form-control" id="doc-title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="doc-type" class="form-label required-field">Document Type</label>
+                        <select class="form-select" id="doc-type" name="document_type" required>
+                            <option value="">Select type...</option>
+                            <option value="nofa">Notice of Funding Availability</option>
+                            <option value="guidelines">Program Guidelines</option>
+                            <option value="budget_template">Budget Template</option>
+                            <option value="application_form">Application Form</option>
+                            <option value="faq">FAQ</option>
+                            <option value="amendment">Amendment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="doc-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="doc-description" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="doc-file" class="form-label required-field">File</label>
+                        <input type="file" class="form-control" id="doc-file" name="file" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Upload Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

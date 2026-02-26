@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans "Map View" %}{% endblock %}
+
+{% block extra_css %}
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet">
+<style>
+    /* Full-height map layout */
+    #map-container {
+        position: relative;
+        height: calc(100vh - 70px);
+        width: 100%;
+    }
+
+    #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    /* Sidebar panel */
+    #map-sidebar {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        width: 280px;
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        max-height: calc(100vh - 110px);
+        overflow-y: auto;
+    }
+
+    #map-sidebar h6 {
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #084594;
+    }
+
+    #map-sidebar .form-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: #555;
+    }
+
+    #map-sidebar .form-select {
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+    }
+
+    /* Legend */
+    #map-legend {
+        position: absolute;
+        bottom: 30px;
+        right: 10px;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        padding: 12px 16px;
+        min-width: 180px;
+    }
+
+    #map-legend h6 {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .legend-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 3px;
+        font-size: 0.75rem;
+        color: #555;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 14px;
+        margin-right: 8px;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    /* Summary stats bar */
+    #map-stats {
+        position: absolute;
+        bottom: 30px;
+        left: 10px;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        padding: 10px 14px;
+        font-size: 0.8rem;
+    }
+
+    #map-stats .stat-label {
+        color: #888;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+    }
+
+    #map-stats .stat-value {
+        font-weight: 600;
+        color: #084594;
+        font-size: 1rem;
+    }
+
+    /* Mapbox popup */
+    .mapboxgl-popup-content {
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+    }
+
+    .popup-title {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #084594;
+        margin-bottom: 6px;
+        border-bottom: 2px solid #6baed6;
+        padding-bottom: 4px;
+    }
+
+    .popup-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2px;
+    }
+
+    .popup-label {
+        color: #777;
+    }
+
+    .popup-value {
+        font-weight: 500;
+    }
+
+    /* Tooltip on hover */
+    #hover-tooltip {
+        position: absolute;
+        z-index: 20;
+        background: rgba(8, 69, 148, 0.9);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        pointer-events: none;
+        display: none;
+        white-space: nowrap;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        #map-sidebar {
+            width: calc(100% - 20px);
+            max-height: 180px;
+            top: auto;
+            bottom: 10px;
+        }
+
+        #map-legend {
+            bottom: 200px;
+            right: 10px;
+            min-width: 140px;
+        }
+
+        #map-stats {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0{% endblock %}
+
+{% block content %}
+<div id="map-container">
+    <!-- Sidebar Controls -->
+    <div id="map-sidebar" role="region" aria-label="{% trans 'Map controls' %}">
+        <h6><i class="bi bi-geo-alt me-1"></i>{% trans "Grant Distribution" %}</h6>
+
+        <label class="form-label" for="metric-select">{% trans "Metric" %}</label>
+        <select id="metric-select" class="form-select form-select-sm">
+            <option value="total_funding" selected>{% trans "Total Funding" %}</option>
+            <option value="award_count">{% trans "Award Count" %}</option>
+        </select>
+
+        <label class="form-label" for="agency-select">{% trans "Agency" %}</label>
+        <select id="agency-select" class="form-select form-select-sm">
+            <option value="">{% trans "All Agencies" %}</option>
+            {% for agency in agencies %}
+            <option value="{{ agency.abbreviation }}">{{ agency.abbreviation }} - {{ agency.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="form-label" for="program-select">{% trans "Program" %}</label>
+        <select id="program-select" class="form-select form-select-sm">
+            <option value="">{% trans "All Programs" %}</option>
+            {% for prog in programs %}
+            <option value="{{ prog.id }}">{{ prog.title|truncatechars:50 }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="form-label" for="town-select">{% trans "Jump to Town" %}</label>
+        <select id="town-select" class="form-select form-select-sm">
+            <option value="">{% trans "Select a town..." %}</option>
+        </select>
+
+        <button id="reset-filters" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>{% trans "Reset Filters" %}
+        </button>
+    </div>
+
+    <!-- Map -->
+    <div id="map" role="application" aria-label="{% trans 'Interactive map of state grant distribution' %}"></div>
+
+    <!-- Hover Tooltip -->
+    <div id="hover-tooltip"></div>
+
+    <!-- Legend -->
+    <div id="map-legend" role="region" aria-label="{% trans 'Map legend' %}">
+        <h6 id="legend-title">{% trans "Total Funding" %}</h6>
+        <div id="legend-items"></div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div id="map-stats" role="region" aria-label="{% trans 'Summary statistics' %}">
+        <div class="d-flex gap-3">
+            <div>
+                <div class="stat-label">{% trans "Municipalities" %}</div>
+                <div class="stat-value" id="stat-towns">0</div>
+            </div>
+            <div>
+                <div class="stat-label">{% trans "Total Awards" %}</div>
+                <div class="stat-value" id="stat-awards">0</div>
+            </div>
+            <div>
+                <div class="stat-label">{% trans "Total Funding" %}</div>
+                <div class="stat-value" id="stat-funding">$0</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ mapbox_token|json_script:"mapbox-token" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<script src="{% static 'js/map-view.js' %}"></script>
+{% endblock %}

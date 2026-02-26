@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Closeouts" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Closeouts" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">
+        <i class="bi bi-lock me-2"></i>{% trans "Closeout Management" %}
+    </h1>
+</div>
+
+<!-- Awards Needing Closeout -->
+{% if awards_needing_closeout %}
+<div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+    <div class="card-header bg-white fw-bold">
+        <i class="bi bi-exclamation-triangle text-warning me-1"></i>{% trans "Awards Needing Closeout" %}
+        <span class="badge bg-warning text-dark ms-2">{{ awards_needing_closeout|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Award Number" %}</th>
+                        <th>{% trans "Program" %}</th>
+                        <th>{% trans "Organization" %}</th>
+                        <th>{% trans "End Date" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for award in awards_needing_closeout %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'awards:detail' award.pk %}" class="fw-semibold text-decoration-none">
+                                {{ award.award_number }}
+                            </a>
+                        </td>
+                        <td>{{ award.grant_program.title|truncatewords:6 }}</td>
+                        <td>{{ award.organization.name|truncatewords:4 }}</td>
+                        <td>
+                            <span class="text-danger">{{ award.end_date|date:"M d, Y" }}</span>
+                        </td>
+                        <td class="text-center">
+                            <form method="post" action="{% url 'closeout:initiate' award.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-play-fill me-1"></i>{% trans "Initiate Closeout" %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="status" class="form-label fw-semibold">{% trans "Status" %}</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                </button>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'closeout:list' %}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-lg me-1"></i>{% trans "Clear" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Closeouts Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    {% sortable_th 'award' _("Award Number") %}
+                    <th>{% trans "Program" %}</th>
+                    <th>{% trans "Organization" %}</th>
+                    {% sortable_th 'status' _("Status") %}
+                    {% sortable_th 'initiated_at' _("Initiated") %}
+                    <th>{% trans "Initiated By" %}</th>
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for closeout in closeouts %}
+                <tr>
+                    <td>
+                        <a href="{% url 'awards:detail' closeout.award.pk %}" class="fw-semibold text-decoration-none">
+                            {{ closeout.award.award_number }}
+                        </a>
+                    </td>
+                    <td>{{ closeout.award.grant_program.title|truncatewords:6 }}</td>
+                    <td>{{ closeout.award.organization.name|truncatewords:4 }}</td>
+                    <td>
+                        {% if closeout.status == 'not_started' %}
+                            <span class="badge bg-secondary">{% trans "Not Started" %}</span>
+                        {% elif closeout.status == 'in_progress' %}
+                            <span class="badge bg-primary">{% trans "In Progress" %}</span>
+                        {% elif closeout.status == 'pending_review' %}
+                            <span class="badge bg-warning text-dark">{% trans "Pending Review" %}</span>
+                        {% elif closeout.status == 'completed' %}
+                            <span class="badge bg-success">{% trans "Completed" %}</span>
+                        {% elif closeout.status == 'reopened' %}
+                            <span class="badge bg-info text-dark">{% trans "Reopened" %}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ closeout.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ closeout.initiated_at|date:"M d, Y" }}</td>
+                    <td>{{ closeout.initiated_by.get_full_name|default:"--" }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'closeout:detail' closeout.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-lock display-4 d-block mb-3"></i>
+                        <p class="mb-0">{% trans "No closeout records found." %}</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="{% trans "Closeout list pagination" %}" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">{% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

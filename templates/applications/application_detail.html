@@ -1,0 +1,890 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{{ application.project_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            {% if user.can_manage_grants %}
+                <li class="breadcrumb-item"><a href="{% url 'applications:list' %}">{% trans "Applications" %}</a></li>
+            {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'applications:my-applications' %}">{% trans "My Applications" %}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ application.project_title|truncatewords:5 }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-start mb-2">
+    <div>
+        <h1 class="h2 mb-1">{{ application.project_title }}</h1>
+        <p class="text-muted mb-0">
+            {% trans "Application ID:" %} <code>{{ application.id }}</code>
+        </p>
+    </div>
+    <div>
+        {% if application.status == "draft" %}
+            <span class="badge bg-secondary fs-6 px-3 py-2">{% trans "Draft" %}</span>
+        {% elif application.status == "submitted" %}
+            <span class="badge bg-info text-dark fs-6 px-3 py-2">{% trans "Submitted" %}</span>
+        {% elif application.status == "under_review" %}
+            <span class="badge bg-primary fs-6 px-3 py-2">{% trans "Under Review" %}</span>
+        {% elif application.status == "revision_requested" %}
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2">{% trans "Revision Requested" %}</span>
+        {% elif application.status == "approved" %}
+            <span class="badge bg-success fs-6 px-3 py-2">{% trans "Approved" %}</span>
+        {% elif application.status == "denied" %}
+            <span class="badge bg-danger fs-6 px-3 py-2">{% trans "Denied" %}</span>
+        {% elif application.status == "withdrawn" %}
+            <span class="badge bg-dark fs-6 px-3 py-2">{% trans "Withdrawn" %}</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Progress Tracker -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center position-relative">
+            <div class="position-absolute top-50 start-0 end-0" style="height: 3px; background: #dee2e6; z-index: 0;"></div>
+            {% with status=application.status %}
+            <!-- Draft -->
+            <div class="text-center position-relative" style="z-index: 1;">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1
+                    {% if status == 'draft' %}bg-secondary text-white{% elif status != 'draft' %}bg-success text-white{% endif %}"
+                    style="width: 36px; height: 36px;">
+                    {% if status != 'draft' %}
+                        <i class="bi bi-check-lg"></i>
+                    {% else %}
+                        <i class="bi bi-pencil"></i>
+                    {% endif %}
+                </div>
+                <div class="small fw-semibold">{% trans "Draft" %}</div>
+            </div>
+            <!-- Submitted -->
+            <div class="text-center position-relative" style="z-index: 1;">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1
+                    {% if status == 'submitted' %}bg-info text-dark{% elif status == 'under_review' or status == 'approved' or status == 'denied' %}bg-success text-white{% else %}bg-light text-muted border{% endif %}"
+                    style="width: 36px; height: 36px;">
+                    {% if status == 'under_review' or status == 'approved' or status == 'denied' %}
+                        <i class="bi bi-check-lg"></i>
+                    {% else %}
+                        <i class="bi bi-send"></i>
+                    {% endif %}
+                </div>
+                <div class="small fw-semibold">{% trans "Submitted" %}</div>
+            </div>
+            <!-- Under Review -->
+            <div class="text-center position-relative" style="z-index: 1;">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1
+                    {% if status == 'under_review' %}bg-primary text-white{% elif status == 'approved' or status == 'denied' %}bg-success text-white{% else %}bg-light text-muted border{% endif %}"
+                    style="width: 36px; height: 36px;">
+                    {% if status == 'approved' or status == 'denied' %}
+                        <i class="bi bi-check-lg"></i>
+                    {% else %}
+                        <i class="bi bi-search"></i>
+                    {% endif %}
+                </div>
+                <div class="small fw-semibold">{% trans "Under Review" %}</div>
+            </div>
+            <!-- Decision -->
+            <div class="text-center position-relative" style="z-index: 1;">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1
+                    {% if status == 'approved' %}bg-success text-white{% elif status == 'denied' %}bg-danger text-white{% else %}bg-light text-muted border{% endif %}"
+                    style="width: 36px; height: 36px;">
+                    {% if status == 'approved' %}
+                        <i class="bi bi-trophy"></i>
+                    {% elif status == 'denied' %}
+                        <i class="bi bi-x-lg"></i>
+                    {% else %}
+                        <i class="bi bi-flag"></i>
+                    {% endif %}
+                </div>
+                <div class="small fw-semibold">{% trans "Decision" %}</div>
+            </div>
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column (8 cols) -->
+    <div class="col-lg-8">
+        <!-- Project Details Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-clipboard-data me-2"></i>{% trans "Project Details" %}</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">{% trans "Project Title" %}</dt>
+                    <dd class="col-sm-8">{{ application.project_title }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Description" %}</dt>
+                    <dd class="col-sm-8">{{ application.project_description|linebreaksbr }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Proposed Start Date" %}</dt>
+                    <dd class="col-sm-8">{{ application.proposed_start_date|date:"M d, Y" }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Proposed End Date" %}</dt>
+                    <dd class="col-sm-8">{{ application.proposed_end_date|date:"M d, Y" }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Funding Requested" %}</dt>
+                    <dd class="col-sm-8 fw-semibold">${{ application.requested_amount|intcomma }}</dd>
+
+                    {% if application.match_amount %}
+                    <dt class="col-sm-4">{% trans "Match Amount" %}</dt>
+                    <dd class="col-sm-8">${{ application.match_amount|intcomma }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Match Description" %}</dt>
+                    <dd class="col-sm-8">{{ application.match_description|linebreaksbr|default:"--" }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Documents Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-paperclip me-2"></i>{% trans "Applicant Documents" %}</h5>
+                <span class="badge bg-secondary">{{ application.documents.count }}</span>
+            </div>
+            <div class="card-body">
+                {% if application.documents.all %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Document" %}</th>
+                                <th>{% trans "Type" %}</th>
+                                <th>{% trans "Uploaded By" %}</th>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in application.documents.all %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark me-1 text-muted"></i>
+                                    {{ doc.title }}
+                                </td>
+                                <td><span class="badge bg-light text-dark">{{ doc.get_document_type_display }}</span></td>
+                                <td class="small text-muted">{{ doc.uploaded_by.get_full_name|default:doc.uploaded_by.username }}</td>
+                                <td class="small text-muted">{{ doc.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">{% trans "No documents have been uploaded yet." %}</p>
+                {% endif %}
+
+                {% if application.is_editable %}
+                <hr>
+                <h6><i class="bi bi-upload me-1"></i>{% trans "Upload Document" %}</h6>
+                <form method="post" action="{% url 'applications:upload-document' application.pk %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <input type="text" name="title" class="form-control form-control-sm" placeholder="{% trans "Document title" %}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="document_type" class="form-select form-select-sm">
+                                <option value="narrative">{% trans "Project Narrative" %}</option>
+                                <option value="budget">{% trans "Budget" %}</option>
+                                <option value="budget_justification">{% trans "Budget Justification" %}</option>
+                                <option value="letters_of_support">{% trans "Letters of Support" %}</option>
+                                <option value="resumes">{% trans "Resumes / CVs" %}</option>
+                                <option value="organizational_chart">{% trans "Organizational Chart" %}</option>
+                                <option value="audit_report">{% trans "Audit Report" %}</option>
+                                <option value="tax_exempt_letter">{% trans "Tax-Exempt Letter" %}</option>
+                                <option value="other">{% trans "Other" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="file" name="file" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">
+                                <i class="bi bi-upload me-1"></i>{% trans "Upload" %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if user.is_agency_staff %}
+        <!-- ============================================================ -->
+        <!-- DUE DILIGENCE SECTION (Staff Only)                           -->
+        <!-- ============================================================ -->
+
+        <!-- Compliance Checklist Card -->
+        <div class="card mb-4 border-start border-4 border-primary">
+            <div class="card-header bg-primary bg-opacity-10">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-shield-check me-2"></i>{% trans "Due Diligence Checklist" %}
+                    </h5>
+                    <div>
+                        {% if compliance_total > 0 %}
+                        {% blocktrans with verified=compliance_verified total=compliance_total %}<span class="badge bg-primary">{{ verified }}/{{ total }} verified</span>{% endblocktrans %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if compliance_items %}
+                <!-- Progress bar -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>{% trans "Completion" %}</span>
+                        <span class="fw-semibold">{{ compliance_pct }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar {% if compliance_all_required_met %}bg-success{% else %}bg-primary{% endif %}"
+                             role="progressbar"
+                             style="width: {{ compliance_pct }}%"
+                             aria-valuenow="{{ compliance_pct }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"></div>
+                    </div>
+                    {% if not compliance_all_required_met %}
+                    <small class="text-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        {% trans "required item(s) still need verification before approval." %}
+                    </small>
+                    {% else %}
+                    <small class="text-success">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {% trans "All required items verified. Application eligible for approval." %}
+                    </small>
+                    {% endif %}
+                </div>
+
+                <div class="list-group list-group-flush">
+                    {% for item in compliance_items %}
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-start">
+                                <form method="post"
+                                      action="{% url 'applications:toggle-compliance' application.pk item.pk %}"
+                                      class="me-3 mt-1">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-sm p-0 border-0 bg-transparent"
+                                            title="{% if item.is_verified %}{% trans "Mark as not verified" %}{% else %}{% trans "Mark as verified" %}{% endif %}">
+                                        {% if item.is_verified %}
+                                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                        {% else %}
+                                            <i class="bi bi-circle text-muted fs-5"></i>
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                <div>
+                                    <div class="{% if item.is_verified %}text-decoration-line-through text-muted{% endif %}">
+                                        <strong>{{ item.label }}</strong>
+                                        {% if item.is_required %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger ms-1" style="font-size: 0.65rem;">{% trans "Required" %}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1" style="font-size: 0.65rem;">{% trans "Optional" %}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if item.is_verified and item.verified_by %}
+                                    <small class="text-muted">
+                                        {% blocktrans with name=item.verified_by.get_full_name|default:item.verified_by.username date=item.verified_at|date:"M d, Y g:i A" %}Verified by {{ name }} on {{ date }}{% endblocktrans %}
+                                    </small>
+                                    {% endif %}
+                                    {% if item.notes %}
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-sticky me-1"></i>{{ item.notes }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <!-- Notes toggle -->
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#notes-{{ item.pk }}"
+                                    aria-expanded="false"
+                                    title="{% trans "Add notes" %}">
+                                <i class="bi bi-sticky"></i>
+                            </button>
+                        </div>
+                        <!-- Collapsible notes form -->
+                        <div class="collapse mt-2" id="notes-{{ item.pk }}">
+                            <form method="post"
+                                  action="{% url 'applications:toggle-compliance' application.pk item.pk %}">
+                                {% csrf_token %}
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="notes" class="form-control"
+                                           placeholder="{% trans "Add a note..." %}" value="{{ item.notes }}">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="bi bi-check"></i> {% trans "Save & Toggle" %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-shield display-4 d-block mb-2"></i>
+                    <p class="mb-0">
+                        {% if application.status == "draft" %}
+                            {% trans "Compliance checklist will be generated when the application is submitted." %}
+                        {% else %}
+                            {% trans "No compliance items found. They will be created automatically when available." %}
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Staff Documents Card -->
+        <div class="card mb-4 border-start border-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-folder-check me-2"></i>{% trans "Staff Documents" %}
+                        <span class="badge bg-warning text-dark ms-1">{% trans "Internal" %}</span>
+                    </h5>
+                    <span class="badge bg-secondary">{{ staff_documents.count }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if staff_documents %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Document" %}</th>
+                                <th>{% trans "Type" %}</th>
+                                <th>{% trans "Uploaded By" %}</th>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in staff_documents %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark-lock me-1 text-warning"></i>
+                                    {{ doc.title }}
+                                    {% if doc.description %}
+                                        <div class="small text-muted">{{ doc.description|truncatewords:10 }}</div>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-warning bg-opacity-10 text-dark">{{ doc.get_document_type_display }}</span></td>
+                                <td class="small text-muted">{{ doc.uploaded_by.get_full_name|default:doc.uploaded_by.username }}</td>
+                                <td class="small text-muted">{{ doc.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">{% trans "No staff documents uploaded yet." %}</p>
+                {% endif %}
+
+                <hr>
+                <h6><i class="bi bi-upload me-1"></i>{% trans "Upload Staff Document" %}</h6>
+                <form method="post" action="{% url 'applications:upload-staff-document' application.pk %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <input type="text" name="title" class="form-control form-control-sm" placeholder="{% trans "Document title" %}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="document_type" class="form-select form-select-sm">
+                                <option value="verification">{% trans "Verification Document" %}</option>
+                                <option value="background_check">{% trans "Background Check" %}</option>
+                                <option value="due_diligence">{% trans "Due Diligence Memo" %}</option>
+                                <option value="reference_check">{% trans "Reference Check" %}</option>
+                                <option value="site_visit">{% trans "Site Visit Report" %}</option>
+                                <option value="legal_review">{% trans "Legal Review" %}</option>
+                                <option value="financial_review">{% trans "Financial Review" %}</option>
+                                <option value="other">{% trans "Other" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="file" name="file" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-warning w-100">
+                                <i class="bi bi-upload me-1"></i>{% trans "Upload" %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Comments Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-chat-dots me-2"></i>{% trans "Comments" %}</h5>
+            </div>
+            <div class="card-body">
+                {% if comments %}
+                <div class="comments-list">
+                    {% for comment in comments %}
+                    <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                        <div class="flex-shrink-0 me-3">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width: 40px; height: 40px;">
+                                <i class="bi bi-person text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div>
+                                    <strong>{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                                    {% if comment.is_internal %}
+                                        <span class="badge bg-warning text-dark ms-1">{% trans "Internal" %}</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ comment.created_at|naturaltime }}</small>
+                            </div>
+                            <p class="mb-0">{{ comment.content|linebreaksbr }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-3">{% trans "No comments yet." %}</p>
+                {% endif %}
+
+                <!-- Add Comment Form -->
+                <hr>
+                <h6 class="mb-3">{% trans "Add Comment" %}</h6>
+                <form method="post" action="{% url 'applications:add-comment' application.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control" rows="3"
+                                  placeholder="{% trans "Write your comment..." %}" required></textarea>
+                    </div>
+                    {% if user.is_agency_staff %}
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="is_internal" class="form-check-input" id="internalComment">
+                        <label class="form-check-label" for="internalComment">
+                            <i class="bi bi-lock me-1"></i>{% trans "Internal comment (visible only to staff)" %}
+                        </label>
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-send me-1"></i>{% trans "Post Comment" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column (4 cols) -->
+    <div class="col-lg-4">
+
+        {% if user.is_agency_staff %}
+        <!-- Assignment Card (Staff Only) -->
+        <div class="card mb-4 border-start border-3 border-primary">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h5 class="card-title mb-0"><i class="bi bi-person-check me-2"></i>{% trans "Assignment" %}</h5>
+            </div>
+            <div class="card-body">
+                {% if current_assignment %}
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px;">
+                            <i class="bi bi-person-fill text-white"></i>
+                        </div>
+                        <div>
+                            <strong>{{ current_assignment.assigned_to.get_full_name|default:current_assignment.assigned_to.username }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {% if current_assignment.assignment_type == 'claimed' %}
+                                    {% trans "Self-claimed" %}
+                                {% else %}
+                                    {% blocktrans with name=current_assignment.assigned_by.get_full_name|default:current_assignment.assigned_by.username %}Assigned by {{ name }}{% endblocktrans %}
+                                {% endif %}
+                                &middot; {{ current_assignment.assigned_at|date:"M d" }}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {% if current_assignment.status == 'in_progress' %}
+                            <span class="badge bg-primary">{% trans "In Progress" %}</span>
+                        {% elif current_assignment.assignment_type == 'claimed' %}
+                            <span class="badge badge-claimed"><i class="bi bi-check-circle-fill me-1"></i>{% trans "Claimed" %}</span>
+                        {% else %}
+                            <span class="badge bg-info text-dark">{% trans "Assigned" %}</span>
+                        {% endif %}
+                    </div>
+                    {% if current_assignment.assigned_to == user %}
+                    <div class="d-grid gap-2">
+                        {% if current_assignment.status == 'assigned' %}
+                        <form method="post" action="{% url 'applications:assignment-status' current_assignment.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="in_progress">
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="bi bi-play-fill me-1"></i>{% trans "Start Working" %}
+                            </button>
+                        </form>
+                        {% elif current_assignment.status == 'in_progress' %}
+                        <form method="post" action="{% url 'applications:assignment-status' current_assignment.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="btn btn-sm btn-outline-success w-100">
+                                <i class="bi bi-check-circle me-1"></i>{% trans "Mark Complete" %}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if can_assign %}
+                    <hr>
+                    <a href="{% url 'applications:assign' application.pk %}" class="btn btn-sm btn-outline-secondary w-100">
+                        <i class="bi bi-person-plus me-1"></i>{% trans "Reassign" %}
+                    </a>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted mb-3">{% trans "No one is currently assigned to this application." %}</p>
+                    <div class="d-grid gap-2">
+                        <form method="post" action="{% url 'applications:claim' application.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                <i class="bi bi-hand-index me-1"></i>{% trans "Claim This Application" %}
+                            </button>
+                        </form>
+                        {% if can_assign %}
+                        <a href="{% url 'applications:assign' application.pk %}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-person-plus me-1"></i>{% trans "Assign to Staff" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Organization Compliance Card (Staff Only) -->
+        <div class="card mb-4 border-start border-3 border-info">
+            <div class="card-header bg-info bg-opacity-10">
+                <h5 class="card-title mb-0"><i class="bi bi-building-check me-2"></i>{% trans "Organization Profile" %}</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="fw-bold mb-2">{{ application.organization.name }}</h6>
+                <span class="badge bg-light text-dark mb-3">{{ application.organization.get_org_type_display }}</span>
+
+                <dl class="row mb-0 small">
+                    <dt class="col-5">{% trans "UEI" %}</dt>
+                    <dd class="col-7">
+                        {% if application.organization.uei_number %}
+                            <code>{{ application.organization.uei_number }}</code>
+                        {% else %}
+                            <span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>{% trans "Missing" %}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-5">{% trans "EIN" %}</dt>
+                    <dd class="col-7">
+                        {% if application.organization.ein %}
+                            <code>{{ application.organization.ein }}</code>
+                        {% else %}
+                            <span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>{% trans "Missing" %}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-5">{% trans "DUNS" %}</dt>
+                    <dd class="col-7">
+                        {% if application.organization.duns_number %}
+                            <code>{{ application.organization.duns_number }}</code>
+                        {% else %}
+                            <span class="text-muted">{% trans "N/A" %}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-5">{% trans "SAM Status" %}</dt>
+                    <dd class="col-7">
+                        {% if application.organization.sam_registered %}
+                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{% trans "Registered" %}</span>
+                        {% else %}
+                            <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>{% trans "Not Registered" %}</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if application.organization.sam_expiration %}
+                    <dt class="col-5">{% trans "SAM Expires" %}</dt>
+                    <dd class="col-7">
+                        {{ application.organization.sam_expiration|date:"M d, Y" }}
+                    </dd>
+                    {% endif %}
+
+                    {% if application.organization.city %}
+                    <dt class="col-5">{% trans "Location" %}</dt>
+                    <dd class="col-7">
+                        {{ application.organization.city }}, {{ application.organization.state }} {{ application.organization.zip_code }}
+                    </dd>
+                    {% endif %}
+
+                    {% if application.organization.phone %}
+                    <dt class="col-5">{% trans "Phone" %}</dt>
+                    <dd class="col-7">{{ application.organization.phone }}</dd>
+                    {% endif %}
+
+                    {% if application.organization.website %}
+                    <dt class="col-5">{% trans "Website" %}</dt>
+                    <dd class="col-7">
+                        <a href="{{ application.organization.website }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 150px;">
+                            {{ application.organization.website }}
+                        </a>
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Applicant Info Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-person-badge me-2"></i>{% trans "Applicant" %}</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-5">{% trans "Name" %}</dt>
+                    <dd class="col-7">{{ application.applicant.get_full_name|default:application.applicant.username }}</dd>
+
+                    <dt class="col-5">{% trans "Email" %}</dt>
+                    <dd class="col-7">{{ application.applicant.email }}</dd>
+
+                    <dt class="col-5">{% trans "Organization" %}</dt>
+                    <dd class="col-7">{{ application.organization.name }}</dd>
+
+                    <dt class="col-5">{% trans "Submitted" %}</dt>
+                    <dd class="col-7">{{ application.submitted_at|date:"M d, Y"|default:"Not submitted" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Status & Timeline Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-clock-history me-2"></i>{% trans "Status Timeline" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>{% trans "Current Status:" %}</strong>
+                    {% if application.status == "draft" %}
+                        <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                    {% elif application.status == "submitted" %}
+                        <span class="badge bg-info text-dark">{% trans "Submitted" %}</span>
+                    {% elif application.status == "under_review" %}
+                        <span class="badge bg-primary">{% trans "Under Review" %}</span>
+                    {% elif application.status == "revision_requested" %}
+                        <span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span>
+                    {% elif application.status == "approved" %}
+                        <span class="badge bg-success">{% trans "Approved" %}</span>
+                    {% elif application.status == "denied" %}
+                        <span class="badge bg-danger">{% trans "Denied" %}</span>
+                    {% elif application.status == "withdrawn" %}
+                        <span class="badge bg-dark">{% trans "Withdrawn" %}</span>
+                    {% endif %}
+                </div>
+
+                {% if application.status_history.all %}
+                <div class="timeline">
+                    {% for entry in application.status_history.all %}
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0 me-2">
+                            <div class="bg-primary rounded-circle" style="width: 10px; height: 10px; margin-top: 6px;"></div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="small">
+                                <strong>{{ entry.get_new_status_display }}</strong>
+                                <span class="text-muted d-block">{{ entry.timestamp|date:"M d, Y g:i A" }}</span>
+                                {% blocktrans with name=entry.changed_by.get_full_name|default:entry.changed_by.username %}<span class="text-muted d-block">by {{ name }}</span>{% endblocktrans %}
+                                {% if entry.comment %}
+                                    <p class="small text-muted mb-0 mt-1">{{ entry.comment }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">
+                    {% blocktrans with time=application.created_at|naturaltime %}Created {{ time }}{% endblocktrans %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grant Program Info Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-megaphone me-2"></i>{% trans "Grant Program" %}</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-5">{% trans "Program" %}</dt>
+                    <dd class="col-7">{{ application.grant_program.title }}</dd>
+
+                    <dt class="col-5">{% trans "Agency" %}</dt>
+                    <dd class="col-7">{{ application.grant_program.agency }}</dd>
+
+                    <dt class="col-5">{% trans "Type" %}</dt>
+                    <dd class="col-7">{{ application.grant_program.get_grant_type_display }}</dd>
+
+                    <dt class="col-5">{% trans "Award Range" %}</dt>
+                    <dd class="col-7">${{ application.grant_program.min_award|intcomma }} &ndash; ${{ application.grant_program.max_award|intcomma }}</dd>
+
+                    <dt class="col-5">{% trans "Deadline" %}</dt>
+                    <dd class="col-7">{{ application.grant_program.application_deadline|date:"M d, Y" }}</dd>
+
+                    <dt class="col-5">{% trans "Fiscal Year" %}</dt>
+                    <dd class="col-7">{{ application.grant_program.fiscal_year }}</dd>
+
+                    {% if application.grant_program.match_required %}
+                    <dt class="col-5">{% trans "Match Req." %}</dt>
+                    <dd class="col-7">{{ application.grant_program.match_percentage }}%</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-lightning me-2"></i>{% trans "Actions" %}</h5>
+            </div>
+            <div class="card-body d-grid gap-2">
+                {% if application.status == "draft" %}
+                    <form method="post" action="{% url 'applications:submit' application.pk %}"
+                          onsubmit="return confirm('{% trans "Are you sure you want to submit this application? You will not be able to edit it after submission." %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-send me-1"></i>{% trans "Submit Application" %}
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if application.is_editable %}
+                    <a href="{% url 'applications:update' application.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i>{% trans "Edit Application" %}
+                    </a>
+                {% endif %}
+
+                {% if application.status != "withdrawn" and application.status != "denied" and application.status != "approved" %}
+                    <form method="post" action="{% url 'applications:withdraw' application.pk %}"
+                          onsubmit="return confirm('{% trans "Are you sure you want to withdraw this application? This action cannot be undone." %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-x-circle me-1"></i>{% trans "Withdraw Application" %}
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if user.is_agency_staff %}
+                <hr>
+                <p class="small text-muted mb-2"><i class="bi bi-shield-lock me-1"></i>{% trans "Staff Actions" %}</p>
+
+                {% if application.status == "submitted" %}
+                    <!-- Move to Review -->
+                    <form method="post" action="{% url 'applications:status-change' application.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="new_status" value="under_review">
+                        <div class="mb-2">
+                            <textarea name="comment" class="form-control form-control-sm" rows="2"
+                                      placeholder="{% trans "Comment (required)" %}" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary w-100 btn-sm">
+                            <i class="bi bi-search me-1"></i>{% trans "Move to Review" %}
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if application.status == "under_review" %}
+                    <!-- Approve -->
+                    <form method="post" action="{% url 'applications:status-change' application.pk %}"
+                          onsubmit="return confirm('{% trans "Approve this application?" %}');">
+                        {% csrf_token %}
+                        <input type="hidden" name="new_status" value="approved">
+                        <div class="mb-2">
+                            <textarea name="comment" class="form-control form-control-sm" rows="2"
+                                      placeholder="{% trans "Approval notes (required)" %}" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 btn-sm
+                            {% if not compliance_all_required_met %}disabled{% endif %}"
+                            {% if not compliance_all_required_met %}
+                            title="{% trans "All required compliance items must be verified before approval" %}"
+                            {% endif %}>
+                            <i class="bi bi-check-circle me-1"></i>{% trans "Approve" %}
+                        </button>
+                        {% if not compliance_all_required_met %}
+                        <small class="text-danger d-block mt-1">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            {% trans "Complete compliance checklist first" %}
+                        </small>
+                        {% endif %}
+                    </form>
+
+                    <!-- Deny -->
+                    <form method="post" action="{% url 'applications:status-change' application.pk %}"
+                          onsubmit="return confirm('{% trans "Deny this application? This cannot be undone." %}');">
+                        {% csrf_token %}
+                        <input type="hidden" name="new_status" value="denied">
+                        <div class="mb-2">
+                            <textarea name="comment" class="form-control form-control-sm" rows="2"
+                                      placeholder="{% trans "Reason for denial (required)" %}" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-sm">
+                            <i class="bi bi-x-circle me-1"></i>{% trans "Deny" %}
+                        </button>
+                    </form>
+
+                    <!-- Request Revision -->
+                    <form method="post" action="{% url 'applications:status-change' application.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="new_status" value="revision_requested">
+                        <div class="mb-2">
+                            <textarea name="comment" class="form-control form-control-sm" rows="2"
+                                      placeholder="{% trans "Describe what needs revision (required)" %}" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 btn-sm">
+                            <i class="bi bi-arrow-return-left me-1"></i>{% trans "Request Revision" %}
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if application.status == "approved" %}
+                    <a href="{% url 'awards:create' application.pk %}" class="btn btn-primary w-100 btn-sm">
+                        <i class="bi bi-trophy me-1"></i>{% trans "Create Award" %}
+                    </a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

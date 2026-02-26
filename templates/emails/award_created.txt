@@ -1,0 +1,23 @@
+{% load i18n %}{% trans "Grantify" %}
+{% trans "State Grants Management Solution" %}
+
+---
+
+{% trans "CONGRATULATIONS! AWARD CREATED" %}
+
+{% blocktrans with name=recipient.get_full_name|default:recipient.username %}Hello {{ name }},{% endblocktrans %}
+
+{% trans "We are pleased to inform you that an award has been created for your grant application." %}
+
+{% trans "Award Number" %}: {{ award.award_number }}
+{% trans "Title" %}: {{ award.title }}
+{% trans "Award Amount" %}: ${{ award.award_amount|floatformat:2 }}
+{% trans "Start Date" %}: {{ award.start_date|date:"F j, Y" }}
+{% trans "End Date" %}: {{ award.end_date|date:"F j, Y" }}
+
+{% trans "View Award Details" %}: {{ detail_url }}
+
+---
+
+{% trans "This is an automated message from Grantify. Do not reply directly." %}
+{% trans "State of DOK" %} -- {% trans "Grants Management System" %}

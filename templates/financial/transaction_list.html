@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Transaction Ledger" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            {% if award %}
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' award.pk %}">{{ award.award_number }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">{% trans "Transactions" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold mb-0">
+            <i class="bi bi-journal-text me-2"></i>{% trans "Transaction Ledger" %}
+        </h1>
+        {% if award %}
+        <p class="text-muted mb-0">{{ award.award_number }} &ndash; {{ award.title }}</p>
+        {% endif %}
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="?export=csv"
+           class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download me-1"></i>{% trans "Export CSV" %}
+        </a>
+        {% if user.can_manage_grants and award %}
+        <a href="{% url 'financial:transaction-create' award.pk %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>{% trans "Record Transaction" %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Transaction Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    {% sortable_th 'transaction_date' _("Date") %}
+                    {% sortable_th 'transaction_type' _("Type") %}
+                    {% sortable_th 'reference_number' _("Reference") %}
+                    <th>{% trans "Description" %}</th>
+                    {% sortable_th 'amount' _("Amount") %}
+                    <th>{% trans "State ERP Ref" %}</th>
+                    <th class="text-end">{% trans "Running Balance" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in transactions %}
+                <tr>
+                    <td>{{ txn.transaction_date|date:"m/d/Y" }}</td>
+                    <td>
+                        {% if txn.transaction_type == 'obligation' %}
+                            <span class="badge bg-primary">{% trans "Obligation" %}</span>
+                        {% elif txn.transaction_type == 'drawdown' %}
+                            <span class="badge bg-info text-dark">{% trans "Drawdown" %}</span>
+                        {% elif txn.transaction_type == 'payment' %}
+                            <span class="badge bg-success">{% trans "Payment" %}</span>
+                        {% elif txn.transaction_type == 'refund' %}
+                            <span class="badge bg-warning text-dark">{% trans "Refund" %}</span>
+                        {% elif txn.transaction_type == 'adjustment' %}
+                            <span class="badge bg-secondary">{% trans "Adjustment" %}</span>
+                        {% endif %}
+                    </td>
+                    <td><code class="small">{{ txn.reference_number|default:"--" }}</code></td>
+                    <td>{{ txn.description|truncatewords:10|default:"--" }}</td>
+                    <td class="text-end fw-semibold {% if txn.transaction_type == 'refund' %}text-success{% elif txn.transaction_type == 'payment' or txn.transaction_type == 'drawdown' %}text-danger{% endif %}">
+                        {% if txn.transaction_type == 'refund' %}+{% elif txn.transaction_type == 'payment' or txn.transaction_type == 'drawdown' %}-{% endif %}${{ txn.amount|intcomma }}
+                    </td>
+                    <td><code class="small">{{ txn.core_ct_reference|default:"--" }}</code></td>
+                    <td class="text-end fw-bold">${{ txn.running_balance|intcomma|default:"--" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-text display-4 d-block mb-3"></i>
+                        <p class="mb-0">{% trans "No transactions recorded." %}</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="{% trans "Transaction list pagination" %}" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">{% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

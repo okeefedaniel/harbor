@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "Edit User Role" %} — {{ edit_user.get_full_name|default:edit_user.username }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light py-2 px-3">
+    <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:user-list' %}">{% trans "User Management" %}</a></li>
+        <li class="breadcrumb-item active">{{ edit_user.get_full_name|default:edit_user.username }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-gear me-2"></i>{% trans "Edit User Role" %}</h2>
+    <a href="{% url 'core:user-list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Users" %}
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {# -- Role Form -- #}
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-shield-lock me-2"></i>{% trans "Role & Permissions" %}
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>{% trans "Save Changes" %}
+                        </button>
+                        <a href="{% url 'core:user-list' %}" class="btn btn-outline-secondary ms-2">{% trans "Cancel" %}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# -- Role Description Help -- #}
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>{% trans "Role Descriptions" %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Role" %}</th>
+                                <th>{% trans "Description" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-danger">{% trans "System Administrator" %}</span></td>
+                                <td class="small">{% trans "Full system access. Manages all agencies, programs, users, and settings." %}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark">{% trans "Agency Administrator" %}</span></td>
+                                <td class="small">{% trans "Manages programs and awards for their assigned agency." %}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">{% trans "Program Officer" %}</span></td>
+                                <td class="small">{% trans "Manages specific grant programs and reviews applications." %}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">{% trans "Fiscal Officer" %}</span></td>
+                                <td class="small">{% trans "Manages financial transactions, drawdowns, and budget tracking." %}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">{% trans "Reviewer" %}</span></td>
+                                <td class="small">{% trans "Reviews and scores grant applications." %}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-info text-dark">{% trans "Applicant" %}</span></td>
+                                <td class="small">{% trans "External grant applicant. Can submit applications and view awards." %}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">{% trans "Auditor" %}</span></td>
+                                <td class="small">{% trans "Read-only access to review grant records and financial data." %}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {# -- User Info Sidebar -- #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person me-2"></i>{% trans "User Information" %}
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.5rem;">
+                        {{ edit_user.first_name|first|default:edit_user.username|first|upper }}
+                    </div>
+                </div>
+                <h5 class="text-center">{{ edit_user.get_full_name|default:edit_user.username }}</h5>
+                <p class="text-center text-muted small mb-3">{{ edit_user.email }}</p>
+                <hr>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <i class="bi bi-person me-2 text-primary"></i>
+                        <strong>{% trans "Username:" %}</strong> <code>{{ edit_user.username }}</code>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-shield-check me-2 text-primary"></i>
+                        <strong>{% trans "Current Role:" %}</strong> {{ edit_user.get_role_display }}
+                    </li>
+                    {% if edit_user.organization %}
+                    <li class="mb-2">
+                        <i class="bi bi-building me-2 text-primary"></i>
+                        <strong>{% trans "Organization:" %}</strong> {{ edit_user.organization.name }}
+                    </li>
+                    {% endif %}
+                    <li class="mb-2">
+                        <i class="bi bi-calendar me-2 text-primary"></i>
+                        <strong>{% trans "Joined:" %}</strong> {{ edit_user.date_joined|date:"M d, Y" }}
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-clock me-2 text-primary"></i>
+                        <strong>{% trans "Last Login:" %}</strong> {{ edit_user.last_login|date:"M d, Y g:i A"|default:"Never" }}
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-flag me-2 text-primary"></i>
+                        <strong>{% trans "State Employee:" %}</strong>
+                        {% if edit_user.is_state_user %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        {# -- AI API Key -- #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-robot me-2"></i>{% trans "AI API Key" %}
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    {% if edit_user.has_ai_access %}
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span class="text-success small fw-semibold">{% trans "Configured" %}</span>
+                    {% else %}
+                        <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                        <span class="text-danger small fw-semibold">{% trans "Not Configured" %}</span>
+                    {% endif %}
+                </div>
+
+                {% if edit_user.has_ai_access %}
+                <p class="small text-muted mb-3">
+                    {% trans "Key:" %} <code>...{{ edit_user.anthropic_api_key|truncatechars:8 }}</code>
+                </p>
+                <form method="post" action="{% url 'core:user-api-key' edit_user.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="clear_key" value="1">
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="bi bi-trash me-1"></i>{% trans "Remove Key" %}
+                    </button>
+                </form>
+                {% else %}
+                <form method="post" action="{% url 'core:user-api-key' edit_user.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <div class="input-group input-group-sm">
+                            <input type="password" class="form-control" name="anthropic_api_key"
+                                   id="admin_api_key" placeholder="sk-ant-api03-...">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="let f=document.getElementById('admin_api_key'); f.type = f.type==='password' ? 'text' : 'password';">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-save me-1"></i>{% trans "Set API Key" %}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

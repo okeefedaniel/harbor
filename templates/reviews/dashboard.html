@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "Review Dashboard" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Review Dashboard" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4"><i class="bi bi-clipboard-check me-2"></i>{% trans "Review Dashboard" %}</h1>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-primary">{{ total_assigned|default:"0" }}</div>
+                <div class="text-muted">{% trans "Total Assigned" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-success">{{ completed|default:"0" }}</div>
+                <div class="text-muted">{% trans "Completed" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-warning">{{ pending|default:"0" }}</div>
+                <div class="text-muted">{% trans "Pending" %}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assigned Reviews Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0"><i class="bi bi-list-task me-2"></i>{% trans "Assigned Reviews" %}</h5>
+    </div>
+    {% if assignments %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Application" %}</th>
+                    <th>{% trans "Grant Program" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Assigned Date" %}</th>
+                    <th>{% trans "Completed Date" %}</th>
+                    <th class="text-center">{% trans "Score" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assignment in assignments %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">{{ assignment.application.project_title|truncatewords:8 }}</span>
+                        <br>
+                        <small class="text-muted">{{ assignment.application.organization }}</small>
+                    </td>
+                    <td class="text-muted">{{ assignment.application.grant_program.title|truncatewords:5 }}</td>
+                    <td>
+                        {% if assignment.status == "assigned" %}
+                            <span class="badge bg-info text-dark">{% trans "Assigned" %}</span>
+                        {% elif assignment.status == "in_progress" %}
+                            <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
+                        {% elif assignment.status == "completed" %}
+                            <span class="badge bg-success">{% trans "Completed" %}</span>
+                        {% elif assignment.status == "recused" %}
+                            <span class="badge bg-dark">{% trans "Recused" %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ assignment.assigned_at|date:"M d, Y" }}</td>
+                    <td class="small text-muted">
+                        {% if assignment.completed_at %}
+                            {{ assignment.completed_at|date:"M d, Y" }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if assignment.status == "completed" %}
+                            {% with total=0 %}
+                            <span class="badge bg-primary fs-6">
+                                {% for score in assignment.scores.all %}
+                                    {% if forloop.last %}{{ score.score }}{% endif %}
+                                {% empty %}
+                                    --
+                                {% endfor %}
+                            </span>
+                            {% endwith %}
+                        {% else %}
+                            <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if assignment.status == "completed" %}
+                            <a href="{% url 'applications:detail' assignment.application.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        {% elif assignment.status != "recused" %}
+                            <a href="{% url 'applications:detail' assignment.application.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil-square me-1"></i>{% trans "Review" %}
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-center py-5">
+        <i class="bi bi-clipboard-check display-1 text-muted"></i>
+        <h3 class="mt-3 text-muted">{% trans "No reviews assigned" %}</h3>
+        <p class="text-muted">{% trans "You have not been assigned any applications to review yet." %}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

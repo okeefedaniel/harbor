@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% if object %}{% trans "Edit Application" %}{% else %}{% blocktrans with title=grant_program.title %}Apply for: {{ title }}{% endblocktrans %}{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'applications:my-applications' %}">{% trans "My Applications" %}</a></li>
+            {% if object %}
+                <li class="breadcrumb-item"><a href="{% url 'applications:detail' object.pk %}">{{ object.project_title|truncatewords:5 }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Edit" %}</li>
+            {% else %}
+                <li class="breadcrumb-item active" aria-current="page">{% trans "New Application" %}</li>
+            {% endif %}
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4">
+    {% if object %}
+        <i class="bi bi-pencil-square me-2"></i>{% trans "Edit Application" %}
+    {% else %}
+        <i class="bi bi-file-earmark-plus me-2"></i>{% blocktrans with title=grant_program.title %}Apply for: {{ title }}{% endblocktrans %}
+    {% endif %}
+</h1>
+
+<!-- Grant Program Summary -->
+<div class="card border-primary mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="card-title mb-1">
+                    <i class="bi bi-megaphone me-1 text-primary"></i>
+                    {{ grant_program.title }}
+                </h5>
+                <p class="text-muted mb-0 small">{{ grant_program.agency }}</p>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">{% trans "Funding Range" %}</small>
+                <span class="fw-semibold">
+                    ${{ grant_program.min_award|intcomma }} &ndash; ${{ grant_program.max_award|intcomma }}
+                </span>
+            </div>
+            <div class="col-md-3 text-md-end">
+                <small class="text-muted d-block">{% trans "Application Deadline" %}</small>
+                <span class="fw-semibold {% if grant_program.days_until_deadline is not None and grant_program.days_until_deadline < 7 %}text-danger{% endif %}">
+                    {{ grant_program.application_deadline|date:"M d, Y g:i A" }}
+                </span>
+                {% if grant_program.days_until_deadline is not None %}
+                    <br>{% blocktrans with days=grant_program.days_until_deadline count counter=grant_program.days_until_deadline %}<small class="text-muted">{{ days }} day remaining</small>{% plural %}<small class="text-muted">{{ days }} days remaining</small>{% endblocktrans %}
+                {% endif %}
+            </div>
+        </div>
+        {% if grant_program.match_required %}
+        <div class="alert alert-info mt-3 mb-0 py-2 small">
+            <i class="bi bi-info-circle me-1"></i>
+            {% blocktrans with pct=grant_program.match_percentage %}This program requires a matching contribution of {{ pct }}%.{% endblocktrans %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Application Form -->
+<form method="post" enctype="multipart/form-data" id="applicationForm">
+    {% csrf_token %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-clipboard-data me-2"></i>{% trans "Project Details" %}</h5>
+        </div>
+        <div class="card-body">
+            {{ form|crispy }}
+        </div>
+    </div>
+
+    <!-- Document Upload Section -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0"><i class="bi bi-paperclip me-2"></i>{% trans "Supporting Documents" %}</h5>
+        </div>
+        <div class="card-body">
+            {% if object and object.documents.all %}
+            <div class="table-responsive mb-3">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Document" %}</th>
+                            <th>{% trans "Type" %}</th>
+                            <th>{% trans "Uploaded" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in object.documents.all %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-file-earmark me-1"></i>
+                                {{ doc.title }}
+                            </td>
+                            <td><span class="badge bg-light text-dark">{{ doc.get_document_type_display }}</span></td>
+                            <td class="text-muted small">{{ doc.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="bi bi-download me-1"></i>{% trans "Download" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if document_form %}
+                <div class="border rounded p-3 bg-light">
+                    <h6 class="mb-3"><i class="bi bi-upload me-1"></i>{% trans "Upload New Document" %}</h6>
+                    {{ document_form|crispy }}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    {% trans "You can upload supporting documents after saving the application." %}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{% if object %}{% url 'applications:detail' object.pk %}{% else %}{% url 'applications:my-applications' %}{% endif %}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+        </a>
+        <div class="d-flex gap-2">
+            <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary">
+                <i class="bi bi-save me-1"></i>{% trans "Save Draft" %}
+            </button>
+            <button type="submit" name="action" value="save_continue" class="btn btn-primary">
+                <i class="bi bi-arrow-right me-1"></i>{% trans "Save & Continue" %}
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-format currency inputs
+    document.querySelectorAll('input[name="requested_amount"], input[name="match_amount"]').forEach(function(input) {
+        input.setAttribute('step', '0.01');
+        input.setAttribute('min', '0');
+        input.setAttribute('inputmode', 'decimal');
+    });
+</script>
+{% endblock %}

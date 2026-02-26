@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load i18n %}
+
+{% block title %}{{ tracked.federal_opportunity.title|truncatewords:8 }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'grants:tracked-list' %}">{% trans "Tracked Opportunities" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ tracked.federal_opportunity.title|truncatewords:6 }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{# -- Header -- #}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">{{ tracked.federal_opportunity.title|truncatewords:15 }}</h2>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge badge-{{ tracked.status }} fs-6">{{ tracked.get_status_display }}</span>
+            {% if tracked.priority == 'high' %}
+            <span class="badge bg-danger">{% trans "High Priority" %}</span>
+            {% elif tracked.priority == 'medium' %}
+            <span class="badge bg-warning text-dark">{% trans "Medium Priority" %}</span>
+            {% else %}
+            <span class="badge bg-secondary">{% trans "Low Priority" %}</span>
+            {% endif %}
+            {% if tracked.federal_opportunity.opportunity_number %}
+            <span class="text-muted small">{{ tracked.federal_opportunity.opportunity_number }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <a href="{% url 'grants:tracked-list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>{% trans "Back to List" %}
+    </a>
+</div>
+
+<div class="row g-4">
+    {# -- Left Column (8 cols) -- #}
+    <div class="col-lg-8">
+
+        {# Federal Opportunity Info Card #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-globe me-2"></i>{% trans "Federal Opportunity Details" %}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ tracked.federal_opportunity.title }}</h5>
+                {% if tracked.federal_opportunity.description %}
+                <p class="card-text">{{ tracked.federal_opportunity.description|truncatewords:80 }}</p>
+                {% endif %}
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled small">
+                            <li class="mb-2">
+                                <strong>{% trans "Agency:" %}</strong> {{ tracked.federal_opportunity.agency_name|default:_("Not specified") }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>{% trans "Category:" %}</strong> {{ tracked.federal_opportunity.category|default:_("Not specified") }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>{% trans "Instrument:" %}</strong> {{ tracked.federal_opportunity.get_funding_instrument_display }}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled small">
+                            <li class="mb-2">
+                                <strong>{% trans "Post Date:" %}</strong> {{ tracked.federal_opportunity.post_date|date:"M d, Y"|default:_("Not specified") }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>{% trans "Close Date:" %}</strong>
+                                {% if tracked.federal_opportunity.close_date %}
+                                <span class="{% if tracked.federal_opportunity.days_until_close is not None and tracked.federal_opportunity.days_until_close < 14 %}text-danger fw-bold{% endif %}">
+                                    {{ tracked.federal_opportunity.close_date|date:"M d, Y" }}
+                                </span>
+                                {% else %}
+                                {% trans "Not specified" %}
+                                {% endif %}
+                            </li>
+                            <li class="mb-2">
+                                <strong>{% trans "Funding:" %}</strong> {{ tracked.federal_opportunity.funding_range_display }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Edit Tracking Form #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-pencil-square me-2"></i>{% trans "Update Tracking" %}
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'grants:tracked-update' tracked.pk %}">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+
+        {# Collaborators Table #}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-people me-2"></i>{% trans "Collaborators" %}
+                    <span class="badge bg-secondary rounded-pill ms-1">{{ collaborators|length }}</span>
+                </span>
+            </div>
+            <div class="card-body p-0">
+                {% if collaborators %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Name" %}</th>
+                                <th>{% trans "Type" %}</th>
+                                <th>{% trans "Role" %}</th>
+                                <th>{% trans "Added" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for collab in collaborators %}
+                            <tr>
+                                <td>
+                                    <strong>{{ collab.display_name }}</strong>
+                                    {% if collab.email and not collab.user %}
+                                    <br><small class="text-muted">{{ collab.email }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if collab.user %}
+                                    <span class="badge bg-info text-dark">{% trans "Internal" %}</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">{% trans "External" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ collab.get_role_display }}</span>
+                                </td>
+                                <td class="text-muted small">{{ collab.invited_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'grants:tracked-remove-collaborator' tracked.pk collab.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Remove' %}"
+                                                onclick="return confirm('{% trans "Remove this collaborator?" %}');">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-people d-block"></i>
+                    <p class="mb-0 text-muted">{% trans "No collaborators added yet." %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# -- Right Column (4 cols) -- #}
+    <div class="col-lg-4">
+
+        {# Quick Info Card #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>{% trans "Quick Info" %}
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Close Date" %}</small>
+                        {% if tracked.federal_opportunity.close_date %}
+                        <span class="{% if tracked.federal_opportunity.days_until_close is not None and tracked.federal_opportunity.days_until_close < 14 %}text-danger fw-bold{% endif %}">
+                            {{ tracked.federal_opportunity.close_date|date:"M d, Y" }}
+                        </span>
+                        {% with days=tracked.federal_opportunity.days_until_close %}
+                        {% if days is not None %}
+                        <br><small class="{% if days < 14 %}text-danger{% else %}text-muted{% endif %}">
+                            {{ days }} {% trans "day" %}{{ days|pluralize }} {% trans "remaining" %}
+                        </small>
+                        {% else %}
+                        <br><small class="text-danger">{% trans "Deadline has passed" %}</small>
+                        {% endif %}
+                        {% endwith %}
+                        {% else %}
+                        <span class="text-muted">{% trans "Not specified" %}</span>
+                        {% endif %}
+                    </li>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Funding Range" %}</small>
+                        <span class="fs-6 fw-bold text-success">{{ tracked.federal_opportunity.funding_range_display }}</span>
+                    </li>
+                    {% if tracked.federal_opportunity.total_funding %}
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Total Estimated Funding" %}</small>
+                        <span>${{ tracked.federal_opportunity.total_funding|intcomma }}</span>
+                    </li>
+                    {% endif %}
+                    {% if tracked.federal_opportunity.expected_awards %}
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Expected Awards" %}</small>
+                        <span>{{ tracked.federal_opportunity.expected_awards }}</span>
+                    </li>
+                    {% endif %}
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Opportunity Status" %}</small>
+                        <span class="badge badge-{{ tracked.federal_opportunity.opportunity_status }}">
+                            {{ tracked.federal_opportunity.get_opportunity_status_display }}
+                        </span>
+                    </li>
+                    <hr>
+                    <li class="mb-3">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Tracking Since" %}</small>
+                        <span>{{ tracked.created_at|date:"M d, Y" }}</span>
+                    </li>
+                    <li class="mb-0">
+                        <small class="text-muted d-block text-uppercase" style="letter-spacing: 0.5px;">{% trans "Last Updated" %}</small>
+                        <span>{{ tracked.updated_at|date:"M d, Y g:i A" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        {# Add Collaborator Card #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person-plus me-2"></i>{% trans "Add Collaborator" %}
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'grants:tracked-collaborate' tracked.pk %}">
+                    {% csrf_token %}
+                    {% crispy collaborator_form %}
+                </form>
+            </div>
+        </div>
+
+        {# External Links Card #}
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-link-45deg me-2"></i>{% trans "Links" %}
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if tracked.federal_opportunity.grants_gov_url %}
+                    <a href="{{ tracked.federal_opportunity.grants_gov_url }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>{% trans "View on Grants.gov" %}
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'portal:federal-opportunity-detail' tracked.federal_opportunity.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-eye me-1"></i>{% trans "View Full Details" %}
+                    </a>
+                    {% if tracked.grant_program %}
+                    <a href="{% url 'grants:program-detail' tracked.grant_program.pk %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-folder me-1"></i>{% trans "View Linked Program" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

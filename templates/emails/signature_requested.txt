@@ -1,0 +1,41 @@
+{% load i18n %}{% trans "Grantify" %}
+{% trans "State Grants Management Solution" %}
+
+---
+
+{% if is_completion_notice %}
+{% trans "AWARD AGREEMENT SIGNED" %}
+
+{% blocktrans with name=signer_name %}Hello,
+
+{{ name }} has signed the award agreement. The award has been marked as executed.{% endblocktrans %}
+
+{% else %}
+{% trans "SIGNATURE REQUESTED" %}
+
+{% blocktrans with name=signer_name %}Hello {{ name }},{% endblocktrans %}
+
+{% trans "An award agreement has been sent to you for electronic signature via DocuSign. Please check your email from DocuSign to review and sign the document." %}
+{% endif %}
+
+{% trans "Award Number" %}: {{ award.award_number }}
+{% trans "Title" %}: {{ award.title }}
+{% trans "Award Amount" %}: ${{ award.award_amount|floatformat:2 }}
+{% trans "Start Date" %}: {{ award.start_date|date:"F j, Y" }}
+{% trans "End Date" %}: {{ award.end_date|date:"F j, Y" }}
+
+{% if signature_request.notes %}
+{% trans "Notes:" %}
+{{ signature_request.notes }}
+
+{% endif %}
+{% trans "View Award Details" %}: {{ detail_url }}
+
+{% if not is_completion_notice %}
+{% trans "You will receive a separate email from DocuSign with the document to sign. If you do not receive it, please check your spam folder." %}
+
+{% endif %}
+---
+
+{% trans "This is an automated message from Grantify. Do not reply directly." %}
+{% trans "State of DOK" %} -- {% trans "Grants Management System" %}

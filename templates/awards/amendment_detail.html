@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with num=amendment.amendment_number %}Amendment #{{ num }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' amendment.award.pk %}">{{ amendment.award.award_number }}</a></li>
+            <li class="breadcrumb-item active">{% blocktrans with num=amendment.amendment_number %}Amendment #{{ num }}{% endblocktrans %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-pencil-square me-2"></i>{% blocktrans with num=amendment.amendment_number %}Amendment #{{ num }}{% endblocktrans %}
+        </h1>
+        <p class="text-muted mb-0">{{ amendment.award.award_number }} &ndash; {{ amendment.award.title }}</p>
+    </div>
+    <a href="{% url 'awards:detail' amendment.award.pk %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Award" %}
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Amendment Details" %}</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">{% trans "Type" %}</dt>
+                    <dd class="col-sm-8">{{ amendment.get_amendment_type_display }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Status" %}</dt>
+                    <dd class="col-sm-8">
+                        {% if amendment.status == 'draft' %}
+                            <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                        {% elif amendment.status == 'submitted' %}
+                            <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                        {% elif amendment.status == 'approved' %}
+                            <span class="badge bg-success">{% trans "Approved" %}</span>
+                        {% elif amendment.status == 'denied' %}
+                            <span class="badge bg-danger">{% trans "Denied" %}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">{% trans "Description" %}</dt>
+                    <dd class="col-sm-8">{{ amendment.description }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Requested By" %}</dt>
+                    <dd class="col-sm-8">{{ amendment.requested_by.get_full_name }}</dd>
+
+                    <dt class="col-sm-4">{% trans "Created" %}</dt>
+                    <dd class="col-sm-8">{{ amendment.created_at|date:"M d, Y g:i A" }}</dd>
+
+                    {% if amendment.approved_by %}
+                    <dt class="col-sm-4">{% trans "Approved By" %}</dt>
+                    <dd class="col-sm-8">{% blocktrans with name=amendment.approved_by.get_full_name date=amendment.approved_at|date:"M d, Y" %}{{ name }} on {{ date }}{% endblocktrans %}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        {% if amendment.old_value or amendment.new_value %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Changes" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">{% trans "Previous Value" %}</h6>
+                        <pre class="bg-light p-3 rounded small">{{ amendment.old_value }}</pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">{% trans "New Value" %}</h6>
+                        <pre class="bg-light p-3 rounded small">{{ amendment.new_value }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if request.user.is_agency_staff %}
+        {% if amendment.status == 'submitted' or amendment.status == 'draft' %}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Actions" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2">
+                    <form method="post" action="{% url 'awards:amendment-approve' amendment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success"
+                                onclick="return confirm('{% trans "Are you sure you want to approve this amendment?" %}');">
+                            <i class="bi bi-check-circle me-1"></i>{% trans "Approve" %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'awards:amendment-deny' amendment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('{% trans "Are you sure you want to deny this amendment?" %}');">
+                            <i class="bi bi-x-circle me-1"></i>{% trans "Deny" %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

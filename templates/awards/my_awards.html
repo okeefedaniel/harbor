@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "My Awards" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "My Awards" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">
+        <i class="bi bi-trophy me-2"></i>{% trans "My Awards" %}
+    </h1>
+</div>
+
+{% if awards %}
+<div class="row g-4">
+    {% for award in awards %}
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="card-title fw-bold mb-1">{{ award.title }}</h5>
+                        <p class="text-muted small mb-0">{{ award.award_number }}</p>
+                    </div>
+                    <div>
+                        {% if award.status == 'draft' %}
+                            <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                        {% elif award.status == 'pending_approval' %}
+                            <span class="badge bg-warning text-dark">{% trans "Pending Approval" %}</span>
+                        {% elif award.status == 'approved' %}
+                            <span class="badge bg-info text-dark">{% trans "Approved" %}</span>
+                        {% elif award.status == 'executed' %}
+                            <span class="badge bg-primary">{% trans "Executed" %}</span>
+                        {% elif award.status == 'active' %}
+                            <span class="badge bg-success">{% trans "Active" %}</span>
+                        {% elif award.status == 'on_hold' %}
+                            <span class="badge bg-warning text-dark">{% trans "On Hold" %}</span>
+                        {% elif award.status == 'completed' %}
+                            <span class="badge bg-dark">{% trans "Completed" %}</span>
+                        {% elif award.status == 'terminated' %}
+                            <span class="badge bg-danger">{% trans "Terminated" %}</span>
+                        {% elif award.status == 'cancelled' %}
+                            <span class="badge bg-danger">{% trans "Cancelled" %}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ award.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Award Amount -->
+                <div class="mb-3">
+                    <span class="fs-4 fw-bold text-primary">${{ award.award_amount|intcomma }}</span>
+                </div>
+
+                <!-- Dates -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">{% trans "Start Date" %}</small>
+                        <span class="fw-semibold">{{ award.start_date|date:"M d, Y"|default:"TBD" }}</span>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">{% trans "End Date" %}</small>
+                        <span class="fw-semibold">{{ award.end_date|date:"M d, Y"|default:"TBD" }}</span>
+                    </div>
+                </div>
+
+                <!-- Time Elapsed Progress Bar -->
+                {% if award.start_date and award.end_date %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="text-muted">{% trans "Time Elapsed" %}</small>
+                        <small class="text-muted">{{ award.time_elapsed_pct|default:"0" }}%</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar {% if award.time_elapsed_pct >= 90 %}bg-danger{% elif award.time_elapsed_pct >= 75 %}bg-warning{% else %}bg-success{% endif %}"
+                             role="progressbar"
+                             style="width: {{ award.time_elapsed_pct|default:'0' }}%"
+                             aria-valuenow="{{ award.time_elapsed_pct|default:'0' }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 mt-auto">
+                    <a href="{% url 'awards:detail' award.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-eye me-1"></i>{% trans "View Details" %}
+                    </a>
+                    {% if award.status == 'active' %}
+                    <a href="{% url 'reporting:create' award.pk %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-file-earmark-text me-1"></i>{% trans "Submit Report" %}
+                    </a>
+                    <a href="{% url 'financial:drawdown-create' award.pk %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-cash-stack me-1"></i>{% trans "Request Drawdown" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-trophy display-1 text-muted d-block mb-3"></i>
+    <h4 class="text-muted">{% trans "No Awards Yet" %}</h4>
+    <p class="text-muted mb-4">
+        {% trans "You do not have any awards at this time. Awards are created when your grant application is approved." %}
+    </p>
+    <a href="{% url 'portal:opportunities' %}" class="btn btn-primary">
+        <i class="bi bi-megaphone me-1"></i>{% trans "Browse Funding Opportunities" %}
+    </a>
+</div>
+{% endif %}
+{% endblock %}

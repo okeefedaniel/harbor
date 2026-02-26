@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with num=drawdown.request_number %}Drawdown {{ num }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'financial:drawdown-list' %}">{% trans "Cash Requests" %}</a></li>
+            <li class="breadcrumb-item active">{{ drawdown.request_number }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <!-- Request Details Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-cash-stack me-2"></i>{% blocktrans with num=drawdown.request_number %}Drawdown Request {{ num }}{% endblocktrans %}
+                </h4>
+                {% if drawdown.status == 'draft' %}
+                    <span class="badge bg-secondary fs-6">{% trans "Draft" %}</span>
+                {% elif drawdown.status == 'submitted' %}
+                    <span class="badge bg-warning text-dark fs-6">{% trans "Submitted" %}</span>
+                {% elif drawdown.status == 'under_review' %}
+                    <span class="badge bg-info text-dark fs-6">{% trans "Under Review" %}</span>
+                {% elif drawdown.status == 'approved' %}
+                    <span class="badge bg-success fs-6">{% trans "Approved" %}</span>
+                {% elif drawdown.status == 'paid' %}
+                    <span class="badge bg-primary fs-6">{% trans "Paid" %}</span>
+                {% elif drawdown.status == 'denied' %}
+                    <span class="badge bg-danger fs-6">{% trans "Denied" %}</span>
+                {% elif drawdown.status == 'returned' %}
+                    <span class="badge bg-warning text-dark fs-6">{% trans "Returned" %}</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">{% trans "Award" %}</dt>
+                    <dd class="col-sm-8">
+                        <a href="{% url 'awards:detail' drawdown.award.pk %}">
+                            {{ drawdown.award.award_number }} - {{ drawdown.award.title }}
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Amount Requested" %}</dt>
+                    <dd class="col-sm-8 fw-bold fs-5 text-primary">${{ drawdown.amount|intcomma }}</dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Period" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ drawdown.period_start|date:"M d, Y" }} &ndash; {{ drawdown.period_end|date:"M d, Y" }}
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Submitted By" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ drawdown.submitted_by.get_full_name }}
+                        {% if drawdown.submitted_at %}
+                        <span class="text-muted small">({{ drawdown.submitted_at|date:"M d, Y g:i A" }})</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if drawdown.description %}
+                    <dt class="col-sm-4 text-muted">{% trans "Description" %}</dt>
+                    <dd class="col-sm-8">{{ drawdown.description }}</dd>
+                    {% endif %}
+
+                    {% if drawdown.payment_reference %}
+                    <dt class="col-sm-4 text-muted">{% trans "Payment Reference" %}</dt>
+                    <dd class="col-sm-8"><code>{{ drawdown.payment_reference }}</code></dd>
+                    {% endif %}
+
+                    {% if drawdown.reviewed_by %}
+                    <dt class="col-sm-4 text-muted">{% trans "Reviewed By" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ drawdown.reviewed_by.get_full_name }}
+                        <span class="text-muted small">({{ drawdown.reviewed_at|date:"M d, Y g:i A" }})</span>
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Expenditure Details -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Expenditure Details" %}</h5>
+            </div>
+            <div class="card-body">
+                {% if drawdown.expenditure_details %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Category" %}</th>
+                                <th>{% trans "Description" %}</th>
+                                <th class="text-end">{% trans "Amount" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in drawdown.expenditure_details.items %}
+                            <tr>
+                                <td>{{ item.category|default:"--" }}</td>
+                                <td>{{ item.description|default:"--" }}</td>
+                                <td class="text-end">${{ item.amount|intcomma|default:"--" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    {% trans "No detailed expenditure items provided." %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">{% trans "No detailed expenditure breakdown provided." %}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Approval / Denial Buttons (Staff Only) -->
+        {% if user.can_manage_grants and drawdown.status == 'submitted' or drawdown.status == 'under_review' %}
+        <div class="card border-0 shadow-sm border-top border-4 border-primary">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3">{% trans "Review Actions" %}</h5>
+                <div class="d-flex gap-2">
+                    <form method="post" action="{% url 'financial:drawdown-approve' drawdown.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i>{% trans "Approve" %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'financial:drawdown-deny' drawdown.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle me-1"></i>{% trans "Deny" %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'financial:drawdown-return' drawdown.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-return-left me-1"></i>{% trans "Return for Revision" %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Status Timeline -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-clock-history me-1"></i>{% trans "Status Timeline" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <!-- Created -->
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                                 style="width: 32px; height: 32px;">
+                                <i class="bi bi-plus-lg text-white small"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <strong class="d-block">{% trans "Created" %}</strong>
+                            <small class="text-muted">{{ drawdown.created_at|date:"M d, Y g:i A" }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Submitted -->
+                    {% if drawdown.submitted_at %}
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center"
+                                 style="width: 32px; height: 32px;">
+                                <i class="bi bi-send text-white small"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <strong class="d-block">{% trans "Submitted" %}</strong>
+                            <small class="text-muted">{{ drawdown.submitted_at|date:"M d, Y g:i A" }}</small>
+                            <br><small class="text-muted">{% blocktrans with name=drawdown.submitted_by.get_full_name %}by {{ name }}{% endblocktrans %}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Reviewed -->
+                    {% if drawdown.reviewed_at %}
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <div class="rounded-circle bg-{% if drawdown.status == 'approved' or drawdown.status == 'paid' %}success{% elif drawdown.status == 'denied' %}danger{% else %}info{% endif %} d-flex align-items-center justify-content-center"
+                                 style="width: 32px; height: 32px;">
+                                <i class="bi bi-clipboard-check text-white small"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <strong class="d-block">{{ drawdown.get_status_display }}</strong>
+                            <small class="text-muted">{{ drawdown.reviewed_at|date:"M d, Y g:i A" }}</small>
+                            <br><small class="text-muted">{% blocktrans with name=drawdown.reviewed_by.get_full_name %}by {{ name }}{% endblocktrans %}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Paid -->
+                    {% if drawdown.paid_at %}
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
+                                 style="width: 32px; height: 32px;">
+                                <i class="bi bi-check-all text-white small"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <strong class="d-block">{% trans "Paid" %}</strong>
+                            <small class="text-muted">{{ drawdown.paid_at|date:"M d, Y g:i A" }}</small>
+                            {% if drawdown.payment_reference %}
+                            <br><small class="text-muted">{% blocktrans with ref=drawdown.payment_reference %}Ref: {{ ref }}{% endblocktrans %}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

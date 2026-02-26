@@ -1,0 +1,56 @@
+{% load i18n %}<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
+    <!-- Header -->
+    <div style="background-color: #00457C; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">{% trans "Grantify" %}</h1>
+        <p style="margin: 5px 0 0; font-size: 14px; opacity: 0.9;">{% trans "State Grants Management Solution" %}</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0; border-top: none;">
+        <h2 style="color: #00457C; margin-top: 0; font-size: 20px;">{% trans "New Application Submitted" %}</h2>
+
+        {% blocktrans with name=staff_user.get_full_name|default:staff_user.username %}<p>Hello {{ name }},</p>{% endblocktrans %}
+
+        <p>{% trans "A new grant application has been submitted and requires your review." %}</p>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555; width: 40%;">{% trans "Project Title" %}</td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{{ application.project_title }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">{% trans "Applicant" %}</td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{{ applicant.get_full_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">{% trans "Organization" %}</td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{{ org_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">{% trans "Grant Program" %}</td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{{ program.title }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 12px; font-weight: bold; color: #555;">{% trans "Amount Requested" %}</td>
+                <td style="padding: 10px 12px;">${{ application.requested_amount|floatformat:2 }}</td>
+            </tr>
+        </table>
+
+        <p style="text-align: center; margin: 25px 0;">
+            <a href="{{ detail_url }}"
+               style="display: inline-block; background-color: #00457C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
+                {% trans "Review Application" %}
+            </a>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding: 20px; text-align: center; font-size: 12px; color: #888; border-radius: 0 0 8px 8px;">
+        <p style="margin: 0 0 5px;">{% trans "This is an automated message from Grantify. Do not reply directly." %}</p>
+        <p style="margin: 0;">{% trans "State of DOK" %} &mdash; {% trans "Grants Management System" %}</p>
+    </div>
+</body>
+</html>

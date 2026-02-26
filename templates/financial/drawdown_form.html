@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% if drawdown %}{% trans "Edit Drawdown Request" %}{% else %}{% trans "New Drawdown Request" %}{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'financial:drawdown-list' %}">{% trans "Cash Requests" %}</a></li>
+            {% if drawdown %}
+            <li class="breadcrumb-item active">{% blocktrans with num=drawdown.request_number %}Edit {{ num }}{% endblocktrans %}</li>
+            {% else %}
+            <li class="breadcrumb-item active">{% trans "New Request" %}</li>
+            {% endif %}
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-4">
+            <i class="bi bi-cash-stack me-2"></i>
+            {% if drawdown %}{% trans "Edit Drawdown Request" %}{% else %}{% trans "New Drawdown Request" %}{% endif %}
+        </h1>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if drawdown %}{% url 'financial:drawdown-detail' drawdown.pk %}{% else %}{% url 'financial:drawdown-list' %}{% endif %}"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="save_draft" value="1" class="btn btn-outline-primary">
+                                <i class="bi bi-save me-1"></i>{% trans "Save Draft" %}
+                            </button>
+                            <button type="submit" name="submit_request" value="1" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>{% trans "Submit Request" %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

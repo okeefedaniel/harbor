@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Grant Matching Preferences" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Matching Preferences" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function updateLabel(btn, boxes) {
+        var allChecked = Array.from(boxes).every(function (cb) { return cb.checked; });
+        btn.textContent = allChecked ? btn.dataset.deselectAll : btn.dataset.selectAll;
+    }
+    document.querySelectorAll('.select-all-toggle').forEach(function (btn) {
+        var fieldset = btn.closest('fieldset');
+        var boxes = fieldset.querySelectorAll('input[type="checkbox"]');
+        updateLabel(btn, boxes);
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var allChecked = Array.from(boxes).every(function (cb) { return cb.checked; });
+            boxes.forEach(function (cb) { cb.checked = !allChecked; });
+            updateLabel(btn, boxes);
+        });
+        boxes.forEach(function (cb) {
+            cb.addEventListener('change', function () { updateLabel(btn, boxes); });
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-stars me-2"></i>{% trans "AI Grant Matching Preferences" %}</h2>
+        <p class="text-muted mb-0">
+            {% trans "Tell us what you're looking for and our AI will match you with relevant funding opportunities." %}
+        </p>
+    </div>
+    <a href="{% url 'grants:recommendations' %}" class="btn btn-outline-primary">
+        <i class="bi bi-lightbulb me-1"></i>{% trans "View Recommendations" %}
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                {% crispy form %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle me-2"></i>{% trans "How It Works" %}</h5>
+                <ol class="mb-0">
+                    <li class="mb-2">{% trans "Set your focus areas, organization types, and funding range preferences." %}</li>
+                    <li class="mb-2">{% trans "Optionally describe your mission and priorities in your own words — our AI reads this to understand your needs." %}</li>
+                    <li class="mb-2">{% trans "We'll automatically score new opportunities against your profile and notify you of strong matches." %}</li>
+                    <li>{% trans "View all recommendations from your dashboard or the Recommendations page." %}</li>
+                </ol>
+            </div>
+        </div>
+
+        {% if object.updated_at %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted"><i class="bi bi-clock-history me-2"></i>{% trans "Status" %}</h6>
+                <p class="mb-1">
+                    {% if object.is_active %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>{% trans "Active" %}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{% trans "Paused" %}</span>
+                    {% endif %}
+                </p>
+                <small class="text-muted">
+                    {% trans "Last updated:" %} {{ object.updated_at|date:"M d, Y g:i A" }}
+                </small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

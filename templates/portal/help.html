@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Help & FAQ" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans "breadcrumb" %}" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb py-2 mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Help & FAQ" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-2">{% trans "Help & Frequently Asked Questions" %}</h1>
+        <p class="text-muted mb-4">
+            {% trans "Find answers to common questions about using the State Grants Management Solution." %}
+        </p>
+
+        <!-- FAQ Accordion -->
+        <div class="accordion" id="faqAccordion">
+
+            <!-- Question 1: Registration -->
+            <div class="accordion-item border-0 shadow-sm mb-3 rounded">
+                <h2 class="accordion-header" id="faqHeading1">
+                    <button class="accordion-button collapsed fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faqCollapse1"
+                            aria-expanded="false" aria-controls="faqCollapse1">
+                        <i class="bi bi-person-plus me-2 text-primary"></i>
+                        {% trans "How do I register for an account?" %}
+                    </button>
+                </h2>
+                <div id="faqCollapse1" class="accordion-collapse collapse"
+                     aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body lh-lg">
+                        <p>{% trans "To create a Grantify account:" %}</p>
+                        <ol>
+                            <li>{% trans "Click the <strong>Register</strong> button in the top navigation bar or visit the" %} <a href="{% url 'core:register' %}">{% trans "registration page" %}</a>.</li>
+                            <li>{% trans "Fill in your personal information including your name, email address, and a username and password." %}</li>
+                            <li>{% trans "Accept the Terms of Service and Privacy Policy." %}</li>
+                            <li>{% trans "Click <strong>Create Account</strong> to complete registration." %}</li>
+                        </ol>
+                        <p>
+                            {% trans "After registering, you will be able to log in and set up your organization profile. Your organization profile is required before you can submit applications." %}
+                        </p>
+                        <p class="mb-0">
+                            {% trans "<strong>Note:</strong> State agency staff should contact their agency administrator for account provisioning rather than using self-registration." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 2: How to Apply -->
+            <div class="accordion-item border-0 shadow-sm mb-3 rounded">
+                <h2 class="accordion-header" id="faqHeading2">
+                    <button class="accordion-button collapsed fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faqCollapse2"
+                            aria-expanded="false" aria-controls="faqCollapse2">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>
+                        {% trans "How do I apply for a grant?" %}
+                    </button>
+                </h2>
+                <div id="faqCollapse2" class="accordion-collapse collapse"
+                     aria-labelledby="faqHeading2" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body lh-lg">
+                        <p>{% trans "To apply for a funding opportunity:" %}</p>
+                        <ol>
+                            <li>{% trans "Browse available opportunities on the" %} <a href="{% url 'portal:opportunities' %}">{% trans "Funding Opportunities" %}</a> {% trans "page." %}</li>
+                            <li>{% trans "Click <strong>View Details</strong> on an opportunity you are interested in." %}</li>
+                            <li>{% trans "Review the program description, eligibility criteria, and required documents." %}</li>
+                            <li>{% trans "If the program is currently accepting applications, click the <strong>Apply Now</strong> button." %}</li>
+                            <li>{% trans "Complete all required sections of the application form, attach supporting documents, and submit." %}</li>
+                        </ol>
+                        <p class="mb-0">
+                            {% trans "You can save your application as a draft and return to it later before the deadline. Make sure to submit before the application deadline, as late submissions cannot be accepted." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 3: Application Statuses -->
+            <div class="accordion-item border-0 shadow-sm mb-3 rounded">
+                <h2 class="accordion-header" id="faqHeading3">
+                    <button class="accordion-button collapsed fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faqCollapse3"
+                            aria-expanded="false" aria-controls="faqCollapse3">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>
+                        {% trans "What do the application status values mean?" %}
+                    </button>
+                </h2>
+                <div id="faqCollapse3" class="accordion-collapse collapse"
+                     aria-labelledby="faqHeading3" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body lh-lg">
+                        <p>{% trans "Your application may have one of the following statuses:" %}</p>
+                        <dl class="row">
+                            <dt class="col-sm-4"><span class="badge bg-secondary">{% trans "Draft" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "You have started an application but have not yet submitted it. You can continue editing until you submit." %}
+                            </dd>
+
+                            <dt class="col-sm-4"><span class="badge bg-primary">{% trans "Submitted" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "Your application has been submitted and received by the awarding agency. It is awaiting initial review." %}
+                            </dd>
+
+                            <dt class="col-sm-4"><span class="badge bg-info">{% trans "Under Review" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "Your application is currently being reviewed and evaluated by the agency or review panel." %}
+                            </dd>
+
+                            <dt class="col-sm-4"><span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "The agency has requested changes or additional information. Check your notifications for details on what needs to be revised." %}
+                            </dd>
+
+                            <dt class="col-sm-4"><span class="badge bg-success">{% trans "Approved" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "Your application has been approved for funding. An award will be processed and you will receive further instructions." %}
+                            </dd>
+
+                            <dt class="col-sm-4"><span class="badge bg-danger">{% trans "Denied" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "Your application was not selected for funding in this cycle. You may receive feedback from the agency about your application." %}
+                            </dd>
+
+                            <dt class="col-sm-4"><span class="badge bg-dark">{% trans "Withdrawn" %}</span></dt>
+                            <dd class="col-sm-8">
+                                {% trans "You or the agency has withdrawn this application from consideration." %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 4: Reports -->
+            <div class="accordion-item border-0 shadow-sm mb-3 rounded">
+                <h2 class="accordion-header" id="faqHeading4">
+                    <button class="accordion-button collapsed fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faqCollapse4"
+                            aria-expanded="false" aria-controls="faqCollapse4">
+                        <i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>
+                        {% trans "How do I submit reports for my award?" %}
+                    </button>
+                </h2>
+                <div id="faqCollapse4" class="accordion-collapse collapse"
+                     aria-labelledby="faqHeading4" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body lh-lg">
+                        <p>
+                            {% trans "Once you have an active award, you may be required to submit periodic progress and financial reports. To submit a report:" %}
+                        </p>
+                        <ol>
+                            <li>{% trans "Log in to your account and navigate to <strong>My Awards</strong>." %}</li>
+                            <li>{% trans "Select the award you need to report on." %}</li>
+                            <li>{% trans "Click the <strong>Reports</strong> tab to see upcoming and past-due reports." %}</li>
+                            <li>{% trans "Click <strong>Submit Report</strong> next to the report that is due." %}</li>
+                            <li>{% trans "Complete the report form with program activities, expenditure details, and any required attachments." %}</li>
+                            <li>{% trans "Submit the report for agency review." %}</li>
+                        </ol>
+                        <p class="mb-0">
+                            {% trans "Report due dates are set by the awarding agency and will appear in your notifications. Timely reporting is important for continued funding and compliance with your award agreement." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 5: Contact -->
+            <div class="accordion-item border-0 shadow-sm mb-3 rounded">
+                <h2 class="accordion-header" id="faqHeading5">
+                    <button class="accordion-button collapsed fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faqCollapse5"
+                            aria-expanded="false" aria-controls="faqCollapse5">
+                        <i class="bi bi-headset me-2 text-primary"></i>
+                        {% trans "How can I get help or contact support?" %}
+                    </button>
+                </h2>
+                <div id="faqCollapse5" class="accordion-collapse collapse"
+                     aria-labelledby="faqHeading5" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body lh-lg">
+                        <p>{% trans "If you need assistance with the Grantify platform, you can reach the support team through the following channels:" %}</p>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold"><i class="bi bi-envelope me-2"></i>{% trans "Email Support" %}</h6>
+                                        <p class="small mb-0">
+                                            <a href="mailto:grants@dok.gov">grants@dok.gov</a><br>
+                                            {% trans "Response within 1-2 business days" %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold"><i class="bi bi-telephone me-2"></i>{% trans "Phone Support" %}</h6>
+                                        <p class="small mb-0">
+                                            (555) 500-2300<br>
+                                            {% trans "Monday - Friday, 8:30 AM - 5:00 PM ET" %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="mt-3 mb-0">
+                            {% trans "For questions specific to a particular grant program, please contact the program officer listed on the opportunity detail page." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Additional Help -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-question-circle display-6 text-primary d-block mb-3"></i>
+                <h5 class="fw-bold">{% trans "Still have questions?" %}</h5>
+                <p class="text-muted mb-3">
+                    {% trans "If you could not find the answer you were looking for, please do not hesitate to contact us." %}
+                </p>
+                <a href="mailto:grants@dok.gov" class="btn btn-primary">
+                    <i class="bi bi-envelope me-2"></i>{% trans "Contact Support" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

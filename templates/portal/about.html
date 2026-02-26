@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "About" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans "breadcrumb" %}" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb py-2 mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "About" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-4">{% trans "About Grantify" %}</h1>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-bank2 me-2 text-primary"></i>{% trans "State Grants Management Solution" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Grantify is an enterprise grants management platform developed to modernize and streamline how state agencies administer grant funding. The system provides a unified portal for the entire grant lifecycle, from opportunity posting through application, award, and closeout." %}
+                </p>
+                <p class="lh-lg">
+                    {% trans "Led by the Department of Commerce and Development, Grantify supports the state's mission to distribute public funding efficiently, transparently, and equitably to municipalities, nonprofits, businesses, and other eligible entities." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-bullseye me-2 text-primary"></i>{% trans "Our Purpose" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "The Grantify platform was created to address the need for a centralized, standardized approach to grants management across state government. By bringing all participating agencies onto a single platform, Grantify:" %}
+                </p>
+                <ul class="lh-lg">
+                    <li>{% trans "Provides a single point of access for applicants to discover and apply for state funding opportunities" %}</li>
+                    <li>{% trans "Standardizes the application review and award process to improve consistency and fairness" %}</li>
+                    <li>{% trans "Streamlines post-award management including financial drawdowns, reporting, and compliance monitoring" %}</li>
+                    <li>{% trans "Enhances transparency and accountability in the use of public funds" %}</li>
+                    <li>{% trans "Reduces administrative burden for both state agencies and grant recipients" %}</li>
+                    <li>{% trans "Supports compliance with state and federal reporting requirements" %}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-buildings me-2 text-primary"></i>{% trans "Participating Agencies" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Grantify serves multiple state agencies that administer grant programs, including:" %}
+                </p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Commerce and Development (DCD)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Office of Budget and Management (OBM)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Housing (DOH)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Energy and Environmental Protection (DEEP)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Social Services (DSS)" %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Public Health (DPH)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Education (SDE)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Transportation (DOT)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Emergency Services and Public Protection (DESPP)" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {% trans "Dept. of Labor (DOL)" %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-envelope me-2 text-primary"></i>{% trans "Contact Us" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "For questions about the Grantify platform or technical assistance, please contact the grants management team:" %}
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <i class="bi bi-envelope me-2 text-muted"></i>
+                            <a href="mailto:grants@dok.gov">grants@dok.gov</a>
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-telephone me-2 text-muted"></i>
+                            (555) 500-2300
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <i class="bi bi-geo-alt me-2 text-muted"></i>
+                            100 Capitol Avenue<br>
+                            <span class="ms-4">Capital City, DOK 00100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

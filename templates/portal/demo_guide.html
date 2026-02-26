@@ -1,0 +1,940 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Product Tour" %}{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lifecycle-step {
+        text-align: center;
+        position: relative;
+        flex: 1;
+    }
+    .lifecycle-step .step-num {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--ct-blue), var(--ct-bold-blue));
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+        font-family: 'Poppins', Arial, sans-serif;
+        margin: 0 auto 0.75rem auto;
+        box-shadow: 0 3px 6px rgba(31, 100, 229, 0.25);
+    }
+    .lifecycle-step .step-connector {
+        position: absolute;
+        top: 24px;
+        left: calc(50% + 28px);
+        width: calc(100% - 56px);
+        height: 2px;
+        background: var(--ct-light-blue);
+    }
+    .lifecycle-step:last-child .step-connector { display: none; }
+    .lifecycle-step h6 { font-size: 0.8rem; color: var(--ct-dark-blue); }
+
+    .role-badge { padding: 0.3em 0.75em; border-radius: 0.375rem; font-weight: 600; font-size: 0.8rem; display: inline-block; }
+    .role-applicant { background-color: #e8f5e9; color: #2e7d32; }
+    .role-reviewer { background-color: #fff3e0; color: #e65100; }
+    .role-program { background-color: #e3f2fd; color: #1565c0; }
+    .role-fiscal { background-color: #fce4ec; color: #c62828; }
+    .role-agency { background-color: #ede7f6; color: #4527a0; }
+    .role-admin { background-color: #263238; color: #ffffff; }
+    .role-auditor { background-color: #f3e5f5; color: #6a1b9a; }
+    .role-federal { background-color: #e0f2f1; color: #00695c; }
+
+    .quick-login-card {
+        border: 2px solid transparent;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .quick-login-card:hover {
+        border-color: var(--ct-blue);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(31, 100, 229, 0.15);
+    }
+    .quick-login-card .card-body { padding: 1.25rem; }
+    .quick-login-card .login-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 1.5rem 1rem;
+        border-radius: 0.625rem;
+        transition: transform 0.2s ease;
+    }
+    .feature-card:hover { transform: translateY(-3px); }
+    .feature-card i { font-size: 2rem; color: var(--ct-blue); }
+
+    .nav-pills .nav-link {
+        color: var(--ct-dark-gray);
+        font-weight: 500;
+        border-radius: 2rem;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+    }
+    .nav-pills .nav-link.active {
+        background-color: var(--ct-blue);
+        color: #fff;
+    }
+
+    .capability-item {
+        display: flex;
+        align-items: start;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .capability-item i {
+        color: var(--ct-blue);
+        font-size: 1.1rem;
+        margin-top: 0.15rem;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 767.98px) {
+        .lifecycle-step .step-connector { display: none; }
+        .lifecycle-step { flex-basis: 33%; margin-bottom: 1rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="mb-3">{% trans "Grantify Product Tour" %}</h1>
+        <p class="lead mb-4 mx-auto" style="max-width: 720px;">
+            {% trans "An enterprise grants management platform built for state agencies. End-to-end lifecycle coverage from opportunity posting through award closeout." %}
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{% url 'portal:opportunities' %}" class="btn btn-light btn-lg px-4">
+                <i class="bi bi-megaphone me-2"></i>{% trans "View Opportunities" %}
+            </a>
+            <a href="{% url 'core:login' %}" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Try the System" %}
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar py-4">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+                <div class="stat-value">9</div>
+                <div class="stat-label">{% trans "Integrated Apps" %}</div>
+            </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+                <div class="stat-value">8</div>
+                <div class="stat-label">{% trans "User Roles" %}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-value">11</div>
+                <div class="stat-label">{% trans "API Endpoints" %}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-value">2</div>
+                <div class="stat-label">{% trans "Languages" %}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Grant Lifecycle -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-2">{% trans "Full Grant Lifecycle" %}</h2>
+        <p class="text-center text-muted mb-4">{% trans "Every stage of the grants process, managed in one platform" %}</p>
+        <div class="d-flex flex-wrap justify-content-center" style="gap: 0;">
+            <div class="lifecycle-step">
+                <div class="step-connector"></div>
+                <div class="step-num">1</div>
+                <h6 class="fw-bold">{% trans "Opportunity" %}</h6>
+                <small class="text-muted">{% trans "Post & discover" %}</small>
+            </div>
+            <div class="lifecycle-step">
+                <div class="step-connector"></div>
+                <div class="step-num">2</div>
+                <h6 class="fw-bold">{% trans "Application" %}</h6>
+                <small class="text-muted">{% trans "Submit & track" %}</small>
+            </div>
+            <div class="lifecycle-step">
+                <div class="step-connector"></div>
+                <div class="step-num">3</div>
+                <h6 class="fw-bold">{% trans "Review" %}</h6>
+                <small class="text-muted">{% trans "Score & evaluate" %}</small>
+            </div>
+            <div class="lifecycle-step">
+                <div class="step-connector"></div>
+                <div class="step-num">4</div>
+                <h6 class="fw-bold">{% trans "Award" %}</h6>
+                <small class="text-muted">{% trans "Issue & execute" %}</small>
+            </div>
+            <div class="lifecycle-step">
+                <div class="step-connector"></div>
+                <div class="step-num">5</div>
+                <h6 class="fw-bold">{% trans "Financial" %}</h6>
+                <small class="text-muted">{% trans "Budget & drawdowns" %}</small>
+            </div>
+            <div class="lifecycle-step">
+                <div class="step-connector"></div>
+                <div class="step-num">6</div>
+                <h6 class="fw-bold">{% trans "Reporting" %}</h6>
+                <small class="text-muted">{% trans "Progress & fiscal" %}</small>
+            </div>
+            <div class="lifecycle-step">
+                <div class="step-num">7</div>
+                <h6 class="fw-bold">{% trans "Closeout" %}</h6>
+                <small class="text-muted">{% trans "Complete & archive" %}</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Role-Based Capabilities -->
+<section class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-2">{% trans "Role-Based Capabilities" %}</h2>
+        <p class="text-center text-muted mb-4">{% trans "Eight distinct roles serving every stakeholder in the grants lifecycle" %}</p>
+
+        <ul class="nav nav-pills justify-content-center mb-4 flex-wrap gap-1" id="roleTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-applicant" data-bs-toggle="pill" data-bs-target="#pane-applicant" type="button" role="tab">{% trans "Applicant" %}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-reviewer" data-bs-toggle="pill" data-bs-target="#pane-reviewer" type="button" role="tab">{% trans "Reviewer" %}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-program" data-bs-toggle="pill" data-bs-target="#pane-program" type="button" role="tab">{% trans "Program Officer" %}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-fiscal" data-bs-toggle="pill" data-bs-target="#pane-fiscal" type="button" role="tab">{% trans "Fiscal Officer" %}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-agency" data-bs-toggle="pill" data-bs-target="#pane-agency" type="button" role="tab">{% trans "Agency Admin" %}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-auditor" data-bs-toggle="pill" data-bs-target="#pane-auditor" type="button" role="tab">{% trans "Auditor" %}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-federal" data-bs-toggle="pill" data-bs-target="#pane-federal" type="button" role="tab">{% trans "Federal Coordinator" %}</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Applicant -->
+            <div class="tab-pane fade show active" id="pane-applicant" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-applicant me-2">{% trans "Applicant" %}</span>
+                            <span class="text-muted small">{% trans "Grant seekers — municipalities, nonprofits, businesses" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-search"></i>
+                                    <div><strong>{% trans "Discover Opportunities" %}</strong><br><small class="text-muted">{% trans "Browse and filter published grant programs by agency, type, and status" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-pencil-square"></i>
+                                    <div><strong>{% trans "Submit Applications" %}</strong><br><small class="text-muted">{% trans "Complete multi-section forms, attach documents, save drafts, and submit before deadlines" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-clock-history"></i>
+                                    <div><strong>{% trans "Track Status" %}</strong><br><small class="text-muted">{% trans "Real-time updates as your application moves through review, scoring, and decision" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-trophy"></i>
+                                    <div><strong>{% trans "Manage Awards" %}</strong><br><small class="text-muted">{% trans "View award details, sign agreements via DocuSign, and track milestones" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-cash-stack"></i>
+                                    <div><strong>{% trans "Request Drawdowns" %}</strong><br><small class="text-muted">{% trans "Submit cash requests against your approved budget with line-item detail" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-file-earmark-bar-graph"></i>
+                                    <div><strong>{% trans "Submit Reports" %}</strong><br><small class="text-muted">{% trans "Complete progress, fiscal, and SF-425 federal financial reports on schedule" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <a href="{% url 'portal:opportunities' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-megaphone me-1"></i>{% trans "View Opportunities" %}
+                            </a>
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="applicant">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Applicant" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviewer -->
+            <div class="tab-pane fade" id="pane-reviewer" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-reviewer me-2">{% trans "Reviewer" %}</span>
+                            <span class="text-muted small">{% trans "Subject matter experts who evaluate and score applications" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-clipboard-check"></i>
+                                    <div><strong>{% trans "Assigned Reviews" %}</strong><br><small class="text-muted">{% trans "View your review queue with pending and completed assignments in one dashboard" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-star"></i>
+                                    <div><strong>{% trans "Weighted Rubric Scoring" %}</strong><br><small class="text-muted">{% trans "Score applications against configurable criteria with weighted point values" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-chat-text"></i>
+                                    <div><strong>{% trans "Comments & Recommendations" %}</strong><br><small class="text-muted">{% trans "Provide narrative feedback and funding recommendations for each application" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-shield-check"></i>
+                                    <div><strong>{% trans "Conflict of Interest" %}</strong><br><small class="text-muted">{% trans "Declare conflicts before reviewing to ensure impartial evaluation" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="reviewer">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Reviewer" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Program Officer -->
+            <div class="tab-pane fade" id="pane-program" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-program me-2">{% trans "Program Officer" %}</span>
+                            <span class="text-muted small">{% trans "Agency staff who create and manage grant programs" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-folder-plus"></i>
+                                    <div><strong>{% trans "Create Grant Programs" %}</strong><br><small class="text-muted">{% trans "Define eligibility, funding amounts, deadlines, and required documents" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-kanban"></i>
+                                    <div><strong>{% trans "Manage Applications" %}</strong><br><small class="text-muted">{% trans "Track submissions, assign reviewers, and process batch status changes" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-trophy"></i>
+                                    <div><strong>{% trans "Issue Awards" %}</strong><br><small class="text-muted">{% trans "Create award records, set budgets, and initiate DocuSign e-signature workflows" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-graph-up"></i>
+                                    <div><strong>{% trans "Monitor Compliance" %}</strong><br><small class="text-muted">{% trans "Track reporting deadlines, review submissions, and manage amendments" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="program.officer">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Program Officer" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fiscal Officer -->
+            <div class="tab-pane fade" id="pane-fiscal" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-fiscal me-2">{% trans "Fiscal Officer" %}</span>
+                            <span class="text-muted small">{% trans "Financial oversight and budget management" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-wallet2"></i>
+                                    <div><strong>{% trans "Budget Management" %}</strong><br><small class="text-muted">{% trans "Create and manage award budgets with federal, state, and match share tracking" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-check2-circle"></i>
+                                    <div><strong>{% trans "Drawdown Approval" %}</strong><br><small class="text-muted">{% trans "Review and approve cash requests with line-item verification" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-receipt"></i>
+                                    <div><strong>{% trans "Transaction Recording" %}</strong><br><small class="text-muted">{% trans "Log payments and track disbursements with state ERP integration codes" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                                    <div><strong>{% trans "SF-425 Federal Reporting" %}</strong><br><small class="text-muted">{% trans "Generate and review federal financial reports with auto-populated data" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="fiscal.officer">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Fiscal Officer" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agency Admin -->
+            <div class="tab-pane fade" id="pane-agency" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-agency me-2">{% trans "Agency Admin" %}</span>
+                            <span class="text-muted small">{% trans "Agency-level oversight and administration" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-building"></i>
+                                    <div><strong>{% trans "Agency Management" %}</strong><br><small class="text-muted">{% trans "Oversee all grant programs, applications, and awards for your agency" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-people"></i>
+                                    <div><strong>{% trans "Staff Provisioning" %}</strong><br><small class="text-muted">{% trans "Manage agency staff accounts and assign program responsibilities" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-clipboard-data"></i>
+                                    <div><strong>{% trans "Award Oversight" %}</strong><br><small class="text-muted">{% trans "Review and approve awards, amendments, and closeout requests" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-download"></i>
+                                    <div><strong>{% trans "Data Export" %}</strong><br><small class="text-muted">{% trans "Export program data to CSV for external analysis and reporting" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="agency.admin">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Agency Admin" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auditor -->
+            <div class="tab-pane fade" id="pane-auditor" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-auditor me-2">{% trans "Auditor" %}</span>
+                            <span class="text-muted small">{% trans "Read-only compliance and audit access" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-eye"></i>
+                                    <div><strong>{% trans "Read-Only Access" %}</strong><br><small class="text-muted">{% trans "View all grant data, applications, awards, and financials without modification capability" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-shield-check"></i>
+                                    <div><strong>{% trans "Audit Trail Review" %}</strong><br><small class="text-muted">{% trans "Access complete audit logs showing every action taken in the system" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-archive"></i>
+                                    <div><strong>{% trans "Data Retention" %}</strong><br><small class="text-muted">{% trans "Review archived records with retention policies aligned to state and federal requirements" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-download"></i>
+                                    <div><strong>{% trans "Export Reports" %}</strong><br><small class="text-muted">{% trans "Download financial and compliance data in CSV format for external audit workpapers" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="auditor">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Auditor" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Federal Coordinator -->
+            <div class="tab-pane fade" id="pane-federal" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="role-badge role-federal me-2">{% trans "Federal Coordinator" %}</span>
+                            <span class="text-muted small">{% trans "Manages the state's federal funding pipeline from discovery to award" %}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-globe"></i>
+                                    <div><strong>{% trans "Federal Discovery" %}</strong><br><small class="text-muted">{% trans "Browse and search Grants.gov opportunities synced via the Simpler Grants API" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-bookmark-star"></i>
+                                    <div><strong>{% trans "Track Opportunities" %}</strong><br><small class="text-muted">{% trans "Flag, prioritize, and manage federal opportunities through a dedicated pipeline dashboard" %}</small></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-item">
+                                    <i class="bi bi-people"></i>
+                                    <div><strong>{% trans "Invite Collaborators" %}</strong><br><small class="text-muted">{% trans "Add internal staff or external partners to work on tracked federal opportunities" %}</small></div>
+                                </div>
+                                <div class="capability-item">
+                                    <i class="bi bi-link-45deg"></i>
+                                    <div><strong>{% trans "Link to Grant Programs" %}</strong><br><small class="text-muted">{% trans "Convert a federal opportunity into a full grant program with pre-populated details" %}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form method="post" action="{% url 'core:demo-login' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="username" value="fed.coordinator">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Log In as Federal Coordinator" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Platform Features -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-2">{% trans "Platform Features" %}</h2>
+        <p class="text-center text-muted mb-4">{% trans "Enterprise capabilities built for state government" %}</p>
+
+        <div class="row g-4">
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-pen d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "DocuSign e-Signatures" %}</h6>
+                    <small class="text-muted">{% trans "JWT-authenticated envelope creation with webhook status tracking" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-shield-lock d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "Microsoft SSO + MFA" %}</h6>
+                    <small class="text-muted">{% trans "Entra ID integration with TOTP, WebAuthn, and recovery codes" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-bell d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "Real-time Notifications" %}</h6>
+                    <small class="text-muted">{% trans "In-app and email alerts for status changes, deadlines, and required actions" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-translate d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "Bilingual (EN/ES)" %}</h6>
+                    <small class="text-muted">{% trans "Session-based language switching for English and Spanish" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-universal-access d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "WCAG 2.1 AA" %}</h6>
+                    <small class="text-muted">{% trans "Keyboard navigation, screen reader support, and ARIA compliance" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-code-slash d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "REST API" %}</h6>
+                    <small class="text-muted">{% trans "11 endpoints with authentication, filtering, pagination, and search" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-journal-check d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "Audit Trail" %}</h6>
+                    <small class="text-muted">{% trans "Immutable logs with user identity, IP address, and before/after change deltas" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <i class="bi bi-file-earmark-bar-graph d-block mb-2"></i>
+                    <h6 class="fw-bold">{% trans "SF-425 Federal Reporting" %}</h6>
+                    <small class="text-muted">{% trans "Auto-populated federal financial reports with compliance tracking" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Login -->
+<section id="quick-login" class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-2">{% trans "Quick Login" %}</h2>
+        <p class="text-center text-muted mb-4">{% trans "Click any card below to instantly log in as that demo user and explore the system" %}</p>
+
+        <h5 class="fw-bold text-uppercase text-muted mb-3" style="letter-spacing: 1px; font-size: 0.8rem;">
+            <i class="bi bi-shield-lock me-1"></i>{% trans "Staff Roles" %}
+        </h5>
+        <div class="row g-3 mb-4">
+            {# Agency Admin #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="agency.admin">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #ede7f6; color: #4527a0;">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Agency Admin</strong>
+                                    <span class="role-badge role-agency" style="font-size: 0.7rem;">{% trans "Agency Admin" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "DCD — agency oversight, staff, awards" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Program Officer #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="program.officer">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e3f2fd; color: #1565c0;">
+                                    <i class="bi bi-folder2-open"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Program Officer</strong>
+                                    <span class="role-badge role-program" style="font-size: 0.7rem;">{% trans "Program Officer" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "DCD — programs, applications, reviews" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Fiscal Officer #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="fiscal.officer">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #fce4ec; color: #c62828;">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Fiscal Officer</strong>
+                                    <span class="role-badge role-fiscal" style="font-size: 0.7rem;">{% trans "Fiscal Officer" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "DCD — budgets, drawdowns, SF-425" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Reviewer #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="reviewer">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #fff3e0; color: #e65100;">
+                                    <i class="bi bi-clipboard-check"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Grant Reviewer</strong>
+                                    <span class="role-badge role-reviewer" style="font-size: 0.7rem;">{% trans "Reviewer" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "Scoring, rubrics, recommendations" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Auditor #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="auditor">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #f3e5f5; color: #6a1b9a;">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">System Auditor</strong>
+                                    <span class="role-badge role-auditor" style="font-size: 0.7rem;">{% trans "Auditor" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "OBM — read-only audit access" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Federal Coordinator #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="fed.coordinator">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e0f2f1; color: #00695c;">
+                                    <i class="bi bi-globe"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Federal Coordinator</strong>
+                                    <span class="role-badge role-federal" style="font-size: 0.7rem;">{% trans "Federal Coordinator" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "OBM — federal funding pipeline" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <h5 class="fw-bold text-uppercase text-muted mb-3" style="letter-spacing: 1px; font-size: 0.8rem;">
+            <i class="bi bi-person me-1"></i>{% trans "Applicant Accounts" %}
+        </h5>
+        <div class="row g-3">
+            {# Main Applicant #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="applicant">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e8f5e9; color: #2e7d32;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Grant Applicant</strong>
+                                    <span class="role-badge role-applicant" style="font-size: 0.7rem;">{% trans "Applicant" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "City of Capital — applications, awards" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Maria Santos #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="maria.santos">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e8f5e9; color: #2e7d32;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Maria Santos</strong>
+                                    <span class="role-badge role-applicant" style="font-size: 0.7rem;">{% trans "Applicant" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "Town of Greenwich" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# James Chen #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="james.chen">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e8f5e9; color: #2e7d32;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">James Chen</strong>
+                                    <span class="role-badge role-applicant" style="font-size: 0.7rem;">{% trans "Applicant" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "Riverside Arts Council" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Priya Patel #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="priya.patel">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e8f5e9; color: #2e7d32;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Priya Patel</strong>
+                                    <span class="role-badge role-applicant" style="font-size: 0.7rem;">{% trans "Applicant" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "UConn Research Foundation" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Derek Williams #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="derek.williams">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e8f5e9; color: #2e7d32;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Derek Williams</strong>
+                                    <span class="role-badge role-applicant" style="font-size: 0.7rem;">{% trans "Applicant" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "City of Bridgeport" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            {# Rachel Kim #}
+            <div class="col-md-4 col-sm-6">
+                <form method="post" action="{% url 'core:demo-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="username" value="rachel.kim">
+                    <button type="submit" class="quick-login-card card border-0 shadow-sm w-100 text-start">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="login-icon" style="background-color: #e8f5e9; color: #2e7d32;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block">Rachel Kim</strong>
+                                    <span class="role-badge role-applicant" style="font-size: 0.7rem;">{% trans "Applicant" %}</span>
+                                    <small class="text-muted d-block mt-1">{% trans "CT Innovation Hub" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                {% trans "All demo accounts use the password" %} <code>demo2026</code>.
+                {% trans "Quick login is only available in demo mode." %}
+            </small>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body text-center p-5">
+                <i class="bi bi-rocket-takeoff display-4 text-primary d-block mb-3"></i>
+                <h3 class="fw-bold">{% trans "Ready to Explore?" %}</h3>
+                <p class="text-muted mb-4 mx-auto" style="max-width: 500px;">
+                    {% trans "Log in with a demo account to experience the full platform, or browse live funding opportunities." %}
+                </p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="{% url 'portal:opportunities' %}" class="btn btn-primary">
+                        <i class="bi bi-megaphone me-1"></i>{% trans "Funding Opportunities" %}
+                    </a>
+                    <a href="{% url 'core:analytics' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-bar-chart-line me-1"></i>{% trans "Analytics Dashboard" %}
+                    </a>
+                    <a href="{% url 'core:map_view' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-geo-alt me-1"></i>{% trans "Map View" %}
+                    </a>
+                    <a href="{% url 'portal:manual' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-journal-text me-1"></i>{% trans "Documentation" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

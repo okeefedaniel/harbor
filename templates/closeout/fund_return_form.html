@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "Record Fund Return" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' closeout.award.pk %}">{{ closeout.award.award_number }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'closeout:detail' closeout.pk %}">{% trans "Closeout" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Fund Return" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-2">
+            <i class="bi bi-arrow-return-left me-2"></i>{% trans "Record Fund Return" %}
+        </h1>
+        <p class="text-muted mb-4">
+            {{ closeout.award.award_number }} &ndash; {{ closeout.award.title }}
+        </p>
+
+        <!-- Award Summary -->
+        <div class="card border-0 shadow-sm mb-4 bg-light">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">{% trans "Award Amount" %}</small>
+                        <span class="fw-semibold">${{ closeout.award.award_amount|intcomma }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">{% trans "Total Spent" %}</small>
+                        <span class="fw-semibold">${{ total_spent|intcomma|default:"0" }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">{% trans "Balance for Return" %}</small>
+                        <span class="fw-semibold text-success">${{ balance_for_return|intcomma|default:"0" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fund Return Form -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_amount" class="form-label fw-semibold">{% trans "Return Amount" %}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="amount" id="id_amount" class="form-control"
+                                   step="0.01" min="0"
+                                   placeholder="0.00"
+                                   value="{{ form.amount.value|default:'' }}"
+                                   required>
+                        </div>
+                        {% if form.amount.errors %}
+                        <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            {% trans "Enter the dollar amount to be returned to the granting agency." %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_reason" class="form-label fw-semibold">{% trans "Reason for Return" %}</label>
+                        <textarea name="reason" id="id_reason" class="form-control" rows="4"
+                                  placeholder="{% trans "Explain the reason for returning these funds..." %}"
+                                  required>{{ form.reason.value|default:'' }}</textarea>
+                        {% if form.reason.errors %}
+                        <div class="invalid-feedback d-block">{{ form.reason.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            {% trans "Provide a detailed explanation for why these funds are being returned (e.g., unspent balance, disallowed costs, voluntary return)." %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'closeout:detail' closeout.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>{% trans "Record Fund Return" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

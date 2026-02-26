@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load portal_tags %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Applications" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Applications" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0"><i class="bi bi-file-earmark-text me-2"></i>{% trans "Applications" %}</h1>
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-muted">{% if page_obj %}{{ page_obj.paginator.count }}{% else %}{{ applications|length }}{% endif %} {% trans "total" %}</span>
+        <a href="?export=csv{% if request.GET.grant_program %}&grant_program={{ request.GET.grant_program }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+           class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download me-1"></i>{% trans "Export CSV" %}
+        </a>
+        <div class="btn-group" role="group" aria-label="{% trans "View toggle" %}">
+            <a href="?view=cards{% if request.GET.grant_program %}&grant_program={{ request.GET.grant_program }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+               class="btn btn-sm {% if view_mode == 'cards' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+               title="{% trans "Card view" %}">
+                <i class="bi bi-grid-3x3-gap"></i>
+            </a>
+            <a href="?view=list{% if request.GET.grant_program %}&grant_program={{ request.GET.grant_program }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+               class="btn btn-sm {% if view_mode != 'cards' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+               title="{% trans "List view" %}">
+                <i class="bi bi-list-ul"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            {% if view_mode == 'cards' %}
+            <input type="hidden" name="view" value="cards">
+            {% endif %}
+            <div class="col-md-3">
+                <label for="grant_program" class="form-label">{% trans "Grant Program" %}</label>
+                <select name="grant_program" id="grant_program" class="form-select">
+                    <option value="">{% trans "All Programs" %}</option>
+                    {% for program in grant_programs %}
+                        <option value="{{ program.pk }}" {% if request.GET.grant_program == program.pk|slugify %}selected{% endif %}>
+                            {{ program.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">{% trans "Status" %}</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="draft" {% if request.GET.status == "draft" %}selected{% endif %}>{% trans "Draft" %}</option>
+                    <option value="submitted" {% if request.GET.status == "submitted" %}selected{% endif %}>{% trans "Submitted" %}</option>
+                    <option value="under_review" {% if request.GET.status == "under_review" %}selected{% endif %}>{% trans "Under Review" %}</option>
+                    <option value="revision_requested" {% if request.GET.status == "revision_requested" %}selected{% endif %}>{% trans "Revision Requested" %}</option>
+                    <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>{% trans "Approved" %}</option>
+                    <option value="denied" {% if request.GET.status == "denied" %}selected{% endif %}>{% trans "Denied" %}</option>
+                    <option value="withdrawn" {% if request.GET.status == "withdrawn" %}selected{% endif %}>{% trans "Withdrawn" %}</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="search" class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="search" id="search" class="form-control"
+                       placeholder="{% trans "Search by title, applicant, or ID..." %}"
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i>{% trans "Filter" %}
+                </button>
+            </div>
+        </form>
+        {% if request.GET.grant_program or request.GET.status or request.GET.search %}
+        <div class="mt-2">
+            <a href="{% url 'applications:list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>{% trans "Clear Filters" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if applications %}
+
+{% if view_mode == 'cards' %}
+<!-- ===================== CARD VIEW ===================== -->
+<div class="row g-4">
+    {% for app in applications %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm border-start border-3
+            {% if app.status == 'approved' %}border-success
+            {% elif app.status == 'denied' %}border-danger
+            {% elif app.status == 'submitted' %}border-info
+            {% elif app.status == 'under_review' %}border-primary
+            {% elif app.status == 'revision_requested' %}border-warning
+            {% elif app.status == 'withdrawn' %}border-dark
+            {% else %}border-secondary{% endif %}">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    {% if app.status == "draft" %}
+                        <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                    {% elif app.status == "submitted" %}
+                        <span class="badge bg-info text-dark">{% trans "Submitted" %}</span>
+                    {% elif app.status == "under_review" %}
+                        <span class="badge bg-primary">{% trans "Under Review" %}</span>
+                    {% elif app.status == "revision_requested" %}
+                        <span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span>
+                    {% elif app.status == "approved" %}
+                        <span class="badge bg-success">{% trans "Approved" %}</span>
+                    {% elif app.status == "denied" %}
+                        <span class="badge bg-danger">{% trans "Denied" %}</span>
+                    {% elif app.status == "withdrawn" %}
+                        <span class="badge bg-dark">{% trans "Withdrawn" %}</span>
+                    {% endif %}
+                    <code class="text-muted small">{{ app.id|truncatechars:13 }}</code>
+                </div>
+
+                <h5 class="card-title fw-bold mb-1">
+                    <a href="{% url 'applications:detail' app.pk %}" class="text-decoration-none text-dark">
+                        {{ app.project_title|truncatewords:10 }}
+                    </a>
+                </h5>
+
+                <p class="text-muted small mb-2">
+                    <i class="bi bi-person me-1"></i>{{ app.applicant.get_full_name|default:app.applicant.username }}
+                </p>
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-building me-1"></i>{{ app.grant_program.title|truncatewords:6 }}
+                </p>
+
+                <div class="border-top pt-3 mt-auto">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="small text-muted">{% trans "Requested Amount" %}</div>
+                            <div class="fw-semibold">${{ app.requested_amount|intcomma }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">{% trans "Submitted" %}</div>
+                            <div class="small">
+                                {% if app.submitted_at %}
+                                    {{ app.submitted_at|date:"M d, Y" }}
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{% url 'applications:detail' app.pk %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-eye me-1"></i>{% trans "View Application" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- ===================== LIST VIEW (default) ===================== -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Application ID" %}</th>
+                    {% sortable_th 'project_title' _("Project Title") %}
+                    {% sortable_th 'applicant' _("Applicant") %}
+                    <th>{% trans "Grant Program" %}</th>
+                    {% sortable_th 'status' _("Status") %}
+                    <th>{% trans "Assigned To" %}</th>
+                    {% sortable_th 'requested_amount' _("Requested Amount") %}
+                    {% sortable_th 'submitted_at' _("Submitted") %}
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                {% with assignment=assignments_by_app|dict_get:app.pk %}
+                <tr>
+                    <td>
+                        <code class="text-muted">{{ app.id|truncatechars:13 }}</code>
+                    </td>
+                    <td>
+                        <a href="{% url 'applications:detail' app.pk %}" class="text-decoration-none fw-semibold">
+                            {{ app.project_title|truncatewords:8 }}
+                        </a>
+                    </td>
+                    <td>{{ app.applicant.get_full_name|default:app.applicant.username }}</td>
+                    <td>
+                        <span class="text-muted">{{ app.grant_program.title|truncatewords:5 }}</span>
+                    </td>
+                    <td>
+                        {% if app.status == "draft" %}
+                            <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                        {% elif app.status == "submitted" %}
+                            <span class="badge bg-info text-dark">{% trans "Submitted" %}</span>
+                        {% elif app.status == "under_review" %}
+                            <span class="badge bg-primary">{% trans "Under Review" %}</span>
+                        {% elif app.status == "revision_requested" %}
+                            <span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span>
+                        {% elif app.status == "approved" %}
+                            <span class="badge bg-success">{% trans "Approved" %}</span>
+                        {% elif app.status == "denied" %}
+                            <span class="badge bg-danger">{% trans "Denied" %}</span>
+                        {% elif app.status == "withdrawn" %}
+                            <span class="badge bg-dark">{% trans "Withdrawn" %}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if assignment %}
+                            <span class="small fw-semibold">
+                                <i class="bi bi-person-fill me-1"></i>{{ assignment.assigned_to.get_full_name|default:assignment.assigned_to.username }}
+                            </span>
+                            <br>
+                            <small class="text-muted">
+                                {% if assignment.status == 'in_progress' %}
+                                    <span class="badge bg-primary" style="font-size: 0.65rem;">{% trans "In Progress" %}</span>
+                                {% elif assignment.assignment_type == 'claimed' %}
+                                    <span class="badge badge-claimed" style="font-size: 0.65rem;"><i class="bi bi-check-circle-fill me-1"></i>{% trans "Claimed" %}</span>
+                                {% else %}
+                                    <span class="badge bg-info text-dark" style="font-size: 0.65rem;">{% trans "Assigned" %}</span>
+                                {% endif %}
+                            </small>
+                        {% else %}
+                            <span class="text-muted small">{% trans "Unassigned" %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">${{ app.requested_amount|intcomma }}</td>
+                    <td>
+                        {% if app.submitted_at %}
+                            {{ app.submitted_at|date:"M d, Y" }}
+                        {% else %}
+                            <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'applications:detail' app.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'View' %}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if not assignment %}
+                                <form method="post" action="{% url 'applications:claim' app.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="{% trans 'Claim' %}">
+                                        <i class="bi bi-hand-index"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                            {% if can_assign %}
+                                <a href="{% url 'applications:assign' app.pk %}" class="btn btn-sm btn-outline-secondary" title="{% trans 'Assign' %}">
+                                    <i class="bi bi-person-plus"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="{% trans "Application list pagination" %}" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+        {% endif %}
+    </ul>
+    <p class="text-center text-muted small">
+        {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}Showing {{ start }}-{{ end }} of {{ total }} applications{% endblocktrans %}
+    </p>
+</nav>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted"></i>
+        <h3 class="mt-3 text-muted">{% trans "No applications found" %}</h3>
+        <p class="text-muted">
+            {% if request.GET.grant_program or request.GET.status or request.GET.search %}
+                {% trans "No applications match your current filters. Try adjusting your search criteria." %}
+            {% else %}
+                {% trans "There are no applications in the system yet." %}
+            {% endif %}
+        </p>
+        {% if request.GET.grant_program or request.GET.status or request.GET.search %}
+        <a href="{% url 'applications:list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-x-circle me-1"></i>{% trans "Clear Filters" %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

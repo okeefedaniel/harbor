@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% if report %}{% trans "Edit Report" %}{% else %}{% trans "Create Report" %}{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'reporting:list' %}">{% trans "Reports" %}</a></li>
+            {% if report %}
+            <li class="breadcrumb-item active">{% trans "Edit Report" %}</li>
+            {% else %}
+            <li class="breadcrumb-item active">{% trans "Create Report" %}</li>
+            {% endif %}
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-4">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>
+            {% if report %}{% trans "Edit Report" %}{% else %}{% trans "Create Report" %}{% endif %}
+        </h1>
+
+        {% if report and report.status == 'revision_requested' and report.reviewer_comments %}
+        <div class="alert alert-warning d-flex mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <div>
+                <strong>{% trans "Revision Requested" %}</strong>
+                <p class="mb-0 mt-1">{{ report.reviewer_comments }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if report %}{% url 'reporting:detail' report.pk %}{% else %}{% url 'reporting:list' %}{% endif %}"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="save_draft" value="1" class="btn btn-outline-primary">
+                                <i class="bi bi-save me-1"></i>{% trans "Save Draft" %}
+                            </button>
+                            <button type="submit" name="submit_report" value="1" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>{% trans "Submit Report" %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

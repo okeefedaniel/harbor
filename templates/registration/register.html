@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Create Your Account" %}{% endblock %}
+
+{% block main_class %}container py-5{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-card {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-card">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <div class="mb-3">
+                    <i class="bi bi-person-plus display-4 text-primary"></i>
+                </div>
+                <h2 class="fw-bold">{% trans "Create Your Account" %}</h2>
+                <p class="text-muted">
+                    {% trans "Register for the State Grants Management Solution" %}
+                </p>
+            </div>
+
+            <!-- Registration Form -->
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold">
+                            {% trans "First Name" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold">
+                            {% trans "Last Name" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                        {% trans "Email Address" %} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mt-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
+                        {% trans "Username" %} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.help_text %}
+                    <div class="form-text">{{ form.username.help_text }}</div>
+                    {% endif %}
+                    {% if form.username.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="row g-3 mt-0">
+                    <div class="col-md-6">
+                        <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
+                            {% trans "Password" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.password1 }}
+                        {% if form.password1.help_text %}
+                        <div class="form-text">{{ form.password1.help_text }}</div>
+                        {% endif %}
+                        {% if form.password1.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
+                            {% trans "Confirm Password" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="form-check">
+                        {{ form.accepted_terms }}
+                        <label class="form-check-label" for="{{ form.accepted_terms.id_for_label }}">
+                            {% url 'portal:terms' as terms_url %}
+                            {% url 'portal:privacy' as privacy_url %}
+                            {% blocktrans %}
+                            I accept the <a href="{{ terms_url }}" target="_blank" rel="noopener">Terms of Service</a> and <a href="{{ privacy_url }}" target="_blank" rel="noopener">Privacy Policy</a>
+                            {% endblocktrans %}
+                        </label>
+                        {% if form.accepted_terms.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.accepted_terms.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Note about organization profile -->
+                <div class="alert alert-info mt-4 mb-0" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small>
+                        {% trans "After creating your account, you will be asked to set up your organization profile. This is required before submitting grant applications." %}
+                    </small>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-person-plus me-2"></i>{% trans "Create Account" %}
+                    </button>
+                </div>
+            </form>
+
+            <!-- Link to login -->
+            <div class="text-center mt-4">
+                <p class="mb-0 small">
+                    {% trans "Already have an account?" %}
+                    <a href="{% url 'core:login' %}" class="text-decoration-none fw-semibold">
+                        {% trans "Log In" %}
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

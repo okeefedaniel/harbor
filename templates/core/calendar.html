@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans "Deadline Calendar" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Calendar" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0" style="color: #00457C;">
+        <i class="bi bi-calendar-event me-2"></i>{% trans "Deadline Calendar" %}
+    </h1>
+</div>
+
+<!-- Overdue Reports Alert -->
+{% if overdue_reports %}
+<section class="mb-4" aria-label="{% trans "Overdue reports" %}">
+    <h2 class="h5 text-danger mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>{% trans "Overdue Reports" %}</h2>
+    <div class="row g-3">
+        {% for report in overdue_reports %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="h6 card-title text-danger mb-1">
+                                {% blocktrans with report_type=report.get_report_type_display %}{{ report_type }} Report{% endblocktrans %}
+                            </h3>
+                            <p class="small text-muted mb-1">
+                                {{ report.award.grant_program.title|truncatechars:60 }}
+                            </p>
+                            <p class="small mb-0">
+                                <strong>{% trans "Award:" %}</strong> {{ report.award.award_number }}
+                            </p>
+                        </div>
+                        <span class="badge bg-danger">{% trans "Overdue" %}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-danger fw-bold">
+                            <i class="bi bi-clock me-1"></i>{% trans "Due:" %} {{ report.due_date }}
+                        </span>
+                        <span class="badge bg-danger bg-opacity-10 text-danger">
+                            {% blocktrans with time=report.due_date|timesince %}{{ time }} overdue{% endblocktrans %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Upcoming Grant Deadlines -->
+<section class="mb-4" aria-label="{% trans "Upcoming grant deadlines" %}">
+    <h2 class="h5 mb-3" style="color: #00457C;"><i class="bi bi-megaphone me-2"></i>{% trans "Upcoming Grant Deadlines" %}</h2>
+    {% if upcoming_deadlines %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" aria-label="{% trans "Upcoming grant application deadlines" %}">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">{% trans "Program" %}</th>
+                        <th scope="col">{% trans "Agency" %}</th>
+                        <th scope="col">{% trans "Deadline" %}</th>
+                        <th scope="col">{% trans "Days Remaining" %}</th>
+                        <th scope="col">{% trans "Status" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for program in upcoming_deadlines %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'grants:program-detail' program.pk %}" class="text-decoration-none fw-semibold">
+                                {{ program.title|truncatechars:60 }}
+                            </a>
+                        </td>
+                        <td class="text-muted">{{ program.agency.name }}</td>
+                        <td>{{ program.application_deadline|date:"M d, Y g:i A" }}</td>
+                        <td>
+                            {% if program.days_until_deadline is not None %}
+                                {% if program.days_until_deadline <= 7 %}
+                                    {% blocktrans with days=program.days_until_deadline count counter=program.days_until_deadline %}<span class="badge bg-danger">{{ days }} day</span>{% plural %}<span class="badge bg-danger">{{ days }} days</span>{% endblocktrans %}
+                                {% elif program.days_until_deadline <= 30 %}
+                                    {% blocktrans with days=program.days_until_deadline %}<span class="badge bg-warning text-dark">{{ days }} days</span>{% endblocktrans %}
+                                {% else %}
+                                    {% blocktrans with days=program.days_until_deadline %}<span class="badge bg-info text-dark">{{ days }} days</span>{% endblocktrans %}
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">{% trans "Passed" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-success">{{ program.get_status_display }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="status">
+        <i class="bi bi-info-circle me-2"></i>{% trans "No upcoming grant deadlines at this time." %}
+    </div>
+    {% endif %}
+</section>
+
+<!-- Upcoming Report Deadlines -->
+<section class="mb-4" aria-label="{% trans "Upcoming report deadlines" %}">
+    <h2 class="h5 mb-3" style="color: #00457C;"><i class="bi bi-file-earmark-text me-2"></i>{% trans "Upcoming Report Deadlines" %}</h2>
+    {% if upcoming_reports %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" aria-label="{% trans "Upcoming report due dates" %}">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">{% trans "Report Type" %}</th>
+                        <th scope="col">{% trans "Program" %}</th>
+                        <th scope="col">{% trans "Award" %}</th>
+                        <th scope="col">{% trans "Due Date" %}</th>
+                        <th scope="col">{% trans "Days Remaining" %}</th>
+                        <th scope="col">{% trans "Status" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in upcoming_reports %}
+                    <tr>
+                        <td>{{ report.get_report_type_display }}</td>
+                        <td class="text-muted">{{ report.award.grant_program.title|truncatechars:50 }}</td>
+                        <td>{{ report.award.award_number }}</td>
+                        <td>{{ report.due_date|date:"M d, Y" }}</td>
+                        <td>
+                            {% with days=report.due_date|timeuntil %}
+                                {% if "day" in days %}
+                                    <span class="badge bg-info text-dark">{{ days }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ days }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if report.status == 'draft' %}
+                                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                            {% elif report.status == 'revision_requested' %}
+                                <span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ report.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="status">
+        <i class="bi bi-info-circle me-2"></i>{% trans "No upcoming report deadlines at this time." %}
+    </div>
+    {% endif %}
+</section>
+
+<!-- Expiring Awards -->
+{% if expiring_awards %}
+<section class="mb-4" aria-label="{% trans "Awards expiring soon" %}">
+    <h2 class="h5 mb-3" style="color: #F27124;"><i class="bi bi-exclamation-circle me-2"></i>{% trans "Awards Expiring Within 90 Days" %}</h2>
+    <div class="row g-3">
+        {% for award in expiring_awards %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="h6 card-title mb-1">
+                                <a href="{% url 'awards:detail' award.pk %}" class="text-decoration-none" style="color: #00457C;">
+                                    {{ award.title|truncatechars:50 }}
+                                </a>
+                            </h3>
+                            <p class="small text-muted mb-1">{{ award.grant_program.title|truncatechars:50 }}</p>
+                            <p class="small mb-0"><strong>{% trans "Award #:" %}</strong> {{ award.award_number }}</p>
+                        </div>
+                        <span class="badge bg-warning text-dark">{% trans "Expiring" %}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-warning fw-bold">
+                            <i class="bi bi-calendar-x me-1"></i>{% trans "Ends:" %} {{ award.end_date|date:"M d, Y" }}
+                        </span>
+                        {% if award.organization %}
+                        <span class="small text-muted">{{ award.organization.name|truncatechars:25 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

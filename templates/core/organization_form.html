@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if is_edit %}{% trans "Edit Organization" %}{% else %}{% trans "Set Up Your Organization" %}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-building me-2"></i>
+                {% if is_edit %}{% trans "Edit Organization" %}{% else %}{% trans "Set Up Your Organization" %}{% endif %}
+            </h2>
+        </div>
+
+        {% if not is_edit %}
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle me-2"></i>
+            {% trans "You need to set up your organization profile before you can submit grant applications. Please fill in the details below." %}
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-building me-2"></i>{% trans "Organization Information" %}
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if next_url %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+                    {% endif %}
+
+                    <h6 class="text-muted mb-3">{% trans "Basic Information" %}</h6>
+                    {{ form.name|as_crispy_field }}
+                    {{ form.org_type|as_crispy_field }}
+
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">{% trans "Federal Identifiers" %}</h6>
+                    <div class="row">
+                        <div class="col-md-4">{{ form.ein|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ form.uei_number|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ form.duns_number|as_crispy_field }}</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">{{ form.sam_registered|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ form.sam_expiration|as_crispy_field }}</div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">{% trans "Address" %}</h6>
+                    {{ form.address_line1|as_crispy_field }}
+                    {{ form.address_line2|as_crispy_field }}
+                    <div class="row">
+                        <div class="col-md-5">{{ form.city|as_crispy_field }}</div>
+                        <div class="col-md-3">{{ form.state|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ form.zip_code|as_crispy_field }}</div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">{% trans "Contact" %}</h6>
+                    <div class="row">
+                        <div class="col-md-6">{{ form.phone|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ form.website|as_crispy_field }}</div>
+                    </div>
+
+                    {{ form.notes|as_crispy_field }}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if is_edit %}{% trans "Save Changes" %}{% else %}{% trans "Create Organization" %}{% endif %}
+                        </button>
+                        <a href="{% url 'core:profile' %}" class="btn btn-outline-secondary ms-2">{% trans "Cancel" %}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

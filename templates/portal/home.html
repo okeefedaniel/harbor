@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}{% trans "Home" %}{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block extra_css %}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="mb-3">{% trans "State Grants Management Solution" %}</h1>
+        <p class="lead mb-4 mx-auto" style="max-width: 700px;">
+            {% trans "Streamlining grant management for state agencies, municipalities, nonprofits, and businesses. Discover funding opportunities, apply online, and track your grants in one place." %}
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{% url 'portal:opportunities' %}" class="btn btn-light btn-lg px-4">
+                <i class="bi bi-megaphone me-2"></i>{% trans "View Funding Opportunities" %}
+            </a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-speedometer2 me-2"></i>{% trans "Go to Dashboard" %}
+            </a>
+            {% else %}
+            <a href="{% url 'core:register' %}" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-person-plus me-2"></i>{% trans "Register to Apply" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar py-4">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-3 mb-md-0 text-center">
+                <div class="stat-value">{{ active_programs_count }}</div>
+                <div class="stat-label">{% trans "State Programs" %}</div>
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0 text-center">
+                <div class="stat-value">${{ total_funding_available|intcomma }}</div>
+                <div class="stat-label">{% trans "State Funding" %}</div>
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0 text-center">
+                <a href="{% url 'portal:federal-opportunities' %}" class="text-decoration-none text-white">
+                    <div class="stat-value">{{ open_federal_count|default:"0" }}</div>
+                    <div class="stat-label">{% trans "Federal Opportunities" %}</div>
+                </a>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-value">10+</div>
+                <div class="stat-label">{% trans "Participating Agencies" %}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if not user.is_authenticated %}
+<!-- Platform Demo -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold">{% trans "See It In Action" %}</h2>
+            <p class="text-muted lead">{% trans "A full-featured grants management platform — explore every role and workflow" %}</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="rounded-4 shadow-lg overflow-hidden border">
+                    <img src="{% static 'img/grantify-sizzle-reel.gif' %}"
+                         alt="{% trans 'Grantify platform demo showing dashboards, analytics, and grant workflows' %}"
+                         class="img-fluid w-100"
+                         loading="lazy">
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4 d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{% url 'core:register' %}" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Try the Platform" %}
+            </a>
+            <a href="{% url 'portal:demo' %}" class="btn btn-outline-primary btn-lg px-4">
+                <i class="bi bi-play-circle me-2"></i>{% trans "Product Tour" %}
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Recent Opportunities -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0">{% trans "Recent Opportunities" %}</h2>
+            <a href="{% url 'portal:opportunities' %}" class="btn btn-outline-primary">
+                {% trans "View All" %} <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        {% if recent_opportunities %}
+        <div class="row g-4">
+            {% for opp in recent_opportunities|slice:":3" %}
+            <div class="col-md-4">
+                <div class="card h-100 opp-card border-0 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-2">
+                            <span class="badge badge-grant-type">
+                                {{ opp.get_grant_type_display }}
+                            </span>
+                        </div>
+                        <h5 class="card-title fw-bold">{{ opp.title }}</h5>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-building me-1"></i>{{ opp.agency.name }}
+                        </p>
+                        <div class="mb-3">
+                            <span class="fw-semibold text-success">
+                                ${{ opp.total_funding|intcomma }}
+                            </span>
+                            <span class="text-muted small"> {% trans "total funding" %}</span>
+                        </div>
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    {% trans "Deadline:" %} {{ opp.application_deadline|date:"M d, Y" }}
+                                </span>
+                            </div>
+                            <a href="{% url 'portal:opportunity-detail' pk=opp.pk %}"
+                               class="btn btn-outline-primary btn-sm mt-3 w-100">
+                                {% trans "View Details" %} <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox display-4 d-block mb-3"></i>
+            <p class="lead">{% trans "No opportunities posted yet. Check back soon." %}</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">{% trans "How It Works" %}</h2>
+        <div class="row g-4 text-center">
+            <div class="col-md-3">
+                <div class="step-icon">1</div>
+                <h5 class="fw-bold">{% trans "Register" %}</h5>
+                <p class="text-muted">
+                    {% trans "Create your account and set up your organization profile to get started." %}
+                </p>
+            </div>
+            <div class="col-md-3">
+                <div class="step-icon">2</div>
+                <h5 class="fw-bold">{% trans "Find Opportunities" %}</h5>
+                <p class="text-muted">
+                    {% trans "Browse available funding opportunities and filter by agency, type, or status." %}
+                </p>
+            </div>
+            <div class="col-md-3">
+                <div class="step-icon">3</div>
+                <h5 class="fw-bold">{% trans "Apply" %}</h5>
+                <p class="text-muted">
+                    {% trans "Complete and submit your application online with all required documents." %}
+                </p>
+            </div>
+            <div class="col-md-3">
+                <div class="step-icon">4</div>
+                <h5 class="fw-bold">{% trans "Track Progress" %}</h5>
+                <p class="text-muted">
+                    {% trans "Monitor your application status, manage awards, and submit required reports." %}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "Request Signature" %} - {{ award.award_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' award.pk %}">{{ award.award_number }}</a></li>
+            <li class="breadcrumb-item active">{% trans "Request Signature" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-4">
+            <i class="bi bi-pen me-2"></i>{% trans "Request E-Signature" %}
+        </h1>
+
+        <!-- Award Summary Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Award Summary" %}</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">{% trans "Award Number" %}</dt>
+                    <dd class="col-sm-8 fw-semibold">{{ award.award_number }}</dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Title" %}</dt>
+                    <dd class="col-sm-8">{{ award.title }}</dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Award Amount" %}</dt>
+                    <dd class="col-sm-8 fw-semibold text-success">${{ award.award_amount|intcomma }}</dd>
+
+                    <dt class="col-sm-4 text-muted">{% trans "Recipient" %}</dt>
+                    <dd class="col-sm-8">
+                        {{ award.organization.name }}
+                        <span class="text-muted small">({{ award.recipient.get_full_name }})</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Signature Request Form -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">{% trans "Signer Information" %}</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    {% trans "The award agreement will be sent to the signer via DocuSign for electronic signature. Once signed, the award will be marked as executed." %}
+                </p>
+                <form method="post" action="{% url 'awards:signature_request' award.pk %}">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Back link -->
+        <div class="mt-3">
+            <a href="{% url 'awards:detail' award.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Award" %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

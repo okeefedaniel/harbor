@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+{% block title %}{% trans "Add Collaborator" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'grants:tracked-list' %}">{% trans "Tracked Opportunities" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'grants:tracked-detail' tracked.pk %}">{{ tracked.federal_opportunity.title|truncatewords:6 }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Add Collaborator" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-person-plus me-2"></i>{% trans "Add Collaborator" %}
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    {% blocktrans with title=tracked.federal_opportunity.title|truncatewords:10 %}
+                    Add a collaborator to the tracked opportunity: <strong>{{ title }}</strong>
+                    {% endblocktrans %}
+                </p>
+                <form method="post" action="{% url 'grants:tracked-collaborate' tracked.pk %}">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

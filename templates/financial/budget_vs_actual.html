@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Budget vs Actual - {{ award.award_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">Awards</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' award.pk %}">{{ award.award_number }}</a></li>
+            <li class="breadcrumb-item active">Budget vs Actual</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-graph-up-arrow me-2"></i>Budget vs Actual
+        </h1>
+        <p class="text-muted mb-0">
+            {{ award.award_number }} &mdash; {{ award.title }}
+        </p>
+    </div>
+    <a href="{% url 'awards:detail' award.pk %}#budget" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Award
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="small text-muted mb-1">Total Budgeted</div>
+                <div class="fs-4 fw-bold" style="color: #00457C;">${{ grand_budgeted_total|intcomma }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="small text-muted mb-1">Total Spent</div>
+                <div class="fs-4 fw-bold" style="color: #F27124;">${{ grand_actual|intcomma }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="small text-muted mb-1">Remaining</div>
+                <div class="fs-4 fw-bold text-success">${{ grand_remaining|intcomma }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="small text-muted mb-1">% Used</div>
+                <div class="fs-4 fw-bold text-primary">{{ grand_pct_used }}%</div>
+                <div class="progress mt-2" style="height: 8px;">
+                    <div class="progress-bar {% if grand_pct_used > 90 %}bg-danger{% elif grand_pct_used > 75 %}bg-warning{% else %}bg-primary{% endif %}"
+                         role="progressbar"
+                         style="width: {{ grand_pct_used }}%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget vs Actual Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold">
+        <i class="bi bi-table me-1"></i>Category Breakdown
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-end">Budgeted (Federal)</th>
+                        <th class="text-end">Budgeted (State)</th>
+                        <th class="text-end">Budgeted (Match)</th>
+                        <th class="text-end">Actual Spent</th>
+                        <th class="text-end">Remaining</th>
+                        <th style="width: 180px;">% Used</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td class="fw-semibold">{{ row.category }}</td>
+                        <td class="text-end">${{ row.budgeted_federal|intcomma }}</td>
+                        <td class="text-end">${{ row.budgeted_state|intcomma }}</td>
+                        <td class="text-end">${{ row.budgeted_match|intcomma }}</td>
+                        <td class="text-end fw-semibold" style="color: #F27124;">${{ row.actual_spent|intcomma }}</td>
+                        <td class="text-end {% if row.remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+                            ${{ row.remaining|intcomma }}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                                    <div class="progress-bar {% if row.pct_used > 90 %}bg-danger{% elif row.pct_used > 75 %}bg-warning{% else %}bg-primary{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ row.pct_used }}%">
+                                    </div>
+                                </div>
+                                <span class="small fw-bold" style="width: 40px; text-align: right;">{{ row.pct_used }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-graph-up-arrow display-4 d-block mb-3"></i>
+                            <p class="mb-0">No budget data available for this award.</p>
+                            <a href="{% url 'financial:budget-create' award.pk %}" class="btn btn-primary mt-3">
+                                <i class="bi bi-plus-lg me-1"></i>Create Budget
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if rows %}
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td>TOTAL</td>
+                        <td class="text-end">${{ grand_budgeted_federal|intcomma }}</td>
+                        <td class="text-end">${{ grand_budgeted_state|intcomma }}</td>
+                        <td class="text-end">${{ grand_budgeted_match|intcomma }}</td>
+                        <td class="text-end" style="color: #F27124;">${{ grand_actual|intcomma }}</td>
+                        <td class="text-end {% if grand_remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+                            ${{ grand_remaining|intcomma }}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                                    <div class="progress-bar {% if grand_pct_used > 90 %}bg-danger{% elif grand_pct_used > 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ grand_pct_used }}%">
+                                    </div>
+                                </div>
+                                <span class="small fw-bold" style="width: 40px; text-align: right;">{{ grand_pct_used }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

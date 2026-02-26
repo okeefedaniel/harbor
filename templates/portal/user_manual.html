@@ -1,0 +1,959 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "User Manual" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manual-nav {
+        position: sticky;
+        top: 80px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+    .manual-nav .nav-link {
+        color: var(--ct-dark-gray);
+        padding: 0.35rem 0.75rem;
+        font-size: 0.875rem;
+        border-left: 3px solid transparent;
+        border-radius: 0;
+    }
+    .manual-nav .nav-link:hover,
+    .manual-nav .nav-link.active {
+        color: var(--ct-blue);
+        border-left-color: var(--ct-blue);
+        background-color: var(--ct-pale-blue);
+    }
+    .manual-nav .nav-link.sub {
+        padding-left: 1.5rem;
+        font-size: 0.8125rem;
+    }
+    .manual-section {
+        scroll-margin-top: 90px;
+    }
+    .manual-section h2 {
+        border-bottom: 2px solid var(--ct-light-blue);
+        padding-bottom: 0.5rem;
+    }
+    .manual-section h3 {
+        color: var(--ct-bold-blue);
+    }
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+    .role-applicant { background-color: #e8f5e9; color: #2e7d32; }
+    .role-reviewer { background-color: #fff3e0; color: #e65100; }
+    .role-program { background-color: #e3f2fd; color: #1565c0; }
+    .role-fiscal { background-color: #fce4ec; color: #c62828; }
+    .role-agency { background-color: #ede7f6; color: #4527a0; }
+    .role-admin { background-color: #263238; color: #ffffff; }
+    .role-auditor { background-color: #f3e5f5; color: #6a1b9a; }
+    .workflow-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.75rem 0;
+    }
+    .workflow-step .step-num {
+        flex-shrink: 0;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background-color: var(--ct-blue);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
+    .status-flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .status-flow .badge {
+        font-size: 0.8125rem;
+    }
+    .status-flow .bi-arrow-right {
+        color: var(--ct-dark-gray);
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans "breadcrumb" %}" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb py-2 mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "User Manual" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar Navigation -->
+    <div class="col-lg-3 d-none d-lg-block">
+        <nav class="manual-nav" aria-label="{% trans "Manual sections" %}">
+            <h6 class="fw-bold text-uppercase text-muted small mb-3 px-2">{% trans "Contents" %}</h6>
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" href="#overview"><i class="bi bi-house me-2"></i>{% trans "Overview" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#getting-started"><i class="bi bi-rocket-takeoff me-2"></i>{% trans "Getting Started" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#portal"><i class="bi bi-globe me-2"></i>{% trans "Public Portal" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#applicant"><i class="bi bi-person me-2"></i>{% trans "Applicant Guide" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#reviewer"><i class="bi bi-clipboard-check me-2"></i>{% trans "Reviewer Guide" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#program-officer"><i class="bi bi-folder me-2"></i>{% trans "Program Officer" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#fiscal-officer"><i class="bi bi-cash-stack me-2"></i>{% trans "Fiscal Officer" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#agency-admin"><i class="bi bi-building me-2"></i>{% trans "Agency Admin" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#system-admin"><i class="bi bi-gear me-2"></i>{% trans "System Admin" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#auditor"><i class="bi bi-shield-check me-2"></i>{% trans "Auditor" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#financial"><i class="bi bi-bank me-2"></i>{% trans "Financial Management" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#reporting"><i class="bi bi-file-earmark-bar-graph me-2"></i>{% trans "Reporting" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#closeout"><i class="bi bi-check2-circle me-2"></i>{% trans "Grant Closeout" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#analytics"><i class="bi bi-bar-chart-line me-2"></i>{% trans "Analytics" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#notifications"><i class="bi bi-bell me-2"></i>{% trans "Notifications" %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="#statuses"><i class="bi bi-diagram-3 me-2"></i>{% trans "Status Reference" %}</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+
+        <!-- Mobile TOC -->
+        <div class="d-lg-none mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <button class="btn btn-outline-primary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#mobileToc">
+                        <i class="bi bi-list me-2"></i>{% trans "Table of Contents" %}
+                    </button>
+                    <div class="collapse mt-3" id="mobileToc">
+                        <div class="list-group list-group-flush">
+                            <a href="#overview" class="list-group-item list-group-item-action small">{% trans "Overview" %}</a>
+                            <a href="#getting-started" class="list-group-item list-group-item-action small">{% trans "Getting Started" %}</a>
+                            <a href="#portal" class="list-group-item list-group-item-action small">{% trans "Public Portal" %}</a>
+                            <a href="#applicant" class="list-group-item list-group-item-action small">{% trans "Applicant Guide" %}</a>
+                            <a href="#reviewer" class="list-group-item list-group-item-action small">{% trans "Reviewer Guide" %}</a>
+                            <a href="#program-officer" class="list-group-item list-group-item-action small">{% trans "Program Officer Guide" %}</a>
+                            <a href="#fiscal-officer" class="list-group-item list-group-item-action small">{% trans "Fiscal Officer Guide" %}</a>
+                            <a href="#agency-admin" class="list-group-item list-group-item-action small">{% trans "Agency Admin Guide" %}</a>
+                            <a href="#system-admin" class="list-group-item list-group-item-action small">{% trans "System Admin Guide" %}</a>
+                            <a href="#auditor" class="list-group-item list-group-item-action small">{% trans "Auditor Guide" %}</a>
+                            <a href="#financial" class="list-group-item list-group-item-action small">{% trans "Financial Management" %}</a>
+                            <a href="#reporting" class="list-group-item list-group-item-action small">{% trans "Reporting" %}</a>
+                            <a href="#closeout" class="list-group-item list-group-item-action small">{% trans "Grant Closeout" %}</a>
+                            <a href="#analytics" class="list-group-item list-group-item-action small">{% trans "Analytics & Dashboards" %}</a>
+                            <a href="#notifications" class="list-group-item list-group-item-action small">{% trans "Notifications" %}</a>
+                            <a href="#statuses" class="list-group-item list-group-item-action small">{% trans "Status Reference" %}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="fw-bold mb-2">{% trans "User Manual" %}</h1>
+        <p class="text-muted mb-4">{% trans "Comprehensive guide to the State Grants Management Solution." %}</p>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- OVERVIEW -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="overview" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-house me-2 text-primary"></i>{% trans "Overview" %}</h2>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 lh-lg">
+                    <p>{% trans "Grantify is a state grants management solution, designed to streamline the entire grant lifecycle for state agencies, municipalities, nonprofits, and businesses." %}</p>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-megaphone text-primary fs-5 mt-1"></i>
+                                <div>
+                                    <strong>{% trans "Discover Funding" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Browse and search available grant opportunities from state agencies." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-pencil-square text-primary fs-5 mt-1"></i>
+                                <div>
+                                    <strong>{% trans "Apply Online" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Create, edit, and submit grant applications with supporting documents." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-trophy text-primary fs-5 mt-1"></i>
+                                <div>
+                                    <strong>{% trans "Manage Awards" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Issue awards, manage amendments, and collect e-signatures via DocuSign." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-bar-chart-line text-primary fs-5 mt-1"></i>
+                                <div>
+                                    <strong>{% trans "Track & Report" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Monitor finances, submit reports, and view statewide analytics dashboards." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="fw-bold mb-3">{% trans "User Roles" %}</h3>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Role" %}</th>
+                                    <th>{% trans "Description" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="role-badge role-applicant">{% trans "Applicant" %}</span></td>
+                                    <td>{% trans "External users (municipalities, nonprofits, businesses) who apply for and manage grants." %}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="role-badge role-reviewer">{% trans "Reviewer" %}</span></td>
+                                    <td>{% trans "Panel members who score and evaluate grant applications using rubrics." %}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="role-badge role-program">{% trans "Program Officer" %}</span></td>
+                                    <td>{% trans "Agency staff who create and manage grant programs and review applications." %}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="role-badge role-fiscal">{% trans "Fiscal Officer" %}</span></td>
+                                    <td>{% trans "Agency staff who manage budgets, drawdowns, and financial transactions." %}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="role-badge role-agency">{% trans "Agency Admin" %}</span></td>
+                                    <td>{% trans "Agency leadership with full control over their agency's programs and staff." %}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="role-badge role-admin">{% trans "System Admin" %}</span></td>
+                                    <td>{% trans "Grantify administrators with full access to all features across all agencies." %}</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="role-badge role-auditor">{% trans "Auditor" %}</span></td>
+                                    <td>{% trans "Compliance staff with read-only access to audit logs, reports, and financial records." %}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- GETTING STARTED -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="getting-started" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-rocket-takeoff me-2 text-primary"></i>{% trans "Getting Started" %}</h2>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold"><i class="bi bi-person-plus me-2 text-primary"></i>{% trans "Registering an Account" %}</h5>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Navigate to the Grantify home page and click <strong>Register to Apply</strong>." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Fill in the registration form: username, email, name, phone, password, and accept the Terms of Service." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Click <strong>Register</strong>. You will be redirected to the login page." %}</span>
+                    </div>
+                    <div class="alert alert-info border-0 small mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {% trans "All new registrations are assigned the <strong>Applicant</strong> role. State agency staff are assigned roles by a System Administrator." %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>{% trans "Logging In" %}</h5>
+                    <p>{% trans "Grantify supports two authentication methods:" %}</p>
+                    <ul>
+                        <li><strong>{% trans "Username and password" %}</strong> -- {% trans "enter your credentials on the login page." %}</li>
+                        <li><strong>{% trans "Microsoft SSO" %}</strong> -- {% trans "click <strong>Sign in with Microsoft</strong> to authenticate via Microsoft Entra ID. Preferred for state employees. Multi-factor authentication (MFA) is supported." %}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold"><i class="bi bi-buildings me-2 text-primary"></i>{% trans "Setting Up Your Organization" %}</h5>
+                    <p>{% trans "Before submitting your first application, you must set up your organization profile:" %}</p>
+                    <ul>
+                        <li>{% trans "Organization name and type (municipality, nonprofit, business, etc.)" %}</li>
+                        <li>{% trans "DUNS number, UEI number, and EIN" %}</li>
+                        <li>{% trans "SAM.gov registration status and expiration date" %}</li>
+                        <li>{% trans "Address, phone, and website" %}</li>
+                    </ul>
+                    <div class="alert alert-warning border-0 small mt-2 mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% trans "Keep your SAM.gov registration current. Many grant programs require active SAM registration, which is verified during compliance review." %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- PUBLIC PORTAL -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="portal" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-globe me-2 text-primary"></i>{% trans "Public Portal" %}</h2>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Browsing Opportunities" %}</h5>
+                    <p>{% trans "The Funding Opportunities page is accessible to everyone, including users who are not logged in." %}</p>
+                    <p><strong>{% trans "Filtering options:" %}</strong></p>
+                    <ul>
+                        <li><strong>{% trans "Agency" %}</strong> -- {% trans "filter by the state agency offering the grant" %}</li>
+                        <li><strong>{% trans "Grant Type" %}</strong> -- {% trans "competitive, non-competitive, formula, continuation, or other" %}</li>
+                        <li><strong>{% trans "Status" %}</strong> -- {% trans "posted, accepting applications, under review, awards pending, or closed" %}</li>
+                    </ul>
+                    <p>{% trans "Each opportunity card shows the grant type, title, agency, total funding, and application deadline. Deadlines are color-coded: <span class='badge bg-danger'>red</span> if 7 or fewer days remain, <span class='badge bg-warning text-dark'>yellow</span> if 30 or fewer." %}</p>
+                    <p class="mb-0">{% trans "Click <strong>View Details</strong> on any opportunity to see full program details, eligibility criteria, funding amounts, downloadable documents, and the <strong>Apply</strong> button." %}</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- APPLICANT GUIDE -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="applicant" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-person me-2 text-primary"></i>{% trans "Applicant Guide" %}</h2>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Your Dashboard" %}</h5>
+                    <p>{% trans "After logging in, your dashboard shows:" %}</p>
+                    <ul>
+                        <li><strong>{% trans "My Applications" %}</strong> -- {% trans "count of your submitted applications" %}</li>
+                        <li><strong>{% trans "My Active Awards" %}</strong> -- {% trans "count of awards currently in progress" %}</li>
+                        <li><strong>{% trans "Pending Actions" %}</strong> -- {% trans "items needing your attention (reports due, revision requests)" %}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Creating and Submitting an Application" %}</h5>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Browse opportunities and click <strong>View Details</strong> on a program, then click <strong>Apply Now</strong>." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Fill in the application: project title, description, requested amount, proposed dates, and match information (if applicable)." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Upload supporting documents (narrative, budget, letters of support, resumes, etc.)." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">4</span>
+                        <span>{% trans "Click <strong>Save as Draft</strong> to save progress, or <strong>Submit</strong> when ready." %}</span>
+                    </div>
+                    <div class="alert alert-info border-0 small mt-2 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {% trans "After submission, you cannot edit your application unless a program officer requests revisions." %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "After Approval: Managing Your Award" %}</h5>
+                    <p>{% trans "Once approved and awarded, you can:" %}</p>
+                    <ul>
+                        <li><strong>{% trans "View award details" %}</strong> -- {% trans "award number, amount, dates, terms and conditions" %}</li>
+                        <li><strong>{% trans "Request drawdowns" %}</strong> -- {% trans "submit requests to disburse awarded funds, specifying amounts and expenditure periods" %}</li>
+                        <li><strong>{% trans "Submit reports" %}</strong> -- {% trans "file periodic progress and fiscal reports as required by the awarding agency" %}</li>
+                        <li><strong>{% trans "Upload documents" %}</strong> -- {% trans "attach any required files to your award record" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- REVIEWER GUIDE -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="reviewer" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-2 text-primary"></i>{% trans "Reviewer Guide" %}</h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Reviewing Applications" %}</h5>
+                    <p>{% trans "Your reviewer dashboard shows pending and completed review assignments." %}</p>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Click on a pending review assignment from your dashboard." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Review the application details and scoring rubric." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Score each criterion within the allowed range and add optional comments." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">4</span>
+                        <span>{% trans "Click <strong>Submit Review</strong>. Once submitted, your review cannot be edited." %}</span>
+                    </div>
+                    <div class="alert alert-warning border-0 small mt-2 mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% trans "If you have a conflict of interest, contact the program officer. They can mark your assignment as <strong>Recused</strong>." %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- PROGRAM OFFICER GUIDE -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="program-officer" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-folder me-2 text-primary"></i>{% trans "Program Officer Guide" %}</h2>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Creating & Publishing Grant Programs" %}</h5>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Navigate to <strong>Grants > Create Program</strong> in the navigation bar." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Fill in program details: title, description, funding source, grant type, eligibility, funding amounts, timeline, and contact information." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Save the program (created in Draft status)." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">4</span>
+                        <span>{% trans "Click <strong>Publish</strong> to make the program visible on the public opportunities listing." %}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Managing Applications" %}</h5>
+                    <p>{% trans "From the Applications list, you can filter by program or status, search, and export to CSV." %}</p>
+                    <p><strong>{% trans "For each application, you can:" %}</strong></p>
+                    <ul>
+                        <li>{% trans "Review project details, uploaded documents, and the compliance checklist" %}</li>
+                        <li>{% trans "Verify compliance items (toggle each item to mark as verified)" %}</li>
+                        <li>{% trans "Add comments (check <strong>Internal</strong> for staff-only visibility)" %}</li>
+                        <li>{% trans "Upload internal staff documents (due-diligence reports, site visit notes)" %}</li>
+                        <li>{% trans "Assign reviewers with a scoring rubric" %}</li>
+                        <li>{% trans "Change application status (requires a comment)" %}</li>
+                    </ul>
+                    <div class="alert alert-info border-0 small mt-2 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {% trans "You cannot approve an application until all <strong>required</strong> compliance checklist items have been verified." %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Creating Awards & E-Signatures" %}</h5>
+                    <p>{% trans "After approving an application, click <strong>Create Award</strong>. The form is pre-populated from the application. An award number is auto-generated." %}</p>
+                    <p>{% trans "To send an award agreement for electronic signature:" %}</p>
+                    <ol>
+                        <li>{% trans "Navigate to the award detail page and click <strong>Request Signature</strong>." %}</li>
+                        <li>{% trans "Enter the signer's name and email, optional CC, and notes." %}</li>
+                        <li>{% trans "Click <strong>Send for Signature</strong>. The system sends a DocuSign envelope." %}</li>
+                        <li>{% trans "Once signed, the document is automatically downloaded and the award status updates to <strong>Executed</strong>." %}</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- FISCAL OFFICER GUIDE -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="fiscal-officer" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-cash-stack me-2 text-primary"></i>{% trans "Fiscal Officer Guide" %}</h2>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Budget Management" %}</h5>
+                    <p>{% trans "Create budgets for awards with fiscal year and total amounts. Add line items by category (personnel, fringe, travel, equipment, supplies, contractual, construction, indirect, other) with federal/state/match share breakdowns." %}</p>
+                    <p class="mb-0">{% trans "Use the <strong>Budget vs. Actual</strong> view to compare budgeted amounts with actual spending by category." %}</p>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Processing Drawdown Requests" %}</h5>
+                    <p>{% trans "When a grantee submits a drawdown request, review the details and choose:" %}</p>
+                    <ul>
+                        <li><strong>{% trans "Approve" %}</strong> -- {% trans "funds are released for payment" %}</li>
+                        <li><strong>{% trans "Deny" %}</strong> -- {% trans "request is rejected (provide a reason)" %}</li>
+                        <li><strong>{% trans "Return" %}</strong> -- {% trans "request is sent back to the grantee for revision" %}</li>
+                    </ul>
+                    <p class="mb-0">{% trans "The grantee is notified automatically. Record transactions to track payments, including state ERP reference numbers." %}</p>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "SF-425 Federal Reporting" %}</h5>
+                    <p class="mb-0">{% trans "Generate SF-425 federal financial reports from the award detail page. The system auto-populates financial data from drawdowns and transactions. Submit for review, then a grant manager approves the final report." %}</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- AGENCY ADMIN -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="agency-admin" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-building me-2 text-primary"></i>{% trans "Agency Administrator Guide" %}</h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <p>{% trans "Agency administrators have all capabilities of program officers and fiscal officers within their agency, plus:" %}</p>
+                    <ul>
+                        <li>{% trans "Manage all grant programs, applications, awards, and financial activity across the agency" %}</li>
+                        <li>{% trans "Work with a System Administrator to add/remove agency staff and assign roles" %}</li>
+                        <li>{% trans "View agency-level analytics and metrics" %}</li>
+                        <li>{% trans "Approve or deny awards and amendments" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- SYSTEM ADMIN -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="system-admin" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-gear me-2 text-primary"></i>{% trans "System Administrator Guide" %}</h2>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "User Management" %}</h5>
+                    <p>{% trans "Navigate to <strong>Users</strong> in the navigation bar to manage all registered users. You can search by name/email, filter by role, and edit each user's role, agency assignment, and active status." %}</p>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Statewide Tools" %}</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2">
+                                <i class="bi bi-bar-chart-line text-primary fs-5"></i>
+                                <div>
+                                    <strong>{% trans "Analytics Dashboard" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "KPI cards, charts (status distribution, funding by agency, monthly trends, budget utilization), agency breakdowns." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2">
+                                <i class="bi bi-geo-alt text-primary fs-5"></i>
+                                <div>
+                                    <strong>{% trans "Map View" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Interactive choropleth map showing grant distribution across state municipalities." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2">
+                                <i class="bi bi-calendar-event text-primary fs-5"></i>
+                                <div>
+                                    <strong>{% trans "Deadline Calendar" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Upcoming deadlines, overdue reports, and awards expiring within 90 days." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2">
+                                <i class="bi bi-shield-check text-primary fs-5"></i>
+                                <div>
+                                    <strong>{% trans "Audit Logs" %}</strong>
+                                    <p class="small text-muted mb-0">{% trans "Complete, immutable history of all system actions with user, timestamp, and IP address." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- AUDITOR -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="auditor" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-primary"></i>{% trans "Auditor Guide" %}</h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <p>{% trans "Auditors have <strong>read-only access</strong> across the system for compliance and oversight. You can view:" %}</p>
+                    <ul>
+                        <li>{% trans "Full audit logs with action history" %}</li>
+                        <li>{% trans "Application details and compliance checklists" %}</li>
+                        <li>{% trans "Award details, amendments, and financial summaries" %}</li>
+                        <li>{% trans "Budgets, drawdowns, transactions, and budget vs. actual reports" %}</li>
+                        <li>{% trans "All submitted progress, fiscal, and SF-425 reports" %}</li>
+                        <li>{% trans "Closeout checklists, documents, and fund returns" %}</li>
+                        <li>{% trans "Archived records per data retention policy" %}</li>
+                    </ul>
+                    <h6 class="fw-bold mt-3">{% trans "Data Retention Policies" %}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>{% trans "Policy" %}</th><th>{% trans "Duration" %}</th><th>{% trans "Use Case" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td>{% trans "Standard" %}</td><td>{% trans "7 years" %}</td><td>{% trans "Most grant records" %}</td></tr>
+                                <tr><td>{% trans "Extended" %}</td><td>{% trans "10 years" %}</td><td>{% trans "High-value or sensitive grants" %}</td></tr>
+                                <tr><td>{% trans "Permanent" %}</td><td>{% trans "Indefinite" %}</td><td>{% trans "Permanent retention requirements" %}</td></tr>
+                                <tr><td>{% trans "Federal" %}</td><td>{% trans "3 years post-closeout" %}</td><td>{% trans "Federal grant compliance" %}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- FINANCIAL MANAGEMENT -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="financial" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-bank me-2 text-primary"></i>{% trans "Financial Management" %}</h2>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Drawdown Workflow" %}</h5>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Grantee creates a drawdown request specifying amount, period, and expenditure details. A request number is auto-generated." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Grantee submits the request for agency review." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Fiscal officer reviews and approves, denies, or returns the request." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">4</span>
+                        <span>{% trans "Once approved, the transaction is recorded and the grantee is notified." %}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Transaction Types" %}</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>{% trans "Type" %}</th><th>{% trans "Description" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>{% trans "Obligation" %}</strong></td><td>{% trans "Initial commitment of funds" %}</td></tr>
+                                <tr><td><strong>{% trans "Drawdown" %}</strong></td><td>{% trans "Disbursement to grantee" %}</td></tr>
+                                <tr><td><strong>{% trans "Payment" %}</strong></td><td>{% trans "Payment against an obligation" %}</td></tr>
+                                <tr><td><strong>{% trans "Refund" %}</strong></td><td>{% trans "Return of funds" %}</td></tr>
+                                <tr><td><strong>{% trans "Adjustment" %}</strong></td><td>{% trans "Correction or modification" %}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- REPORTING -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="reporting" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>{% trans "Reporting" %}</h2>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Report Types" %}</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>{% trans "Type" %}</th><th>{% trans "Description" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>{% trans "Progress" %}</strong></td><td>{% trans "Narrative report on project activities and milestones" %}</td></tr>
+                                <tr><td><strong>{% trans "Fiscal" %}</strong></td><td>{% trans "Financial report on expenditures and budget status" %}</td></tr>
+                                <tr><td><strong>{% trans "Programmatic" %}</strong></td><td>{% trans "Report on program outcomes and performance metrics" %}</td></tr>
+                                <tr><td><strong>{% trans "Final Progress" %}</strong></td><td>{% trans "Comprehensive end-of-grant progress report" %}</td></tr>
+                                <tr><td><strong>{% trans "Final Fiscal" %}</strong></td><td>{% trans "Comprehensive end-of-grant financial report" %}</td></tr>
+                                <tr><td><strong>{% trans "SF-425" %}</strong></td><td>{% trans "Federal Financial Report (Standard Form 425)" %}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Submission Workflow" %}</h5>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Create a report from the award detail page, selecting the type and reporting period." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Fill in the report data and attach any supporting documents." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Submit the report for agency review." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">4</span>
+                        <span>{% trans "Agency staff reviews and approves, requests revision, or rejects the report." %}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- CLOSEOUT -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="closeout" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-check2-circle me-2 text-primary"></i>{% trans "Grant Closeout" %}</h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <p>{% trans "When an award reaches its end date, agency staff initiate the closeout process:" %}</p>
+                    <div class="workflow-step">
+                        <span class="step-num">1</span>
+                        <span>{% trans "Click <strong>Initiate Closeout</strong> on the award. A checklist is automatically generated." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">2</span>
+                        <span>{% trans "Complete each checklist item (6 items: final progress report, final fiscal report, equipment inventory, audit resolution, fund return, record retention)." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">3</span>
+                        <span>{% trans "Record any fund returns for unspent funds." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">4</span>
+                        <span>{% trans "Upload closeout documents (final reports, audit documentation)." %}</span>
+                    </div>
+                    <div class="workflow-step">
+                        <span class="step-num">5</span>
+                        <span>{% trans "Click <strong>Complete Closeout</strong> once all required items are done. The award status updates to Completed." %}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- ANALYTICS -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="analytics" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-2 text-primary"></i>{% trans "Analytics & Dashboards" %}</h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <p>{% trans "System administrators and agency staff have access to analytics tools:" %}</p>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="bi bi-bar-chart me-2 text-primary"></i>{% trans "Analytics Dashboard" %}</h6>
+                                    <p class="small mb-0">{% trans "6 KPI cards, application status chart, funding by agency, monthly award trends, and budget utilization for top programs." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="bi bi-geo-alt me-2 text-primary"></i>{% trans "Map View" %}</h6>
+                                    <p class="small mb-0">{% trans "Interactive choropleth map showing grant distribution by municipality, filterable by agency and program." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="bi bi-calendar-event me-2 text-primary"></i>{% trans "Deadline Calendar" %}</h6>
+                                    <p class="small mb-0">{% trans "Shows overdue reports, upcoming application deadlines, report due dates, and awards expiring within 90 days." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="bi bi-download me-2 text-primary"></i>{% trans "CSV Export" %}</h6>
+                                    <p class="small mb-0">{% trans "Download application, award, drawdown, transaction, and report data as CSV files from any list view." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- NOTIFICATIONS -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="notifications" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-bell me-2 text-primary"></i>{% trans "Notifications" %}</h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <p>{% trans "Grantify sends in-app notifications (and email) for key events:" %}</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>{% trans "Event" %}</th><th>{% trans "Who is Notified" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td>{% trans "Application submitted" %}</td><td>{% trans "Agency staff" %}</td></tr>
+                                <tr><td>{% trans "Application status changed" %}</td><td>{% trans "Applicant" %}</td></tr>
+                                <tr><td>{% trans "Award created" %}</td><td>{% trans "Award recipient" %}</td></tr>
+                                <tr><td>{% trans "E-signature requested" %}</td><td>{% trans "Signer" %}</td></tr>
+                                <tr><td>{% trans "E-signature completed" %}</td><td>{% trans "Agency staff" %}</td></tr>
+                                <tr><td>{% trans "Drawdown status changed" %}</td><td>{% trans "Drawdown submitter" %}</td></tr>
+                                <tr><td>{% trans "Report reviewed" %}</td><td>{% trans "Report submitter" %}</td></tr>
+                                <tr><td>{% trans "Closeout initiated" %}</td><td>{% trans "Relevant users" %}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small text-muted mt-3 mb-0">
+                        <i class="bi bi-bell me-1"></i>{% trans "Click the notification bell icon in the navigation bar to view and manage your notifications." %}
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- STATUS REFERENCE -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <section id="statuses" class="manual-section mb-5">
+            <h2 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2 text-primary"></i>{% trans "Status Reference" %}</h2>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Application Statuses" %}</h5>
+                    <div class="status-flow mb-3">
+                        <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                        <i class="bi bi-arrow-right"></i>
+                        <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                        <i class="bi bi-arrow-right"></i>
+                        <span class="badge bg-info">{% trans "Under Review" %}</span>
+                        <i class="bi bi-arrow-right"></i>
+                        <span class="badge bg-success">{% trans "Approved" %}</span>
+                        /
+                        <span class="badge bg-danger">{% trans "Denied" %}</span>
+                        /
+                        <span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>{% trans "Status" %}</th><th>{% trans "Meaning" %}</th><th>{% trans "Who Triggers" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td><span class="badge bg-secondary">{% trans "Draft" %}</span></td><td>{% trans "Started, not yet submitted. Editable." %}</td><td>{% trans "Applicant" %}</td></tr>
+                                <tr><td><span class="badge bg-primary">{% trans "Submitted" %}</span></td><td>{% trans "Received by agency, awaiting review." %}</td><td>{% trans "Applicant" %}</td></tr>
+                                <tr><td><span class="badge bg-info">{% trans "Under Review" %}</span></td><td>{% trans "Being evaluated by staff or reviewers." %}</td><td>{% trans "Program Officer" %}</td></tr>
+                                <tr><td><span class="badge bg-warning text-dark">{% trans "Revision Requested" %}</span></td><td>{% trans "Changes requested. Applicant can edit and resubmit." %}</td><td>{% trans "Program Officer" %}</td></tr>
+                                <tr><td><span class="badge bg-success">{% trans "Approved" %}</span></td><td>{% trans "Selected for funding. Award will be processed." %}</td><td>{% trans "Program Officer" %}</td></tr>
+                                <tr><td><span class="badge bg-danger">{% trans "Denied" %}</span></td><td>{% trans "Not selected for funding in this cycle." %}</td><td>{% trans "Program Officer" %}</td></tr>
+                                <tr><td><span class="badge bg-dark">{% trans "Withdrawn" %}</span></td><td>{% trans "Application withdrawn from consideration." %}</td><td>{% trans "Applicant / Staff" %}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Award Statuses" %}</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>{% trans "Status" %}</th><th>{% trans "Description" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td><span class="badge bg-secondary">{% trans "Draft" %}</span></td><td>{% trans "Award created, not yet finalized." %}</td></tr>
+                                <tr><td><span class="badge bg-info">{% trans "Pending Approval" %}</span></td><td>{% trans "Awaiting administrative approval." %}</td></tr>
+                                <tr><td><span class="badge bg-primary">{% trans "Approved" %}</span></td><td>{% trans "Approved but not yet signed." %}</td></tr>
+                                <tr><td><span class="badge bg-success">{% trans "Executed" %}</span></td><td>{% trans "Agreement signed (via DocuSign or manual)." %}</td></tr>
+                                <tr><td><span class="badge bg-success">{% trans "Active" %}</span></td><td>{% trans "Award is in progress." %}</td></tr>
+                                <tr><td><span class="badge bg-warning text-dark">{% trans "On Hold" %}</span></td><td>{% trans "Temporarily suspended." %}</td></tr>
+                                <tr><td><span class="badge bg-primary">{% trans "Completed" %}</span></td><td>{% trans "All work finished, grant closed out." %}</td></tr>
+                                <tr><td><span class="badge bg-danger">{% trans "Terminated" %}</span></td><td>{% trans "Ended early." %}</td></tr>
+                                <tr><td><span class="badge bg-dark">{% trans "Cancelled" %}</span></td><td>{% trans "Cancelled before execution." %}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold">{% trans "Compliance Checklist Items" %}</h5>
+                    <p>{% trans "When an application is submitted, the following compliance items are automatically generated. All <strong>required</strong> items must be verified before the application can be approved." %}</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>{% trans "Item" %}</th><th class="text-center">{% trans "Required" %}</th></tr></thead>
+                            <tbody>
+                                <tr><td>{% trans "SAM Registration Active" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Tax-Exempt Status Verified" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Audit Clearance" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Debarment/Suspension Check" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Budget Review Complete" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Narrative Review Complete" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Insurance Verification" %}</td><td class="text-center"><span class="text-muted small">{% trans "Optional" %}</span></td></tr>
+                                <tr><td>{% trans "Eligibility Confirmed" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                                <tr><td>{% trans "Match Funds Verified" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i> <span class="small text-muted">{% trans "(if match required)" %}</span></td></tr>
+                                <tr><td>{% trans "Conflict of Interest Check" %}</td><td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom Card -->
+        <div class="card border-0 shadow-sm mt-4 mb-4">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-question-circle display-6 text-primary d-block mb-3"></i>
+                <h5 class="fw-bold">{% trans "Need More Help?" %}</h5>
+                <p class="text-muted mb-3">
+                    {% trans "Visit our FAQ page for quick answers, or contact support for personalized assistance." %}
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'portal:help' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-question-circle me-2"></i>{% trans "Help & FAQ" %}
+                    </a>
+                    <a href="mailto:grants@dok.gov" class="btn btn-primary">
+                        <i class="bi bi-envelope me-2"></i>{% trans "Contact Support" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Highlight active section in sidebar on scroll
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = document.querySelectorAll('.manual-section');
+    const navLinks = document.querySelectorAll('.manual-nav .nav-link');
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                navLinks.forEach(function(link) { link.classList.remove('active'); });
+                const activeLink = document.querySelector('.manual-nav a[href="#' + entry.target.id + '"]');
+                if (activeLink) activeLink.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(function(section) { observer.observe(section); });
+});
+</script>
+{% endblock %}

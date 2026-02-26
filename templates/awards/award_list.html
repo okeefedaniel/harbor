@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Awards" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Awards" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">
+        <i class="bi bi-trophy me-2"></i>{% trans "Awards" %}
+    </h1>
+    <div class="d-flex align-items-center gap-2">
+        <a href="?export=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.agency %}&agency={{ request.GET.agency }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+           class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download me-1"></i>{% trans "Export CSV" %}
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="status" class="form-label fw-semibold">{% trans "Status" %}</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>{% trans "Draft" %}</option>
+                    <option value="pending_approval" {% if request.GET.status == 'pending_approval' %}selected{% endif %}>{% trans "Pending Approval" %}</option>
+                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>{% trans "Approved" %}</option>
+                    <option value="executed" {% if request.GET.status == 'executed' %}selected{% endif %}>{% trans "Executed" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="on_hold" {% if request.GET.status == 'on_hold' %}selected{% endif %}>{% trans "On Hold" %}</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>{% trans "Completed" %}</option>
+                    <option value="terminated" {% if request.GET.status == 'terminated' %}selected{% endif %}>{% trans "Terminated" %}</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="agency" class="form-label fw-semibold">{% trans "Agency" %}</label>
+                <select name="agency" id="agency" class="form-select">
+                    <option value="">{% trans "All Agencies" %}</option>
+                    {% for ag in agencies %}
+                    <option value="{{ ag.pk }}" {% if request.GET.agency == ag.pk|slugify %}selected{% endif %}>
+                        {{ ag.abbreviation }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="q" class="form-label fw-semibold">{% trans "Search" %}</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" id="q" class="form-control"
+                           placeholder="{% trans "Award number, title, or recipient..." %}"
+                           value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Awards Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    {% sortable_th 'award_number' _("Award Number") %}
+                    {% sortable_th 'title' _("Title") %}
+                    {% sortable_th 'recipient' _("Recipient") %}
+                    <th>{% trans "Agency" %}</th>
+                    {% sortable_th 'award_amount' _("Amount") %}
+                    {% sortable_th 'status' _("Status") %}
+                    {% sortable_th 'start_date' _("Start Date") %}
+                    {% sortable_th 'end_date' _("End Date") %}
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for award in awards %}
+                <tr>
+                    <td>
+                        <a href="{% url 'awards:detail' award.pk %}" class="fw-semibold text-decoration-none">
+                            {{ award.award_number }}
+                        </a>
+                    </td>
+                    <td>{{ award.title|truncatewords:8 }}</td>
+                    <td>
+                        <span class="text-muted small">{{ award.organization.name }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ award.agency.abbreviation }}</span>
+                    </td>
+                    <td class="text-end fw-semibold">${{ award.award_amount|intcomma }}</td>
+                    <td>
+                        {% if award.status == 'draft' %}
+                            <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                        {% elif award.status == 'pending_approval' %}
+                            <span class="badge bg-warning text-dark">{% trans "Pending Approval" %}</span>
+                        {% elif award.status == 'approved' %}
+                            <span class="badge bg-info text-dark">{% trans "Approved" %}</span>
+                        {% elif award.status == 'executed' %}
+                            <span class="badge bg-primary">{% trans "Executed" %}</span>
+                        {% elif award.status == 'active' %}
+                            <span class="badge bg-success">{% trans "Active" %}</span>
+                        {% elif award.status == 'on_hold' %}
+                            <span class="badge bg-warning text-dark">{% trans "On Hold" %}</span>
+                        {% elif award.status == 'completed' %}
+                            <span class="badge bg-dark">{% trans "Completed" %}</span>
+                        {% elif award.status == 'terminated' %}
+                            <span class="badge bg-danger">{% trans "Terminated" %}</span>
+                        {% elif award.status == 'cancelled' %}
+                            <span class="badge bg-danger">{% trans "Cancelled" %}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ award.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ award.start_date|date:"M d, Y"|default:"--" }}</td>
+                    <td>{{ award.end_date|date:"M d, Y"|default:"--" }}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'awards:detail' award.pk %}" class="btn btn-outline-primary"
+                               title="{% trans "View Details" %}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if user.can_manage_grants %}
+                            <a href="{% url 'awards:edit' award.pk %}" class="btn btn-outline-secondary"
+                               title="{% trans "Edit" %}">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-trophy display-4 d-block mb-3"></i>
+                        <p class="mb-0">{% trans "No awards found matching your criteria." %}</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="{% trans "Award list pagination" %}" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-double-left"></i>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">
+                {% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-double-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

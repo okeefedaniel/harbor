@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Support" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans "breadcrumb" %}" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb py-2 mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Support" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-2">{% trans "Support" %}</h1>
+        <p class="text-muted mb-4">
+            {% trans "Get help with the State Grants Management Solution. Browse our documentation or contact the support team." %}
+        </p>
+
+        <!-- Documentation & Resources -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-book me-2 text-primary"></i>{% trans "Documentation & Resources" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Explore our comprehensive documentation to learn how to use the Grantify platform." %}
+                </p>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <a href="{% url 'portal:manual' %}" class="text-decoration-none">
+                            <div class="card bg-light border-0 h-100">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-journal-text display-5 text-primary d-block mb-3"></i>
+                                    <h6 class="fw-bold text-dark">{% trans "User Manual" %}</h6>
+                                    <p class="small text-muted mb-0">
+                                        {% trans "Complete guide covering all features, roles, and workflows in the system." %}
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{% url 'portal:help' %}" class="text-decoration-none">
+                            <div class="card bg-light border-0 h-100">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-question-circle display-5 text-primary d-block mb-3"></i>
+                                    <h6 class="fw-bold text-dark">{% trans "Help & FAQ" %}</h6>
+                                    <p class="small text-muted mb-0">
+                                        {% trans "Answers to frequently asked questions about registration, applications, and reporting." %}
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Support -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-headset me-2 text-primary"></i>{% trans "Contact Support" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Our grants management support team is available to assist you with technical issues, account questions, and general inquiries about the platform." %}
+                </p>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-4">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-envelope display-6 text-primary d-block mb-2"></i>
+                                <h6 class="fw-bold">{% trans "Email" %}</h6>
+                                <a href="mailto:grants@dok.gov" class="text-decoration-none">grants@dok.gov</a>
+                                <p class="small text-muted mt-1 mb-0">
+                                    {% trans "Response within 1-2 business days" %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-telephone display-6 text-primary d-block mb-2"></i>
+                                <h6 class="fw-bold">{% trans "Phone" %}</h6>
+                                <p class="mb-0">(555) 500-2300</p>
+                                <p class="small text-muted mt-1 mb-0">
+                                    {% trans "Mon – Fri, 8:30 AM – 5:00 PM ET" %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-geo-alt display-6 text-primary d-block mb-2"></i>
+                                <h6 class="fw-bold">{% trans "Office" %}</h6>
+                                <p class="small mb-0">
+                                    100 Capitol Avenue<br>
+                                    Capital City, DOK 00100
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report an Issue -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-bug me-2 text-primary"></i>{% trans "Report an Issue" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "If you encounter a technical problem, error, or unexpected behavior in the system, please report it so we can resolve it promptly." %}
+                </p>
+                <p class="lh-lg">{% trans "When reporting an issue, please include:" %}</p>
+                <ul class="lh-lg">
+                    <li>{% trans "A description of what you were trying to do" %}</li>
+                    <li>{% trans "The page or section of the system where the issue occurred" %}</li>
+                    <li>{% trans "Any error messages you received" %}</li>
+                    <li>{% trans "Your browser name and version" %}</li>
+                </ul>
+                <a href="mailto:grants@dok.gov?subject=Grantify%20Issue%20Report" class="btn btn-outline-primary">
+                    <i class="bi bi-envelope me-2"></i>{% trans "Email an Issue Report" %}
+                </a>
+            </div>
+        </div>
+
+        <!-- System Compatibility -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-display me-2 text-primary"></i>{% trans "System Compatibility" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Grantify is a web-based application that works with modern browsers. For the best experience, we recommend:" %}
+                </p>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Google Chrome ({% trans "latest version" %})
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Microsoft Edge ({% trans "latest version" %})
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Mozilla Firefox ({% trans "latest version" %})
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Apple Safari ({% trans "latest version" %})
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="lh-lg mt-2 mb-0">
+                    <i class="bi bi-universal-access me-1 text-primary"></i>
+                    {% trans "Grantify is designed to comply with WCAG 2.1 Level AA accessibility standards, including keyboard navigation and screen reader support." %}
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

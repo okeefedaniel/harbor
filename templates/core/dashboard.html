@@ -1,0 +1,1007 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load portal_tags %}
+
+{% block title %}{% trans "Dashboard" %}{% endblock %}
+
+{% block content %}
+{% if user.is_agency_staff and user.role != "federal_coordinator" %}
+{# ===== AGENCY STAFF DASHBOARD ===== #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {% blocktrans with name=user.get_full_name|default:user.username %}
+        <h2 class="mb-1">Welcome back, {{ name }}</h2>
+        {% endblocktrans %}
+        {% if user.agency %}
+        <p class="text-muted mb-0">
+            <i class="bi bi-building me-1"></i>{{ user.agency.name }} ({{ user.agency.abbreviation }})
+        </p>
+        {% endif %}
+    </div>
+    <div>
+        <span class="badge bg-primary fs-6">{{ user.get_role_display }}</span>
+    </div>
+</div>
+
+{# -- Stat Cards -- #}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a href="{% url 'awards:list' %}?status=active&status=executed" class="text-decoration-none">
+            <div class="card stat-card accent-green h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ active_awards_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Active Awards" %}</div>
+                        </div>
+                        <i class="bi bi-trophy fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'applications:list' %}?status=submitted" class="text-decoration-none">
+            <div class="card stat-card accent-gold h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ pending_applications_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Pending Applications" %}</div>
+                        </div>
+                        <i class="bi bi-file-earmark-text fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'awards:list' %}" class="text-decoration-none">
+            <div class="card stat-card h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">${{ total_funding|intcomma|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Total Funding Awarded" %}</div>
+                        </div>
+                        <i class="bi bi-currency-dollar fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'reviews:dashboard' %}" class="text-decoration-none">
+            <div class="card stat-card accent-red h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ pending_reviews_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Pending Reviews" %}</div>
+                        </div>
+                        <i class="bi bi-clipboard-check fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+{# -- Two-column layout -- #}
+<div class="row g-4">
+    {# Left column #}
+    <div class="col-lg-8">
+        {# My Assignments Card (top) #}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-check me-2"></i>{% trans "My Assignments" %}
+                    {% if my_assignments_count %}<span class="badge bg-primary ms-1">{{ my_assignments_count }}</span>{% endif %}
+                </span>
+                <a href="{% url 'applications:my-assignments' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                {% if my_assignments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Application" %}</th>
+                                <th>{% trans "Program" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Assigned" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in my_assignments %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'applications:detail' assignment.application.pk %}" class="text-decoration-none fw-semibold">
+                                        {{ assignment.application.project_title|truncatewords:6 }}
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ assignment.application.organization.name|default:"" }}</small>
+                                </td>
+                                <td class="text-muted small">{{ assignment.application.grant_program.title|truncatewords:4 }}</td>
+                                <td>
+                                    {% if assignment.status == 'assigned' and assignment.assignment_type == 'claimed' %}
+                                        <span class="badge badge-claimed"><i class="bi bi-check-circle-fill me-1"></i>{% trans "Claimed" %}</span>
+                                    {% elif assignment.status == 'assigned' %}
+                                        <span class="badge bg-info text-dark">{% trans "Assigned" %}</span>
+                                    {% elif assignment.status == 'in_progress' %}
+                                        <span class="badge bg-primary">{% trans "In Progress" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted">{{ assignment.assigned_at|date:"M d" }}</td>
+                                <td>
+                                    <a href="{% url 'applications:detail' assignment.application.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-person-check d-block"></i>
+                    <p>{% trans "No active assignments. Visit the applications list to claim one." %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Recent Applications Card #}
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-file-earmark-text me-2"></i>{% trans "Recent Applications" %}</span>
+                <a href="{% url 'applications:list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                {% if pending_applications %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "ID" %}</th>
+                                <th>{% trans "Project Title" %}</th>
+                                <th>{% trans "Applicant" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Assigned To" %}</th>
+                                <th>{% trans "Submitted" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in pending_applications %}
+                            {% with assignment=assignments_by_app|dict_get:app.pk %}
+                            <tr>
+                                <td class="text-muted small">{{ app.id|truncatechars:8 }}</td>
+                                <td>
+                                    <strong>{{ app.project_title|truncatewords:8 }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ app.grant_program.title|truncatewords:6 }}</small>
+                                </td>
+                                <td>
+                                    {{ app.applicant.get_full_name|default:app.applicant.username }}
+                                    <br>
+                                    <small class="text-muted">{{ app.organization.name|default:"" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ app.status|slugify }}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if assignment %}
+                                        <span class="small fw-semibold">
+                                            <i class="bi bi-person-fill me-1"></i>{{ assignment.assigned_to.get_full_name|default:assignment.assigned_to.username }}
+                                        </span>
+                                        <br>
+                                        <small>
+                                            {% if assignment.status == 'in_progress' %}
+                                                <span class="badge bg-primary" style="font-size: 0.65rem;">{% trans "In Progress" %}</span>
+                                            {% elif assignment.assignment_type == 'claimed' %}
+                                                <span class="badge badge-claimed" style="font-size: 0.65rem;"><i class="bi bi-check-circle-fill me-1"></i>{% trans "Claimed" %}</span>
+                                            {% else %}
+                                                <span class="badge bg-info text-dark" style="font-size: 0.65rem;">{% trans "Assigned" %}</span>
+                                            {% endif %}
+                                        </small>
+                                    {% else %}
+                                        <span class="text-muted small">{% trans "Unassigned" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if app.submitted_at %}
+                                        {{ app.submitted_at|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="{% url 'applications:detail' app.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'View' %}">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if not assignment %}
+                                            <form method="post" action="{% url 'applications:claim' app.pk %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="{% trans 'Claim' %}">
+                                                    <i class="bi bi-hand-index"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        {% if can_assign %}
+                                            <a href="{% url 'applications:assign' app.pk %}" class="btn btn-sm btn-outline-secondary" title="{% trans 'Assign' %}">
+                                                <i class="bi bi-person-plus"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p>{% trans "No pending applications at this time." %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Right column: Quick Actions #}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning me-2"></i>{% trans "Quick Actions" %}
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'grants:program-create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>{% trans "Create Grant Program" %}
+                    </a>
+                    <a href="{% url 'applications:list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-folder me-2"></i>{% trans "View All Applications" %}
+                    </a>
+                    <a href="{% url 'applications:my-assignments' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-person-check me-2"></i>{% trans "My Assignments" %}
+                    </a>
+                    <a href="{% url 'reporting:list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-bar-chart me-2"></i>{% trans "View Reports" %}
+                    </a>
+                    <a href="{% url 'awards:list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-trophy me-2"></i>{% trans "Manage Awards" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# Active Awards Summary #}
+        {% if active_awards %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="bi bi-trophy me-2"></i>{% trans "Recent Active Awards" %}
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for award in active_awards|slice:":5" %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong class="small">{{ award.title|truncatewords:5 }}</strong>
+                                <br>
+                                <small class="text-muted">{{ award.organization.name }}</small>
+                            </div>
+                            <span class="text-success fw-bold small">${{ award.award_amount|intcomma }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% elif user.role == "federal_coordinator" %}
+{# ===== FEDERAL FUND COORDINATOR DASHBOARD ===== #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {% blocktrans with name=user.get_full_name|default:user.username %}
+        <h2 class="mb-1">Welcome, {{ name }}</h2>
+        {% endblocktrans %}
+        {% if user.agency %}
+        <p class="text-muted mb-0">
+            <i class="bi bi-building me-1"></i>{{ user.agency.name }} ({{ user.agency.abbreviation }})
+        </p>
+        {% endif %}
+    </div>
+    <div>
+        <span class="badge bg-info fs-6">{{ user.get_role_display }}</span>
+    </div>
+</div>
+
+{# -- Stat Cards -- #}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a href="{% url 'portal:federal-opportunities' %}" class="text-decoration-none">
+            <div class="card stat-card accent-green h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ open_federal_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Open Federal Opportunities" %}</div>
+                        </div>
+                        <i class="bi bi-globe fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'grants:tracked-list' %}" class="text-decoration-none">
+            <div class="card stat-card accent-gold h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ tracked_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Tracked Opportunities" %}</div>
+                        </div>
+                        <i class="bi bi-bookmark-star fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'grants:program-list' %}" class="text-decoration-none">
+            <div class="card stat-card h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ linked_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Programs Linked" %}</div>
+                        </div>
+                        <i class="bi bi-link-45deg fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card accent-red h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">${{ total_federal_funding|intcomma|default:"0" }}</div>
+                        <div class="stat-label">{% trans "Federal Funding Available" %}</div>
+                    </div>
+                    <i class="bi bi-currency-dollar fs-3 text-muted opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# -- Two-column layout -- #}
+<div class="row g-4">
+    {# Left column: Tracked Opportunities #}
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-bookmark-star me-2"></i>{% trans "Tracked Opportunities" %}</span>
+                <a href="{% url 'grants:tracked-list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                {% if tracked_opportunities %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Opportunity" %}</th>
+                                <th>{% trans "Agency" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Close Date" %}</th>
+                                <th>{% trans "Linked Program" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tracked in tracked_opportunities %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'portal:federal-opportunity-detail' tracked.federal_opportunity.pk %}" class="text-decoration-none fw-bold">
+                                        {{ tracked.federal_opportunity.title|truncatewords:8 }}
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-light text-dark">{{ tracked.federal_opportunity.agency_code }}</span></td>
+                                <td>
+                                    <span class="badge badge-{{ tracked.status }}">{{ tracked.get_status_display }}</span>
+                                </td>
+                                <td>
+                                    {% if tracked.federal_opportunity.close_date %}
+                                        {% if tracked.federal_opportunity.days_until_close is not None and tracked.federal_opportunity.days_until_close < 14 %}
+                                            <span class="text-danger fw-bold">{{ tracked.federal_opportunity.close_date|date:"M d, Y" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">{{ tracked.federal_opportunity.close_date|date:"M d, Y" }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tracked.grant_program %}
+                                        <a href="{% url 'grants:program-detail' tracked.grant_program.pk %}" class="text-decoration-none">
+                                            <i class="bi bi-link-45deg me-1"></i>{{ tracked.grant_program.title|truncatewords:4 }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-bookmark-plus d-block"></i>
+                    <p>{% trans "No tracked opportunities yet. Browse federal opportunities to start tracking." %}</p>
+                    <a href="{% url 'portal:federal-opportunities' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-globe me-1"></i>{% trans "Browse Federal Opportunities" %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Right column: Quick Actions + Recent Opps #}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning me-2"></i>{% trans "Quick Actions" %}
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'portal:federal-opportunities' %}" class="btn btn-primary">
+                        <i class="bi bi-globe me-2"></i>{% trans "Browse Federal Opportunities" %}
+                    </a>
+                    <a href="{% url 'grants:tracked-list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-bookmark-star me-2"></i>{% trans "Manage Tracked" %}
+                    </a>
+                    <a href="{% url 'grants:program-create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-2"></i>{% trans "Create Grant Program" %}
+                    </a>
+                    <a href="{% url 'grants:program-list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-folder me-2"></i>{% trans "View Grant Programs" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# Approaching Deadlines #}
+        {% if approaching_deadlines %}
+        <div class="card mt-4 border-start border-3 border-danger">
+            <div class="card-header bg-danger bg-opacity-10">
+                <i class="bi bi-exclamation-triangle me-2 text-danger"></i>{% trans "Approaching Deadlines" %}
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for tracked in approaching_deadlines %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <a href="{% url 'portal:federal-opportunity-detail' tracked.federal_opportunity.pk %}" class="text-decoration-none">
+                                    <strong class="small">{{ tracked.federal_opportunity.title|truncatewords:6 }}</strong>
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ tracked.federal_opportunity.agency_code }}</small>
+                            </div>
+                            <span class="badge bg-danger">
+                                {{ tracked.federal_opportunity.close_date|date:"M d" }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {# AI Suggested Federal Opportunities #}
+        <div class="card mt-4 border-start border-3 border-primary">
+            <div class="card-header d-flex justify-content-between align-items-center text-white" style="background-color: var(--ct-dark-blue);">
+                <span>
+                    <i class="bi bi-stars me-2"></i>{% trans "AI Suggestions" %}
+                    {% if new_match_count %}<span class="badge bg-danger ms-1">{{ new_match_count }}</span>{% endif %}
+                </span>
+                <a href="{% url 'grants:preferences' %}" class="btn btn-sm btn-outline-light" title="{% trans 'Edit Preferences' %}">
+                    <i class="bi bi-gear"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recommended_matches %}
+                <ul class="list-group list-group-flush">
+                    {% for match in recommended_matches %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <a href="{{ match.opportunity_url }}" class="text-decoration-none">
+                                    <strong class="small">{{ match.opportunity_title|truncatewords:6 }}</strong>
+                                </a>
+                                <br>
+                                <small class="text-muted"><i class="bi bi-robot me-1"></i>{{ match.explanation|truncatewords:10 }}</small>
+                            </div>
+                            <span class="badge {% if match.relevance_score >= 85 %}bg-success{% elif match.relevance_score >= 70 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ match.relevance_score }}%
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="p-2 text-center">
+                    <a href="{% url 'grants:recommendations' %}" class="btn btn-sm btn-outline-primary">{% trans "View All Recommendations" %}</a>
+                </div>
+                {% else %}
+                <div class="p-3 text-center">
+                    {% if not has_ai_access %}
+                    <small class="text-muted">{% trans "Add your API key in your profile to enable AI-powered suggestions." %}</small><br>
+                    <a href="{% url 'core:profile' %}" class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="bi bi-key me-1"></i>{% trans "Set Up API Key" %}
+                    </a>
+                    {% elif not has_preferences %}
+                    <small class="text-muted">{% trans "Set up your preferences to get AI-powered suggestions." %}</small><br>
+                    <a href="{% url 'grants:preferences' %}" class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="bi bi-gear me-1"></i>{% trans "Set Up Preferences" %}
+                    </a>
+                    {% else %}
+                    <small class="text-muted">{% trans "No matches yet. We'll notify you when new opportunities match your preferences." %}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Recent Federal Opportunities #}
+        {% if recent_federal %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-2"></i>{% trans "Recently Synced" %}
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for opp in recent_federal %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{% url 'portal:federal-opportunity-detail' opp.pk %}" class="text-decoration-none">
+                                    <strong class="small">{{ opp.title|truncatewords:6 }}</strong>
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ opp.agency_name|truncatewords:4 }}</small>
+                            </div>
+                            {% if opp.close_date %}
+                            <small class="text-muted">{{ opp.close_date|date:"M d" }}</small>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% elif user.role == "reviewer" or user.role == "auditor" %}
+{# ===== REVIEWER / AUDITOR DASHBOARD ===== #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {% blocktrans with name=user.get_full_name|default:user.username %}
+        <h2 class="mb-1">Welcome, {{ name }}</h2>
+        {% endblocktrans %}
+    </div>
+    <div>
+        <span class="badge bg-info fs-6">{{ user.get_role_display }}</span>
+    </div>
+</div>
+
+{# -- Stat Cards -- #}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <a href="{% url 'reviews:dashboard' %}" class="text-decoration-none">
+            <div class="card stat-card h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ pending_applications_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Applications Under Review" %}</div>
+                        </div>
+                        <i class="bi bi-file-earmark-text fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'reviews:dashboard' %}" class="text-decoration-none">
+            <div class="card stat-card accent-gold h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ my_pending_reviews|default:"0" }}</div>
+                            <div class="stat-label">{% trans "My Pending Reviews" %}</div>
+                        </div>
+                        <i class="bi bi-clipboard-check fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'reviews:dashboard' %}" class="text-decoration-none">
+            <div class="card stat-card accent-green h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ my_completed_reviews|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Completed Reviews" %}</div>
+                        </div>
+                        <i class="bi bi-check-circle fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+{# -- Pending Applications + Quick Actions -- #}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-file-earmark-text me-2"></i>{% trans "Applications Awaiting Review" %}</span>
+                <a href="{% url 'reviews:dashboard' %}" class="btn btn-sm btn-outline-primary">{% trans "Review Dashboard" %}</a>
+            </div>
+            <div class="card-body p-0">
+                {% if pending_applications %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Project Title" %}</th>
+                                <th>{% trans "Applicant" %}</th>
+                                <th>{% trans "Program" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Submitted" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in pending_applications %}
+                            <tr>
+                                <td><strong>{{ app.project_title|truncatewords:8 }}</strong></td>
+                                <td>
+                                    {{ app.applicant.get_full_name|default:app.applicant.username }}
+                                    <br><small class="text-muted">{{ app.organization.name|default:"" }}</small>
+                                </td>
+                                <td class="text-muted small">{{ app.grant_program.title|truncatewords:5 }}</td>
+                                <td>
+                                    <span class="badge badge-{{ app.status|slugify }}">{{ app.get_status_display }}</span>
+                                </td>
+                                <td>{{ app.submitted_at|date:"M d, Y"|default:"--" }}</td>
+                                <td>
+                                    <a href="{% url 'applications:detail' app.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p>{% trans "No applications awaiting review." %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning me-2"></i>{% trans "Quick Actions" %}
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'reviews:dashboard' %}" class="btn btn-primary">
+                        <i class="bi bi-clipboard-check me-2"></i>{% trans "My Review Assignments" %}
+                    </a>
+                    <a href="{% url 'applications:list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-folder me-2"></i>{% trans "All Applications" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+{# ===== APPLICANT DASHBOARD ===== #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {% blocktrans with name=user.get_full_name|default:user.username %}
+        <h2 class="mb-1">Welcome, {{ name }}</h2>
+        {% endblocktrans %}
+        {% if user.organization %}
+        <p class="text-muted mb-0">
+            <i class="bi bi-building me-1"></i>{{ user.organization.name }}
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+{# -- Stat Cards -- #}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a href="{% url 'applications:my-applications' %}" class="text-decoration-none">
+            <div class="card stat-card h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ applications_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "My Applications" %}</div>
+                        </div>
+                        <i class="bi bi-file-earmark-text fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'awards:my-awards' %}" class="text-decoration-none">
+            <div class="card stat-card accent-green h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ awards_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "My Active Awards" %}</div>
+                        </div>
+                        <i class="bi bi-trophy fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'grants:saved-list' %}" class="text-decoration-none">
+            <div class="card stat-card accent-blue h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ saved_programs_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Saved Programs" %}</div>
+                        </div>
+                        <i class="bi bi-bookmark-star fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'core:notifications' %}" class="text-decoration-none">
+            <div class="card stat-card accent-gold h-100 stat-card-link">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value">{{ pending_actions_count|default:"0" }}</div>
+                            <div class="stat-label">{% trans "Pending Actions" %}</div>
+                        </div>
+                        <i class="bi bi-exclamation-circle fs-3 text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+{# -- My Recent Applications -- #}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-text me-2"></i>{% trans "My Recent Applications" %}</span>
+        <a href="{% url 'portal:opportunities' %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{% trans "New Application" %}
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_applications %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>{% trans "Project Title" %}</th>
+                        <th>{% trans "Grant Program" %}</th>
+                        <th>{% trans "Amount Requested" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Last Updated" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in recent_applications %}
+                    <tr>
+                        <td><strong>{{ app.project_title|truncatewords:8 }}</strong></td>
+                        <td class="text-muted small">{{ app.grant_program.title|truncatewords:6 }}</td>
+                        <td>${{ app.requested_amount|intcomma }}</td>
+                        <td>
+                            <span class="badge badge-{{ app.status|slugify }}">
+                                {{ app.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ app.updated_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' app.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-file-earmark-plus d-block"></i>
+            <p class="mb-2">{% trans "You have not submitted any applications yet." %}</p>
+            <a href="{% url 'portal:opportunities' %}" class="btn btn-primary">
+                <i class="bi bi-megaphone me-1"></i>{% trans "Browse Funding Opportunities" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# -- Saved Programs -- #}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-bookmark-star me-2"></i>{% trans "Saved Programs" %}</span>
+        <a href="{% url 'grants:saved-list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+    </div>
+    <div class="card-body p-0">
+        {% if saved_programs %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>{% trans "Program" %}</th>
+                        <th>{% trans "Agency" %}</th>
+                        <th>{% trans "Interest" %}</th>
+                        <th>{% trans "Saved" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for saved in saved_programs %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'portal:opportunity-detail' saved.grant_program.pk %}" class="text-decoration-none fw-semibold">
+                                {{ saved.grant_program.title|truncatewords:8 }}
+                            </a>
+                        </td>
+                        <td class="text-muted small">{{ saved.grant_program.agency.name|default:"--" }}</td>
+                        <td>
+                            {% if saved.interest_level == 'planning_to_apply' %}
+                                <span class="badge bg-success">{% trans "Planning to Apply" %}</span>
+                            {% elif saved.interest_level == 'interested' %}
+                                <span class="badge bg-info text-dark">{% trans "Interested" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{% trans "Watching" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">{{ saved.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'portal:opportunity-detail' saved.grant_program.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-bookmark-plus d-block"></i>
+            <p class="mb-2">{% trans "No saved programs yet. Browse opportunities to start tracking." %}</p>
+            <a href="{% url 'portal:opportunities' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-search me-1"></i>{% trans "Browse Opportunities" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# -- AI Recommended Opportunities -- #}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            <i class="bi bi-stars me-2"></i>{% trans "AI Recommendations" %}
+            {% if new_match_count %}<span class="badge bg-danger ms-1">{{ new_match_count }} {% trans "new" %}</span>{% endif %}
+        </span>
+        <div>
+            <a href="{% url 'grants:preferences' %}" class="btn btn-sm btn-outline-secondary me-1" title="{% trans 'Edit Preferences' %}">
+                <i class="bi bi-gear"></i>
+            </a>
+            <a href="{% url 'grants:recommendations' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if recommended_matches %}
+        <ul class="list-group list-group-flush">
+            {% for match in recommended_matches %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="me-2">
+                        <a href="{{ match.opportunity_url }}" class="text-decoration-none fw-semibold">
+                            {{ match.opportunity_title|truncatewords:10 }}
+                        </a>
+                        <br>
+                        <small class="text-muted">
+                            <i class="bi bi-robot me-1"></i>{{ match.explanation|truncatewords:15 }}
+                        </small>
+                    </div>
+                    <span class="badge {% if match.relevance_score >= 85 %}bg-success{% elif match.relevance_score >= 70 %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                        {{ match.relevance_score }}%
+                    </span>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-stars d-block"></i>
+            {% if not has_ai_access %}
+            <p class="mb-2">{% trans "Add your API key in your profile to enable AI-powered recommendations." %}</p>
+            <a href="{% url 'core:profile' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-key me-1"></i>{% trans "Set Up API Key" %}
+            </a>
+            {% elif not has_preferences %}
+            <p class="mb-2">{% trans "Set up your preferences to get personalized grant recommendations." %}</p>
+            <a href="{% url 'grants:preferences' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-gear me-1"></i>{% trans "Set Up Preferences" %}
+            </a>
+            {% else %}
+            <p class="mb-2">{% trans "No matches yet. We'll notify you when new opportunities match your preferences." %}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# -- Available Opportunities Preview -- #}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-megaphone me-2"></i>{% trans "Available Opportunities" %}</span>
+        <a href="{% url 'portal:opportunities' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">{% trans "Explore current grant programs accepting applications from state agencies." %}</p>
+        <a href="{% url 'portal:opportunities' %}" class="btn btn-outline-primary">
+            <i class="bi bi-search me-1"></i>{% trans "Browse Funding Opportunities" %}
+        </a>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% load i18n %}{% trans "Grantify" %}
+{% trans "State Grants Management Solution" %}
+
+---
+
+{% trans "NEW GRANT RECOMMENDATION" %}
+
+{% blocktrans with name=user.get_full_name|default:user.username %}Hello {{ name }},{% endblocktrans %}
+
+{% trans "Our AI matching system found a funding opportunity that aligns with your preferences." %}
+
+{% trans "Opportunity" %}: {{ title }}
+{% trans "Source" %}: {{ source }}
+{% trans "Relevance Score" %}: {{ score }}%
+{% trans "Why This Matches" %}: {{ explanation }}
+
+{% trans "View Opportunity" %}: {{ detail_url }}
+
+{% trans "You can manage your matching preferences and view all recommendations from your Grantify dashboard." %}
+
+---
+
+{% trans "This is an automated message from Grantify. Do not reply directly." %}
+{% trans "State of DOK" %} -- {% trans "Grants Management System" %}

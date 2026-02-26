@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}Grant Programs{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Grant Programs</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-folder me-2"></i>Grant Programs</h2>
+    {% if user.can_manage_grants %}
+    <a href="{% url 'grants:program-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Create New Program
+    </a>
+    {% endif %}
+</div>
+
+{# -- Filter Bar -- #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="status-filter" class="form-label small fw-bold">Status</label>
+                <select name="status" id="status-filter" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="posted" {% if request.GET.status == 'posted' %}selected{% endif %}>Posted</option>
+                    <option value="accepting_applications" {% if request.GET.status == 'accepting_applications' %}selected{% endif %}>Accepting Applications</option>
+                    <option value="under_review" {% if request.GET.status == 'under_review' %}selected{% endif %}>Under Review</option>
+                    <option value="awards_pending" {% if request.GET.status == 'awards_pending' %}selected{% endif %}>Awards Pending</option>
+                    <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label for="search-input" class="form-label small fw-bold">Search</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" id="search-input" class="form-control form-control-sm"
+                           placeholder="Search programs by title..." value="{{ request.GET.q|default:'' }}">
+                </div>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+                <a href="{% url 'grants:program-list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# -- Programs Table -- #}
+{% if programs %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        {% sortable_th 'title' 'Title' %}
+                        {% sortable_th 'agency' 'Agency' %}
+                        {% sortable_th 'total_funding' 'Total Funding' %}
+                        {% sortable_th 'status' 'Status' %}
+                        <th>Applications</th>
+                        {% sortable_th 'deadline' 'Deadline' %}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for program in programs %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'grants:program-detail' program.pk %}" class="text-decoration-none fw-bold">
+                                {{ program.title|truncatewords:10 }}
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ program.get_grant_type_display }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ program.agency.abbreviation }}</span>
+                        </td>
+                        <td class="fw-bold text-success">${{ program.total_funding|intcomma }}</td>
+                        <td>
+                            <span class="badge badge-{{ program.status|slugify }}">
+                                {{ program.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary rounded-pill">{{ program.applications_count }}</span>
+                        </td>
+                        <td>
+                            {% if program.days_until_deadline is not None %}
+                                <span class="{% if program.days_until_deadline < 7 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                    {{ program.application_deadline|date:"M d, Y" }}
+                                </span>
+                                <br>
+                                <small class="{% if program.days_until_deadline < 7 %}text-danger{% else %}text-muted{% endif %}">
+                                    {{ program.days_until_deadline }} day{{ program.days_until_deadline|pluralize }} left
+                                </small>
+                            {% else %}
+                                <span class="text-muted">{{ program.application_deadline|date:"M d, Y" }}</span>
+                                <br>
+                                <small class="text-danger">Deadline passed</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'grants:program-detail' program.pk %}" class="btn btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if user.can_manage_grants %}
+                                <a href="{% url 'grants:program-update' program.pk %}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Pagination #}
+{% if is_paginated %}
+<nav class="mt-4" aria-label="Program list pagination">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i> Previous
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+    <p class="text-center text-muted small">
+        Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} programs
+    </p>
+</nav>
+{% endif %}
+
+{% else %}
+{# Empty State #}
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="bi bi-folder-x d-block"></i>
+        <h5>No Grant Programs Found</h5>
+        <p class="text-muted">
+            {% if request.GET.status or request.GET.q %}
+                No programs match your current filters. Try adjusting your search criteria.
+            {% else %}
+                There are no grant programs yet. Create the first one to get started.
+            {% endif %}
+        </p>
+        {% if user.can_manage_grants %}
+        <a href="{% url 'grants:program-create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Create Grant Program
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% if award %}{% trans "Edit Award" %}{% else %}{% trans "Create Award" %}{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            {% if award %}
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' award.pk %}">{{ award.award_number }}</a></li>
+            <li class="breadcrumb-item active">{% trans "Edit" %}</li>
+            {% else %}
+            <li class="breadcrumb-item active">{% trans "Create Award" %}</li>
+            {% endif %}
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-4">
+            <i class="bi bi-trophy me-2"></i>
+            {% if award %}{% trans "Edit Award" %}{% else %}{% trans "Create Award" %}{% endif %}
+        </h1>
+
+        {% if application %}
+        <div class="alert alert-info d-flex align-items-center mb-4">
+            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+            <div>
+                {% blocktrans with title=application.title number=application.application_number %}
+                <strong>Creating award from approved application:</strong>
+                {{ title }} ({{ number }})
+                {% endblocktrans %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if award %}{% url 'awards:detail' award.pk %}{% else %}{% url 'awards:list' %}{% endif %}"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="save_draft" class="btn btn-outline-primary">
+                                <i class="bi bi-save me-1"></i>{% trans "Save as Draft" %}
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>
+                                {% if award %}{% trans "Update Award" %}{% else %}{% trans "Create Award" %}{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

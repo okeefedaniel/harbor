@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}{% trans "Statewide Analytics" %}{% endblock %}
+
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Statewide Analytics" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-bar-chart-line me-2"></i>{% trans "Statewide Analytics" %}
+        </h1>
+        <p class="text-muted mb-0">{% trans "Cross-agency grants management overview" %}</p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4 col-lg-2">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 3px solid #00457C !important;">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold" style="color: #00457C;">{{ total_programs }}</div>
+                <div class="small text-muted">{% trans "Total Programs" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 3px solid #198754 !important;">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-success">{{ active_awards }}</div>
+                <div class="small text-muted">{% trans "Active Awards" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 3px solid #F27124 !important;">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold" style="color: #F27124;">${{ total_funding|intcomma }}</div>
+                <div class="small text-muted">{% trans "Total Funding" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 3px solid #0d6efd !important;">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-primary">{{ approval_rate }}%</div>
+                <div class="small text-muted">{% trans "Approval Rate" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 3px solid #dc3545 !important;">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-danger">{{ overdue_reports }}</div>
+                <div class="small text-muted">{% trans "Overdue Reports" %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 3px solid #ffc107 !important;">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-warning">{{ pending_drawdowns }}</div>
+                <div class="small text-muted">{% trans "Pending Drawdowns" %}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Charts -->
+{{ chart_data|json_script:"chart-data" }}
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-pie-chart me-1"></i>{% trans "Application Status Distribution" %}
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chartStatusDistribution"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-bar-chart me-1"></i>{% trans "Funding by Agency" %}
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chartFundingByAgency"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-graph-up me-1"></i>{% trans "Award Trends (Last 12 Months)" %}
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chartAwardTrends"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-cash-stack me-1"></i>{% trans "Budget Utilization (Top 10 Programs)" %}
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chartBudgetUtilization"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-currency-dollar me-1"></i>{% trans "Financial Overview" %}
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">{% trans "Total Funding Awarded" %}</span>
+                    <span class="fw-bold text-success">${{ total_funding|intcomma }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">{% trans "Total Disbursed" %}</span>
+                    <span class="fw-bold" style="color: #F27124;">${{ total_disbursed|intcomma }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">{% trans "Active Programs" %}</span>
+                    <span class="fw-bold">{{ active_programs }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">{% trans "Pending Applications" %}</span>
+                    <span class="fw-bold">{{ pending_applications }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">{% trans "Total Applications" %}</span>
+                    <span class="fw-bold">{{ total_applications }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <!-- Application Status Distribution -->
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-pie-chart me-1"></i>{% trans "Application Status Distribution" %}
+            </div>
+            <div class="card-body">
+                {% if status_distribution %}
+                {% for item in status_distribution %}
+                <div class="d-flex align-items-center mb-3">
+                    <div style="width: 140px;" class="text-muted small">
+                        {% if item.status == 'draft' %}
+                            <span class="badge bg-secondary me-1">{% trans "Draft" %}</span>
+                        {% elif item.status == 'submitted' %}
+                            <span class="badge bg-warning text-dark me-1">{% trans "Submitted" %}</span>
+                        {% elif item.status == 'under_review' %}
+                            <span class="badge bg-info text-dark me-1">{% trans "Under Review" %}</span>
+                        {% elif item.status == 'revision_requested' %}
+                            <span class="badge bg-danger me-1">{% trans "Revision Req." %}</span>
+                        {% elif item.status == 'approved' %}
+                            <span class="badge bg-success me-1">{% trans "Approved" %}</span>
+                        {% elif item.status == 'denied' %}
+                            <span class="badge bg-danger me-1">{% trans "Denied" %}</span>
+                        {% elif item.status == 'withdrawn' %}
+                            <span class="badge bg-dark me-1">{% trans "Withdrawn" %}</span>
+                        {% else %}
+                            <span class="badge bg-secondary me-1">{{ item.status }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 me-3">
+                        {% if total_applications %}
+                        {% widthratio item.count total_applications 100 as pct %}
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar {% if item.status == 'approved' %}bg-success{% elif item.status == 'denied' %}bg-danger{% elif item.status == 'submitted' %}bg-warning{% elif item.status == 'under_review' %}bg-info{% else %}bg-secondary{% endif %}"
+                                 role="progressbar"
+                                 style="width: {% widthratio item.count total_applications 100 %}%">
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="fw-bold" style="width: 50px; text-align: right;">{{ item.count }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center mb-0">{% trans "No application data available." %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agency Breakdown -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-bold">
+        <i class="bi bi-building me-1"></i>{% trans "Agency Breakdown" %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Agency" %}</th>
+                        <th class="text-center">{% trans "Programs" %}</th>
+                        <th class="text-center">{% trans "Applications" %}</th>
+                        <th class="text-center">{% trans "Awards" %}</th>
+                        <th class="text-end">{% trans "Total Funding" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in agency_stats %}
+                    <tr>
+                        <td>
+                            <span class="fw-semibold">{{ stat.agency.abbreviation }}</span>
+                            <br><small class="text-muted">{{ stat.agency.name }}</small>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border">{{ stat.programs }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border">{{ stat.applications }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border">{{ stat.awards }}</span>
+                        </td>
+                        <td class="text-end fw-semibold">${{ stat.total_funding|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            {% trans "No active agencies found." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row g-4 mb-4">
+    <!-- Recent Applications -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-file-earmark-text me-1"></i>{% trans "Recent Applications" %}
+            </div>
+            <div class="card-body p-0">
+                {% if recent_applications %}
+                <ul class="list-group list-group-flush">
+                    {% for app in recent_applications %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <a href="{% url 'applications:detail' app.pk %}" class="fw-semibold text-decoration-none">
+                                    {{ app.project_title|truncatewords:8 }}
+                                </a>
+                                <br>
+                                <small class="text-muted">
+                                    {{ app.organization.name|default:"--" }} &middot;
+                                    {{ app.grant_program.title|truncatewords:5 }}
+                                </small>
+                            </div>
+                            <div>
+                                {% if app.status == 'draft' %}
+                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                {% elif app.status == 'submitted' %}
+                                    <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+                                {% elif app.status == 'under_review' %}
+                                    <span class="badge bg-info text-dark">{% trans "Under Review" %}</span>
+                                {% elif app.status == 'approved' %}
+                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                {% elif app.status == 'denied' %}
+                                    <span class="badge bg-danger">{% trans "Denied" %}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ app.get_status_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-0">{% trans "No recent applications." %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Awards -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-trophy me-1"></i>{% trans "Recent Awards" %}
+            </div>
+            <div class="card-body p-0">
+                {% if recent_awards %}
+                <ul class="list-group list-group-flush">
+                    {% for aw in recent_awards %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <a href="{% url 'awards:detail' aw.pk %}" class="fw-semibold text-decoration-none">
+                                    {{ aw.award_number }} - {{ aw.title|truncatewords:6 }}
+                                </a>
+                                <br>
+                                <small class="text-muted">
+                                    {{ aw.organization.name|default:"--" }} &middot;
+                                    {{ aw.agency.abbreviation }}
+                                </small>
+                            </div>
+                            <span class="fw-bold text-success">${{ aw.award_amount|intcomma }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-0">{% trans "No recent awards." %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="{% static 'js/analytics-charts.js' %}"></script>
+{% endblock %}

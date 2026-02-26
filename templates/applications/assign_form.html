@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "Assign Application" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'applications:list' %}">{% trans "Applications" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'applications:detail' application.pk %}">{{ application.project_title|truncatewords:5 }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Assign" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-person-plus me-2"></i>{% trans "Assign Application" %}</h4>
+            </div>
+            <div class="card-body">
+                {# Application Summary #}
+                <div class="alert alert-light border mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>{% trans "Application:" %}</strong>
+                            <br>{{ application.project_title }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>{% trans "Status:" %}</strong>
+                            <br>
+                            <span class="badge badge-{{ application.status|slugify }}">{{ application.get_status_display }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>{% trans "Applicant:" %}</strong>
+                            <br>{{ application.applicant.get_full_name|default:application.applicant.username }}
+                        </div>
+                    </div>
+                </div>
+
+                {# Current Assignment Info #}
+                {% if current_assignment %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {% blocktrans with name=current_assignment.assigned_to.get_full_name|default:current_assignment.assigned_to.username %}
+                    This application is currently assigned to <strong>{{ name }}</strong>.
+                    Assigning a new staff member will mark the current assignment as reassigned.
+                    {% endblocktrans %}
+                </div>
+                {% endif %}
+
+                {# Assignment Form #}
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-check me-2"></i>{% trans "Assign" %}
+                        </button>
+                        <a href="{% url 'applications:detail' application.pk %}" class="btn btn-outline-secondary">
+                            {% trans "Cancel" %}
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

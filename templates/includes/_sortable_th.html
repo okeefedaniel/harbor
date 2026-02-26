@@ -1,0 +1,21 @@
+{# Sortable table header cell.
+   Usage: {% include 'includes/_sortable_th.html' with field='title' label='Title' %}
+   Optional: class='text-end' for right-aligned headers
+   Requires context from SortableListMixin: current_sort, current_dir, filter_params
+#}
+{% load i18n %}
+<th class="sortable-header {{ class }}">
+{% if current_sort == field and current_dir == 'asc' %}
+    <a href="?sort={{ field }}&amp;dir=desc{% if filter_params %}&amp;{{ filter_params }}{% endif %}">
+        {{ label }} <i class="bi bi-sort-up-alt"></i>
+    </a>
+{% elif current_sort == field and current_dir == 'desc' %}
+    <a href="?sort={{ field }}&amp;dir=asc{% if filter_params %}&amp;{{ filter_params }}{% endif %}">
+        {{ label }} <i class="bi bi-sort-down"></i>
+    </a>
+{% else %}
+    <a href="?sort={{ field }}&amp;dir=asc{% if filter_params %}&amp;{{ filter_params }}{% endif %}">
+        {{ label }} <i class="bi bi-chevron-expand"></i>
+    </a>
+{% endif %}
+</th>

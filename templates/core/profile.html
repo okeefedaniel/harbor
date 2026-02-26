@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "My Profile" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-circle me-2"></i>{% trans "My Profile" %}</h2>
+    <span class="badge bg-primary fs-6">{{ user.get_role_display }}</span>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {# -- Profile Form -- #}
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pencil-square me-2"></i>{% trans "Profile Information" %}
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>{% trans "Save Changes" %}
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">{% trans "Cancel" %}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {# -- Account Summary -- #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person me-2"></i>{% trans "Account Summary" %}
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ user.first_name|first|default:user.username|first|upper }}
+                    </div>
+                </div>
+                <h5 class="text-center">{{ user.get_full_name|default:user.username }}</h5>
+                <p class="text-center text-muted mb-3">{{ user.email }}</p>
+                <hr>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <i class="bi bi-shield-check me-2 text-primary"></i>
+                        <strong>{% trans "Role:" %}</strong> {{ user.get_role_display }}
+                    </li>
+                    {% if user.agency %}
+                    <li class="mb-2">
+                        <i class="bi bi-building me-2 text-primary"></i>
+                        <strong>{% trans "Agency:" %}</strong> {{ user.agency.name }}
+                    </li>
+                    {% endif %}
+                    <li class="mb-2">
+                        <i class="bi bi-calendar me-2 text-primary"></i>
+                        <strong>{% trans "Joined:" %}</strong> {{ user.date_joined|date:"M d, Y" }}
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-clock me-2 text-primary"></i>
+                        <strong>{% trans "Last Login:" %}</strong> {{ user.last_login|date:"M d, Y g:i A"|default:"Never" }}
+                    </li>
+                </ul>
+                <hr>
+                <a href="{% url 'account_change_password' %}" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-key me-1"></i>{% trans "Change Password" %}
+                </a>
+            </div>
+        </div>
+
+        {# -- AI / Claude API Key -- #}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-robot me-2"></i>{% trans "AI-Powered Features" %}
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    {% if user.has_ai_access %}
+                        <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                        <span class="text-success fw-semibold">{% trans "API Key Configured" %}</span>
+                    {% else %}
+                        <i class="bi bi-x-circle-fill text-danger me-2 fs-5"></i>
+                        <span class="text-danger fw-semibold">{% trans "Not Configured" %}</span>
+                    {% endif %}
+                </div>
+
+                {% if user.has_ai_access %}
+                <p class="small text-muted mb-3">
+                    {% trans "Key:" %} <code>sk-ant-...{{ user.anthropic_api_key|truncatechars:8 }}</code>
+                </p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_api_key">
+                    <input type="hidden" name="clear_key" value="1">
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="bi bi-trash me-1"></i>{% trans "Remove API Key" %}
+                    </button>
+                </form>
+                {% else %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_api_key">
+                    <div class="mb-3">
+                        <label for="anthropic_api_key" class="form-label small fw-semibold">{% trans "Anthropic API Key" %}</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control form-control-sm" name="anthropic_api_key"
+                                   id="anthropic_api_key" placeholder="sk-ant-api03-...">
+                            <button class="btn btn-outline-secondary btn-sm" type="button"
+                                    onclick="let f=document.getElementById('anthropic_api_key'); f.type = f.type==='password' ? 'text' : 'password';">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-save me-1"></i>{% trans "Save API Key" %}
+                    </button>
+                </form>
+                {% endif %}
+
+                <hr>
+                <p class="small text-muted mb-2">{% trans "AI features include grant matching and personalized recommendations." %}</p>
+                <p class="small text-muted mb-0">
+                    {% trans "To get an API key:" %}
+                </p>
+                <ol class="small text-muted mb-0">
+                    <li>{% trans "Visit" %} <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a></li>
+                    <li>{% trans "Create an account or sign in" %}</li>
+                    <li>{% trans "Go to API Keys and create a new key" %}</li>
+                </ol>
+            </div>
+        </div>
+
+        {# -- Organization Details (if applicable) -- #}
+        {% if user.organization %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-building me-2"></i>{% trans "Organization Details" %}</span>
+                <a href="{% url 'core:organization-edit' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i>{% trans "Edit" %}
+                </a>
+            </div>
+            <div class="card-body">
+                <h6 class="fw-bold">{{ user.organization.name }}</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <i class="bi bi-tag me-2 text-primary"></i>
+                        <strong>{% trans "Type:" %}</strong> {{ user.organization.get_org_type_display }}
+                    </li>
+                    {% if user.organization.ein %}
+                    <li class="mb-2">
+                        <i class="bi bi-hash me-2 text-primary"></i>
+                        <strong>{% trans "EIN:" %}</strong> {{ user.organization.ein }}
+                    </li>
+                    {% endif %}
+                    {% if user.organization.uei_number %}
+                    <li class="mb-2">
+                        <i class="bi bi-upc me-2 text-primary"></i>
+                        <strong>{% trans "UEI:" %}</strong> {{ user.organization.uei_number }}
+                    </li>
+                    {% endif %}
+                    {% if user.organization.city %}
+                    <li class="mb-2">
+                        <i class="bi bi-geo-alt me-2 text-primary"></i>
+                        <strong>{% trans "Location:" %}</strong>
+                        {{ user.organization.city }}, {{ user.organization.state }} {{ user.organization.zip_code }}
+                    </li>
+                    {% endif %}
+                    {% if user.organization.phone %}
+                    <li class="mb-2">
+                        <i class="bi bi-telephone me-2 text-primary"></i>
+                        <strong>{% trans "Phone:" %}</strong> {{ user.organization.phone }}
+                    </li>
+                    {% endif %}
+                    {% if user.organization.website %}
+                    <li class="mb-2">
+                        <i class="bi bi-globe me-2 text-primary"></i>
+                        <strong>{% trans "Website:" %}</strong>
+                        <a href="{{ user.organization.website }}" target="_blank" rel="noopener">{{ user.organization.website }}</a>
+                    </li>
+                    {% endif %}
+                    <li class="mb-2">
+                        <i class="bi bi-patch-check me-2 {% if user.organization.sam_registered %}text-success{% else %}text-danger{% endif %}"></i>
+                        <strong>{% trans "SAM Registered:" %}</strong>
+                        {% if user.organization.sam_registered %}
+                            {% trans "Yes" %} {% if user.organization.sam_expiration %}({% trans "Expires:" %} {{ user.organization.sam_expiration|date:"M d, Y" }}){% endif %}
+                        {% else %}
+                            {% trans "No" %}
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% elif user.role == 'applicant' %}
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-building display-4 text-muted d-block mb-3"></i>
+                <h6>{% trans "No Organization Profile" %}</h6>
+                <p class="text-muted small mb-3">{% trans "Set up your organization to start applying for grants." %}</p>
+                <a href="{% url 'core:organization-create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>{% trans "Create Organization" %}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% if object %}Edit Grant Program{% else %}Create Grant Program{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'grants:program-list' %}">Grant Programs</a></li>
+            {% if object %}
+            <li class="breadcrumb-item"><a href="{% url 'grants:program-detail' object.pk %}">{{ object.title|truncatewords:5 }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            {% else %}
+            <li class="breadcrumb-item active" aria-current="page">Create</li>
+            {% endif %}
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        {% if object %}
+            <i class="bi bi-pencil-square me-2"></i>Edit Grant Program
+        {% else %}
+            <i class="bi bi-plus-circle me-2"></i>Create Grant Program
+        {% endif %}
+    </h2>
+    {% if object %}
+    <div>
+        <span class="badge badge-{{ object.status|slugify }} fs-6">{{ object.get_status_display }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {# Display non-field errors #}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        {# -- Left Column: Program Information -- #}
+        <div class="col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2"></i>Program Information
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label required-field">Title</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label required-field">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.eligibility_criteria.id_for_label }}" class="form-label">Eligibility Criteria</label>
+                        {{ form.eligibility_criteria }}
+                        {% if form.eligibility_criteria.errors %}
+                        <div class="invalid-feedback d-block">{{ form.eligibility_criteria.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Describe who is eligible to apply for this grant program.</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.funding_source.id_for_label }}" class="form-label required-field">Funding Source</label>
+                            {{ form.funding_source }}
+                            {% if form.funding_source.errors %}
+                            <div class="invalid-feedback d-block">{{ form.funding_source.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.grant_type.id_for_label }}" class="form-label required-field">Grant Type</label>
+                            {{ form.grant_type }}
+                            {% if form.grant_type.errors %}
+                            <div class="invalid-feedback d-block">{{ form.grant_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# -- Contact Information -- #}
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-person-lines-fill me-2"></i>Contact Information
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.contact_name.id_for_label }}" class="form-label">Contact Name</label>
+                            {{ form.contact_name }}
+                            {% if form.contact_name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.contact_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.contact_email.id_for_label }}" class="form-label">Contact Email</label>
+                            {{ form.contact_email }}
+                            {% if form.contact_email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.contact_email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.contact_phone.id_for_label }}" class="form-label">Contact Phone</label>
+                            {{ form.contact_phone }}
+                            {% if form.contact_phone.errors %}
+                            <div class="invalid-feedback d-block">{{ form.contact_phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- Right Column: Funding & Timeline -- #}
+        <div class="col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-currency-dollar me-2"></i>Funding Details
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.total_funding.id_for_label }}" class="form-label required-field">Total Funding Available</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.total_funding }}
+                        </div>
+                        {% if form.total_funding.errors %}
+                        <div class="invalid-feedback d-block">{{ form.total_funding.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.min_award.id_for_label }}" class="form-label required-field">Min Award</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.min_award }}
+                            </div>
+                            {% if form.min_award.errors %}
+                            <div class="invalid-feedback d-block">{{ form.min_award.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.max_award.id_for_label }}" class="form-label required-field">Max Award</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.max_award }}
+                            </div>
+                            {% if form.max_award.errors %}
+                            <div class="invalid-feedback d-block">{{ form.max_award.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check mt-2">
+                                {{ form.match_required }}
+                                <label class="form-check-label" for="{{ form.match_required.id_for_label }}">Match Required</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.match_percentage.id_for_label }}" class="form-label">Match %</label>
+                            <div class="input-group">
+                                {{ form.match_percentage }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            {% if form.match_percentage.errors %}
+                            <div class="invalid-feedback d-block">{{ form.match_percentage.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-calendar-event me-2"></i>Timeline
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.fiscal_year.id_for_label }}" class="form-label required-field">Fiscal Year</label>
+                            {{ form.fiscal_year }}
+                            {% if form.fiscal_year.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fiscal_year.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.duration_months.id_for_label }}" class="form-label required-field">Duration (months)</label>
+                            {{ form.duration_months }}
+                            {% if form.duration_months.errors %}
+                            <div class="invalid-feedback d-block">{{ form.duration_months.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-check my-3">
+                        {{ form.multi_year }}
+                        <label class="form-check-label" for="{{ form.multi_year.id_for_label }}">Multi-year program</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.posting_date.id_for_label }}" class="form-label required-field">Posting Date</label>
+                        {{ form.posting_date }}
+                        {% if form.posting_date.errors %}
+                        <div class="invalid-feedback d-block">{{ form.posting_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.application_deadline.id_for_label }}" class="form-label required-field">Application Deadline</label>
+                        {{ form.application_deadline }}
+                        {% if form.application_deadline.errors %}
+                        <div class="invalid-feedback d-block">{{ form.application_deadline.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# -- Action Buttons -- #}
+    <div class="card mt-4">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <a href="{% if object %}{% url 'grants:program-detail' object.pk %}{% else %}{% url 'grants:program-list' %}{% endif %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>Cancel
+            </a>
+            <div>
+                <button type="submit" name="action" value="draft" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-file-earmark me-1"></i>Save as Draft
+                </button>
+                <button type="submit" name="action" value="publish" class="btn btn-primary">
+                    <i class="bi bi-send me-1"></i>Save &amp; Publish
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap form-control class to all form inputs that don't already have it
+    const formInputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea');
+    formInputs.forEach(function(input) {
+        if (!input.classList.contains('form-control') && !input.classList.contains('form-select') && !input.classList.contains('form-check-input')) {
+            if (input.tagName === 'SELECT') {
+                input.classList.add('form-select');
+            } else if (input.type === 'checkbox' || input.type === 'radio') {
+                input.classList.add('form-check-input');
+            } else {
+                input.classList.add('form-control');
+            }
+        }
+    });
+
+    // Toggle match percentage field based on match_required checkbox
+    const matchRequired = document.getElementById('{{ form.match_required.id_for_label }}');
+    const matchPercentage = document.getElementById('{{ form.match_percentage.id_for_label }}');
+    if (matchRequired && matchPercentage) {
+        function toggleMatchPercentage() {
+            matchPercentage.disabled = !matchRequired.checked;
+            if (!matchRequired.checked) {
+                matchPercentage.value = '';
+            }
+        }
+        toggleMatchPercentage();
+        matchRequired.addEventListener('change', toggleMatchPercentage);
+    }
+});
+</script>
+{% endblock %}

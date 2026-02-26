@@ -1,0 +1,796 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{{ award.title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item active">{{ award.award_number }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-tracker {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin: 1.5rem 0;
+    }
+    .progress-tracker::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: #dee2e6;
+        z-index: 0;
+    }
+    .progress-step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+    }
+    .progress-step .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #dee2e6;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem auto;
+        font-weight: 600;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+    .progress-step.completed .step-circle {
+        background-color: #198754;
+        color: #fff;
+        box-shadow: 0 0 0 2px #198754;
+    }
+    .progress-step.active .step-circle {
+        background-color: #0d6efd;
+        color: #fff;
+        box-shadow: 0 0 0 2px #0d6efd;
+    }
+    .progress-step .step-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .progress-step.completed .step-label,
+    .progress-step.active .step-label {
+        color: #212529;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="fw-bold mb-1">{{ award.title }}</h1>
+        <p class="text-muted mb-0">
+            <span class="fw-semibold">{{ award.award_number }}</span>
+            &middot;
+            {% if award.status == 'draft' %}
+                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+            {% elif award.status == 'pending_approval' %}
+                <span class="badge bg-warning text-dark">{% trans "Pending Approval" %}</span>
+            {% elif award.status == 'approved' %}
+                <span class="badge bg-info text-dark">{% trans "Approved" %}</span>
+            {% elif award.status == 'executed' %}
+                <span class="badge bg-primary">{% trans "Executed" %}</span>
+            {% elif award.status == 'active' %}
+                <span class="badge bg-success">{% trans "Active" %}</span>
+            {% elif award.status == 'on_hold' %}
+                <span class="badge bg-warning text-dark">{% trans "On Hold" %}</span>
+            {% elif award.status == 'completed' %}
+                <span class="badge bg-dark">{% trans "Completed" %}</span>
+            {% elif award.status == 'terminated' %}
+                <span class="badge bg-danger">{% trans "Terminated" %}</span>
+            {% elif award.status == 'cancelled' %}
+                <span class="badge bg-danger">{% trans "Cancelled" %}</span>
+            {% else %}
+                <span class="badge bg-secondary">{{ award.get_status_display }}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if user.can_manage_grants %}
+        <a href="{% url 'awards:edit' award.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>{% trans "Edit" %}
+        </a>
+        {% endif %}
+        <a href="{% url 'awards:amendment-create' award.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-plus me-1"></i>{% trans "Request Amendment" %}
+        </a>
+    </div>
+</div>
+
+<!-- Progress Tracker -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        {% with status_order="draft,approved,executed,active,completed" %}
+        <div class="progress-tracker">
+            {% for step_label in "Draft,Approved,Executed,Active,Completed"|make_list %}
+            {% endfor %}
+            <div class="progress-step {% if award.status == 'draft' %}active{% elif award.status == 'approved' or award.status == 'executed' or award.status == 'active' or award.status == 'completed' %}completed{% endif %}">
+                <div class="step-circle"><i class="bi bi-pencil"></i></div>
+                <div class="step-label">{% trans "Draft" %}</div>
+            </div>
+            <div class="progress-step {% if award.status == 'approved' %}active{% elif award.status == 'executed' or award.status == 'active' or award.status == 'completed' %}completed{% endif %}">
+                <div class="step-circle"><i class="bi bi-check-lg"></i></div>
+                <div class="step-label">{% trans "Approved" %}</div>
+            </div>
+            <div class="progress-step {% if award.status == 'executed' %}active{% elif award.status == 'active' or award.status == 'completed' %}completed{% endif %}">
+                <div class="step-circle"><i class="bi bi-pen"></i></div>
+                <div class="step-label">{% trans "Executed" %}</div>
+            </div>
+            <div class="progress-step {% if award.status == 'active' %}active{% elif award.status == 'completed' %}completed{% endif %}">
+                <div class="step-circle"><i class="bi bi-lightning"></i></div>
+                <div class="step-label">{% trans "Active" %}</div>
+            </div>
+            <div class="progress-step {% if award.status == 'completed' %}active{% endif %}">
+                <div class="step-circle"><i class="bi bi-flag"></i></div>
+                <div class="step-label">{% trans "Completed" %}</div>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<ul class="nav nav-tabs mb-4" id="awardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab"
+                data-bs-target="#overview" type="button" role="tab">
+            <i class="bi bi-info-circle me-1"></i>{% trans "Overview" %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="budget-tab" data-bs-toggle="tab"
+                data-bs-target="#budget" type="button" role="tab">
+            <i class="bi bi-wallet2 me-1"></i>{% trans "Budget" %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="drawdowns-tab" data-bs-toggle="tab"
+                data-bs-target="#drawdowns" type="button" role="tab">
+            <i class="bi bi-cash-stack me-1"></i>{% trans "Drawdowns" %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="reports-tab" data-bs-toggle="tab"
+                data-bs-target="#reports" type="button" role="tab">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i>{% trans "Reports" %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="documents-tab" data-bs-toggle="tab"
+                data-bs-target="#documents" type="button" role="tab">
+            <i class="bi bi-folder me-1"></i>{% trans "Documents" %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="amendments-tab" data-bs-toggle="tab"
+                data-bs-target="#amendments" type="button" role="tab">
+            <i class="bi bi-file-earmark-diff me-1"></i>{% trans "Amendments" %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="closeout-tab" data-bs-toggle="tab"
+                data-bs-target="#closeout" type="button" role="tab">
+            <i class="bi bi-lock me-1"></i>{% trans "Closeout" %}
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="awardTabContent">
+
+    <!-- Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row g-4">
+            <!-- Left Column: Award Details -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0 fw-bold">{% trans "Award Details" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4 text-muted">{% trans "Award Amount" %}</dt>
+                            <dd class="col-sm-8 fw-semibold fs-5 text-success">${{ award.award_amount|intcomma }}</dd>
+
+                            <dt class="col-sm-4 text-muted">{% trans "Award Date" %}</dt>
+                            <dd class="col-sm-8">{{ award.award_date|date:"M d, Y"|default:"--" }}</dd>
+
+                            <dt class="col-sm-4 text-muted">{% trans "Start Date" %}</dt>
+                            <dd class="col-sm-8">{{ award.start_date|date:"M d, Y"|default:"--" }}</dd>
+
+                            <dt class="col-sm-4 text-muted">{% trans "End Date" %}</dt>
+                            <dd class="col-sm-8">{{ award.end_date|date:"M d, Y"|default:"--" }}</dd>
+
+                            <dt class="col-sm-4 text-muted">{% trans "Grant Program" %}</dt>
+                            <dd class="col-sm-8">{{ award.grant_program.title }}</dd>
+
+                            <dt class="col-sm-4 text-muted">{% trans "Requires Match" %}</dt>
+                            <dd class="col-sm-8">
+                                {% if award.requires_match %}
+                                    {% trans "Yes" %} &mdash; ${{ award.match_amount|intcomma }}
+                                {% else %}
+                                    {% trans "No" %}
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-4 text-muted">{% trans "Approved By" %}</dt>
+                            <dd class="col-sm-8">
+                                {% if award.approved_by %}
+                                    {{ award.approved_by.get_full_name }}
+                                    <span class="text-muted small">({{ award.approved_at|date:"M d, Y" }})</span>
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Terms & Conditions -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0 fw-bold">{% trans "Terms & Conditions" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ award.terms_and_conditions|linebreaksbr }}</p>
+                        {% if award.special_conditions %}
+                        <hr>
+                        <h6 class="fw-bold">{% trans "Special Conditions" %}</h6>
+                        <p>{{ award.special_conditions|linebreaksbr }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Recipient, Agency, Financial Summary -->
+            <div class="col-lg-4">
+                <!-- Recipient Info -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-building me-1"></i>{% trans "Recipient" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-bold">{{ award.organization.name }}</h6>
+                        <p class="text-muted small mb-1">{{ award.organization.get_org_type_display }}</p>
+                        {% if award.organization.city %}
+                        <p class="text-muted small mb-1">
+                            <i class="bi bi-geo-alt me-1"></i>
+                            {{ award.organization.city }}, {{ award.organization.state }} {{ award.organization.zip_code }}
+                        </p>
+                        {% endif %}
+                        <hr>
+                        <p class="mb-0 small">
+                            <strong>{% trans "Contact:" %}</strong> {{ award.recipient.get_full_name }}<br>
+                            <i class="bi bi-envelope me-1"></i>{{ award.recipient.email }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Agency Info -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-bank me-1"></i>{% trans "Agency" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-bold">{{ award.agency.name }}</h6>
+                        <p class="text-muted small mb-0">{{ award.agency.abbreviation }}</p>
+                        {% if award.agency.contact_email %}
+                        <p class="mt-2 mb-0 small">
+                            <i class="bi bi-envelope me-1"></i>{{ award.agency.contact_email }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Financial Summary -->
+                <div class="card border-0 shadow-sm border-start border-4 border-primary">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-graph-up me-1"></i>{% trans "Financial Summary" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">{% trans "Total Budget" %}</span>
+                            <span class="fw-bold">${{ award.award_amount|intcomma }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">{% trans "Total Spent" %}</span>
+                            <span class="fw-bold text-danger">${{ total_spent|intcomma|default:"0" }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted fw-semibold">{% trans "Remaining" %}</span>
+                            <span class="fw-bold text-success fs-5">${{ remaining|intcomma|default:"0" }}</span>
+                        </div>
+                        {% if award.award_amount %}
+                        <div class="progress mt-3" style="height: 10px;">
+                            <div class="progress-bar bg-danger" role="progressbar"
+                                 style="width: {{ spent_pct|default:'0' }}%"
+                                 aria-valuenow="{{ spent_pct|default:'0' }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted">{% blocktrans with pct=spent_pct|default:"0" %}{{ pct }}% expended{% endblocktrans %}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Tab -->
+    <div class="tab-pane fade" id="budget" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">{% trans "Budgets" %}</h4>
+            <div class="d-flex gap-2">
+                <a href="{% url 'financial:budget-vs-actual' award.pk %}" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-graph-up-arrow me-1"></i>{% trans "Budget vs Actual" %}
+                </a>
+                {% if user.can_manage_grants %}
+                <a href="{% url 'financial:budget-create' award.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>{% trans "Add Budget" %}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% if budgets %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Fiscal Year" %}</th>
+                        <th class="text-end">{% trans "Total Amount" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Submitted" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for budget in budgets %}
+                    <tr>
+                        <td class="fw-semibold">FY{{ budget.fiscal_year }}</td>
+                        <td class="text-end">${{ budget.total_amount|intcomma }}</td>
+                        <td>
+                            {% if budget.status == 'draft' %}
+                                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                            {% elif budget.status == 'submitted' %}
+                                <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+                            {% elif budget.status == 'approved' %}
+                                <span class="badge bg-success">{% trans "Approved" %}</span>
+                            {% elif budget.status == 'revision_requested' %}
+                                <span class="badge bg-danger">{% trans "Revision Requested" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ budget.submitted_at|date:"M d, Y"|default:"--" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'financial:budget-detail' budget.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-wallet2 display-4 d-block mb-2"></i>
+            <p>{% trans "No budgets have been created for this award." %}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Drawdowns Tab -->
+    <div class="tab-pane fade" id="drawdowns" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">{% trans "Drawdown Requests" %}</h4>
+            <a href="{% url 'financial:drawdown-create' award.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>{% trans "New Request" %}
+            </a>
+        </div>
+        {% if drawdowns %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Request #" %}</th>
+                        <th class="text-end">{% trans "Amount" %}</th>
+                        <th>{% trans "Period" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Submitted" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dd in drawdowns %}
+                    <tr>
+                        <td class="fw-semibold">{{ dd.request_number }}</td>
+                        <td class="text-end">${{ dd.amount|intcomma }}</td>
+                        <td>{{ dd.period_start|date:"m/d/Y" }} &ndash; {{ dd.period_end|date:"m/d/Y" }}</td>
+                        <td>
+                            {% if dd.status == 'draft' %}
+                                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                            {% elif dd.status == 'submitted' %}
+                                <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+                            {% elif dd.status == 'under_review' %}
+                                <span class="badge bg-info text-dark">{% trans "Under Review" %}</span>
+                            {% elif dd.status == 'approved' %}
+                                <span class="badge bg-success">{% trans "Approved" %}</span>
+                            {% elif dd.status == 'paid' %}
+                                <span class="badge bg-primary">{% trans "Paid" %}</span>
+                            {% elif dd.status == 'denied' %}
+                                <span class="badge bg-danger">{% trans "Denied" %}</span>
+                            {% elif dd.status == 'returned' %}
+                                <span class="badge bg-warning text-dark">{% trans "Returned" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ dd.submitted_at|date:"M d, Y"|default:"--" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'financial:drawdown-detail' dd.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-cash-stack display-4 d-block mb-2"></i>
+            <p>{% trans "No drawdown requests have been submitted for this award." %}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Reports Tab -->
+    <div class="tab-pane fade" id="reports" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">{% trans "Reports" %}</h4>
+            <a href="{% url 'reporting:create' award.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>{% trans "New Report" %}
+            </a>
+        </div>
+        {% if reports %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Report Type" %}</th>
+                        <th>{% trans "Period" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Due Date" %}</th>
+                        <th>{% trans "Submitted" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td class="fw-semibold">{{ report.get_report_type_display }}</td>
+                        <td>{{ report.reporting_period_start|date:"m/d/Y" }} &ndash; {{ report.reporting_period_end|date:"m/d/Y" }}</td>
+                        <td>
+                            {% if report.status == 'draft' %}
+                                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                            {% elif report.status == 'submitted' %}
+                                <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+                            {% elif report.status == 'under_review' %}
+                                <span class="badge bg-info text-dark">{% trans "Under Review" %}</span>
+                            {% elif report.status == 'revision_requested' %}
+                                <span class="badge bg-danger">{% trans "Revision Requested" %}</span>
+                            {% elif report.status == 'approved' %}
+                                <span class="badge bg-success">{% trans "Approved" %}</span>
+                            {% elif report.status == 'rejected' %}
+                                <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ report.due_date|date:"M d, Y" }}
+                            {% if report.is_overdue %}
+                                <span class="badge bg-danger ms-1">{% trans "Overdue" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ report.submitted_at|date:"M d, Y"|default:"--" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'reporting:detail' report.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-file-earmark-bar-graph display-4 d-block mb-2"></i>
+            <p>{% trans "No reports have been created for this award." %}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Documents Tab -->
+    <div class="tab-pane fade" id="documents" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">{% trans "Documents" %}</h4>
+            <div class="d-flex gap-2">
+                {% if award.status == 'approved' and user.can_manage_grants %}
+                <a href="{% url 'awards:signature_request' award.pk %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-pen me-1"></i>{% trans "Request Signature" %}
+                </a>
+                {% endif %}
+                <a href="{% url 'awards:document-upload' award.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-upload me-1"></i>{% trans "Upload Document" %}
+                </a>
+            </div>
+        </div>
+
+        <!-- E-Signature Requests -->
+        {% if signature_requests %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-pen me-1"></i>{% trans "E-Signature Requests" %}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Signer" %}</th>
+                                <th>{% trans "Email" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Sent" %}</th>
+                                <th>{% trans "Completed" %}</th>
+                                <th class="text-center">{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sig in signature_requests %}
+                            <tr data-signature-id="{{ sig.pk }}">
+                                <td class="fw-semibold">{{ sig.signer_name }}</td>
+                                <td>{{ sig.signer_email }}</td>
+                                <td>
+                                    {% if sig.status == 'sent' %}
+                                        <span class="badge bg-warning text-dark">{% trans "Sent" %}</span>
+                                    {% elif sig.status == 'delivered' %}
+                                        <span class="badge bg-info text-dark">{% trans "Delivered" %}</span>
+                                    {% elif sig.status == 'signed' %}
+                                        <span class="badge bg-success">{% trans "Signed" %}</span>
+                                    {% elif sig.status == 'declined' %}
+                                        <span class="badge bg-danger">{% trans "Declined" %}</span>
+                                    {% elif sig.status == 'voided' %}
+                                        <span class="badge bg-secondary">{% trans "Voided" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ sig.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ sig.sent_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ sig.completed_at|date:"M d, Y H:i"|default:"--" }}</td>
+                                <td class="text-center">
+                                    {% if sig.signed_document %}
+                                    <a href="{{ sig.signed_document.url }}" class="btn btn-sm btn-outline-success" target="_blank">
+                                        <i class="bi bi-file-earmark-check me-1"></i>{% trans "Signed Doc" %}
+                                    </a>
+                                    {% elif sig.status == 'sent' or sig.status == 'delivered' %}
+                                    <span class="text-muted small">
+                                        <i class="bi bi-hourglass-split me-1"></i>{% trans "Awaiting signature" %}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if documents %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Title" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Uploaded By" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-file-earmark me-1 text-muted"></i>
+                            {{ doc.title }}
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display }}</span></td>
+                        <td>{{ doc.uploaded_by.get_full_name|default:"--" }}</td>
+                        <td>{{ doc.created_at|date:"M d, Y" }}</td>
+                        <td class="text-center">
+                            <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="bi bi-download me-1"></i>{% trans "Download" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% elif not signature_requests %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-folder display-4 d-block mb-2"></i>
+            <p>{% trans "No documents have been uploaded for this award." %}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Amendments Tab -->
+    <div class="tab-pane fade" id="amendments" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">{% trans "Amendments" %}</h4>
+            <a href="{% url 'awards:amendment-create' award.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>{% trans "Request Amendment" %}
+            </a>
+        </div>
+        {% if amendments %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Description" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Requested By" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for amend in amendments %}
+                    <tr>
+                        <td class="fw-semibold">{{ amend.amendment_number }}</td>
+                        <td>{{ amend.get_amendment_type_display }}</td>
+                        <td>{{ amend.description|truncatewords:12 }}</td>
+                        <td>
+                            {% if amend.status == 'draft' %}
+                                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                            {% elif amend.status == 'submitted' %}
+                                <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+                            {% elif amend.status == 'approved' %}
+                                <span class="badge bg-success">{% trans "Approved" %}</span>
+                            {% elif amend.status == 'denied' %}
+                                <span class="badge bg-danger">{% trans "Denied" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ amend.requested_by.get_full_name }}</td>
+                        <td>{{ amend.created_at|date:"M d, Y" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'awards:amendment-detail' amend.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-file-earmark-diff display-4 d-block mb-2"></i>
+            <p>{% trans "No amendments have been requested for this award." %}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Closeout Tab -->
+    <div class="tab-pane fade" id="closeout" role="tabpanel">
+        {% if closeout %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold mb-0">{% trans "Closeout Process" %}</h4>
+                    <span class="badge bg-{% if closeout.status == 'completed' %}success{% elif closeout.status == 'in_progress' %}primary{% elif closeout.status == 'pending_review' %}warning{% else %}secondary{% endif %} fs-6">
+                        {{ closeout.get_status_display }}
+                    </span>
+                </div>
+                {% blocktrans with date=closeout.initiated_at|date:"M d, Y" name=closeout.initiated_by.get_full_name %}
+                <p>Initiated on {{ date }} by {{ name }}.</p>
+                {% endblocktrans %}
+                <a href="{% url 'closeout:detail' closeout.pk %}" class="btn btn-primary">
+                    <i class="bi bi-eye me-1"></i>{% trans "View Closeout Details" %}
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-lock display-4 d-block mb-2"></i>
+            <p>{% trans "Closeout has not been initiated for this award." %}</p>
+            {% if user.can_manage_grants and award.status == 'completed' %}
+            <a href="{% url 'closeout:initiate' award.pk %}" class="btn btn-primary">
+                <i class="bi bi-lock me-1"></i>{% trans "Initiate Closeout" %}
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activate tab from URL hash
+    document.addEventListener('DOMContentLoaded', function() {
+        var hash = window.location.hash;
+        if (hash) {
+            var tab = document.querySelector('#awardTabs button[data-bs-target="' + hash + '"]');
+            if (tab) {
+                new bootstrap.Tab(tab).show();
+            }
+        }
+        // Update hash on tab change
+        document.querySelectorAll('#awardTabs button').forEach(function(btn) {
+            btn.addEventListener('shown.bs.tab', function(e) {
+                history.replaceState(null, null, e.target.getAttribute('data-bs-target'));
+            });
+        });
+
+        // Poll signature status for pending requests
+        var pendingRows = document.querySelectorAll('tr[data-signature-id]');
+        pendingRows.forEach(function(row) {
+            var sigId = row.getAttribute('data-signature-id');
+            var statusBadge = row.querySelector('td:nth-child(3) .badge');
+            if (statusBadge && (statusBadge.textContent.trim() === '{% trans "Sent" %}' || statusBadge.textContent.trim() === '{% trans "Delivered" %}')) {
+                var pollInterval = setInterval(function() {
+                    fetch('{% url "awards:list" %}' + 'signature/' + sigId + '/status/')
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            if (data.status === 'signed' || data.status === 'declined' || data.status === 'voided') {
+                                clearInterval(pollInterval);
+                                location.reload();
+                            } else if (data.status === 'delivered') {
+                                statusBadge.className = 'badge bg-info text-dark';
+                                statusBadge.textContent = data.status_display;
+                            }
+                        })
+                        .catch(function() { /* silently ignore polling errors */ });
+                }, 30000); // Poll every 30 seconds
+            }
+        });
+    });
+</script>
+{% endblock %}

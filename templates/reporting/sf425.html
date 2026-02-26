@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% trans "SF-425 Federal Financial Report" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'reporting:list' %}">{% trans "Reports" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "SF-425" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sf425-form {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+    .sf425-form .form-header {
+        background-color: #003DA5;
+        color: #fff;
+        padding: 0.75rem 1rem;
+    }
+    .sf425-form .field-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    .sf425-form .field-value {
+        font-weight: 600;
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #dee2e6;
+        min-height: 1.5rem;
+    }
+    .sf425-form .section-header {
+        background-color: #e9ecef;
+        padding: 0.5rem 1rem;
+        font-weight: 700;
+        border-top: 2px solid #003DA5;
+    }
+    @media print {
+        .no-print { display: none !important; }
+        .sf425-form { border: 1px solid #000; }
+        .navbar, .breadcrumb, footer { display: none !important; }
+        main { padding: 0 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-file-earmark-text me-2"></i>{% trans "SF-425 Federal Financial Report" %}
+        </h1>
+        <p class="text-muted mb-0">
+            {{ sf425.award.award_number }} &ndash;
+            {{ sf425.reporting_period_start|date:"M d, Y" }} {% trans "to" %} {{ sf425.reporting_period_end|date:"M d, Y" }}
+            &middot;
+            {% if sf425.status == 'draft' %}
+                <span class="badge bg-secondary">{% trans "Draft" %}</span>
+            {% elif sf425.status == 'submitted' %}
+                <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+            {% elif sf425.status == 'approved' %}
+                <span class="badge bg-success">{% trans "Approved" %}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="bi bi-printer me-1"></i>{% trans "Print" %}
+        </button>
+        <a href="{% url 'reporting:list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Reports" %}
+        </a>
+    </div>
+</div>
+
+<!-- SF-425 Form Layout -->
+<div class="card border-0 shadow-sm sf425-form">
+    <!-- Form Title -->
+    <div class="form-header text-center">
+        <h4 class="mb-0 fw-bold">{% trans "FEDERAL FINANCIAL REPORT" %}</h4>
+        <small>{% trans "(Follow instructions on the back)" %}</small>
+    </div>
+
+    <div class="card-body p-0">
+        <!-- Section 1: Header Information -->
+        <div class="section-header">{% trans "1. Federal Agency and Organizational Element to Which Report is Submitted" %}</div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-6 p-3 border-end">
+                <div class="field-label">{% trans "1. Federal Agency" %}</div>
+                <div class="field-value">{{ sf425.award.agency.name }}</div>
+            </div>
+            <div class="col-md-6 p-3">
+                <div class="field-label">{% trans "2. Federal Grant or Other Identifying Number" %}</div>
+                <div class="field-value">{{ sf425.award.award_number }}</div>
+            </div>
+        </div>
+
+        <div class="row g-0 border-bottom">
+            <div class="col-md-6 p-3 border-end">
+                <div class="field-label">{% trans "3. Recipient Organization (Name and complete address)" %}</div>
+                <div class="field-value">
+                    {{ sf425.award.organization.name }}<br>
+                    {% if sf425.award.organization.address_line1 %}
+                    {{ sf425.award.organization.address_line1 }}<br>
+                    {% endif %}
+                    {% if sf425.award.organization.city %}
+                    {{ sf425.award.organization.city }}, {{ sf425.award.organization.state }} {{ sf425.award.organization.zip_code }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6 p-3">
+                <div class="row g-0">
+                    <div class="col-6 pe-2">
+                        <div class="field-label">{% trans "4a. UEI Number" %}</div>
+                        <div class="field-value">{{ sf425.award.organization.uei_number|default:"" }}</div>
+                    </div>
+                    <div class="col-6 ps-2">
+                        <div class="field-label">{% trans "4b. EIN" %}</div>
+                        <div class="field-value">{{ sf425.award.organization.ein|default:"" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-0 border-bottom">
+            <div class="col-md-3 p-3 border-end">
+                <div class="field-label">{% trans "5. Recipient Account Number" %}</div>
+                <div class="field-value">{{ sf425.data.recipient_account_number|default:"" }}</div>
+            </div>
+            <div class="col-md-3 p-3 border-end">
+                <div class="field-label">{% trans "6. Report Type" %}</div>
+                <div class="field-value">
+                    {{ sf425.data.report_type_label|default:"Quarterly" }}
+                </div>
+            </div>
+            <div class="col-md-3 p-3 border-end">
+                <div class="field-label">{% trans "7. Basis of Accounting" %}</div>
+                <div class="field-value">{{ sf425.data.accounting_basis|default:"Cash" }}</div>
+            </div>
+            <div class="col-md-3 p-3">
+                <div class="field-label">{% trans "8. Project/Grant Period" %}</div>
+                <div class="field-value">
+                    {{ sf425.award.start_date|date:"m/d/Y"|default:"" }} {% trans "to" %}
+                    {{ sf425.award.end_date|date:"m/d/Y"|default:"" }}
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-0 border-bottom">
+            <div class="col-md-6 p-3 border-end">
+                <div class="field-label">{% trans "9. Reporting Period End Date" %}</div>
+                <div class="field-value">{{ sf425.reporting_period_end|date:"m/d/Y" }}</div>
+            </div>
+            <div class="col-md-6 p-3">
+                <div class="field-label">{% trans "10. Transactions" %}</div>
+                <div class="field-value text-muted small">{% trans "(Use lines 10a through 10o)" %}</div>
+            </div>
+        </div>
+
+        <!-- Section 10: Transactions (Federal Cash) -->
+        <div class="section-header">{% trans "10. Transactions" %} &mdash; {% trans "Federal Cash" %}</div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10a.</span> {% trans "Cash Receipts" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.federal_cash_receipts|intcomma }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10b.</span> {% trans "Cash Disbursements" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.federal_expenditures|intcomma }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom bg-light">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10c.</span> {% trans "Cash on Hand (line 10a minus line 10b)" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.cash_on_hand|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+
+        <!-- Section 10: Federal Expenditures and Unobligated Balance -->
+        <div class="section-header">{% trans "10. Transactions" %} &mdash; {% trans "Federal Expenditures and Unobligated Balance" %}</div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10d.</span> {% trans "Total Federal Funds Authorized" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.award.award_amount|intcomma }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10e.</span> {% trans "Federal Share of Expenditures" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.federal_expenditures|intcomma }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10f.</span> {% trans "Federal Share of Unliquidated Obligations" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.federal_unliquidated_obligations|intcomma }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom bg-light">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10g.</span> {% trans "Total Federal Share (line 10e + 10f)" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.total_federal_share|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom bg-light">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10h.</span> {% trans "Unobligated Balance of Federal Funds (line 10d minus 10g)" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.remaining_federal_funds|intcomma }}</span>
+            </div>
+        </div>
+
+        <!-- Section 10: Recipient Share -->
+        <div class="section-header">{% trans "10. Transactions" %} &mdash; {% trans "Recipient Share" %}</div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10i.</span> {% trans "Total Recipient Share Required" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.recipient_share_required|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10j.</span> {% trans "Recipient Share of Expenditures" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.recipient_share_expenditures|intcomma }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom bg-light">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10k.</span> {% trans "Remaining Recipient Share to be Provided (line 10i minus 10j)" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.remaining_recipient_share|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+
+        <!-- Section 10: Program Income -->
+        <div class="section-header">{% trans "10. Transactions" %} &mdash; {% trans "Program Income" %}</div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10l.</span> {% trans "Total Federal Program Income Earned" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.program_income_earned|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10m.</span> {% trans "Program Income Expended in Accordance with Deduction Alternative" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.program_income_deduction|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10n.</span> {% trans "Program Income Expended in Accordance with Addition Alternative" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.program_income_addition|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-8 p-3 border-end">
+                <span class="fw-bold">10o.</span> {% trans "Unexpended Program Income (line 10l minus 10m and 10n)" %}
+            </div>
+            <div class="col-md-4 p-3 text-end">
+                <span class="fw-bold">${{ sf425.data.unexpended_program_income|intcomma|default:"0" }}</span>
+            </div>
+        </div>
+
+        <!-- Section 11: Indirect Expense -->
+        <div class="section-header">{% trans "11. Indirect Expense" %}</div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-4 p-3 border-end">
+                <div class="field-label">{% trans "11a. Type of Rate" %}</div>
+                <div class="field-value">{{ sf425.data.indirect_rate_type|default:"" }}</div>
+            </div>
+            <div class="col-md-4 p-3 border-end">
+                <div class="field-label">{% trans "11b. Rate" %}</div>
+                <div class="field-value">{{ sf425.data.indirect_rate|default:"" }}%</div>
+            </div>
+            <div class="col-md-4 p-3">
+                <div class="field-label">{% trans "11c. Base" %}</div>
+                <div class="field-value">${{ sf425.data.indirect_base|intcomma|default:"" }}</div>
+            </div>
+        </div>
+        <div class="row g-0 border-bottom">
+            <div class="col-md-6 p-3 border-end">
+                <div class="field-label">{% trans "11d. Total Amount" %}</div>
+                <div class="field-value">${{ sf425.data.indirect_total|intcomma|default:"0" }}</div>
+            </div>
+            <div class="col-md-6 p-3">
+                <div class="field-label">{% trans "11e. Federal Share" %}</div>
+                <div class="field-value">${{ sf425.data.indirect_federal_share|intcomma|default:"0" }}</div>
+            </div>
+        </div>
+
+        <!-- Section 12: Remarks -->
+        <div class="section-header">{% trans "12. Remarks" %}</div>
+        <div class="p-3 border-bottom">
+            <div class="field-value" style="min-height: 4rem;">
+                {{ sf425.data.remarks|default:"" }}
+            </div>
+        </div>
+
+        <!-- Section 13: Certification -->
+        <div class="section-header">{% trans "13. Certification" %}</div>
+        <div class="p-3">
+            <p class="small mb-3">
+                {% trans "I certify to the best of my knowledge and belief that this report is correct and complete and that all outlays and unliquidated obligations are for the purposes set forth in the award documents." %}
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="field-label">{% trans "13a. Typed or Printed Name and Title of Authorized Certifying Official" %}</div>
+                    <div class="field-value">
+                        {{ sf425.generated_by.get_full_name }}<br>
+                        <small class="text-muted">{{ sf425.generated_by.title|default:"" }}</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="field-label">{% trans "13c. Telephone (area code, number, ext.)" %}</div>
+                    <div class="field-value">{{ sf425.generated_by.phone|default:"" }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="field-label">{% trans "13d. Email Address" %}</div>
+                    <div class="field-value">{{ sf425.generated_by.email }}</div>
+                </div>
+            </div>
+            <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                    <div class="field-label">{% trans "13b. Signature of Authorized Certifying Official" %}</div>
+                    <div class="field-value" style="min-height: 2rem;"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="field-label">{% trans "13e. Date Report Submitted" %}</div>
+                    <div class="field-value">{{ sf425.submitted_at|date:"m/d/Y"|default:"" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons (non-print) -->
+<div class="d-flex justify-content-between mt-4 no-print">
+    <a href="{% url 'reporting:list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Reports" %}
+    </a>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="bi bi-printer me-1"></i>{% trans "Print" %}
+        </button>
+        {% if sf425.status == 'draft' %}
+        <form method="post" action="{% url 'reporting:sf425-submit' sf425.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send me-1"></i>{% trans "Submit SF-425" %}
+            </button>
+        </form>
+        {% endif %}
+        {% if user.can_manage_grants and sf425.status == 'submitted' %}
+        <form method="post" action="{% url 'reporting:sf425-approve' sf425.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle me-1"></i>{% trans "Approve" %}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

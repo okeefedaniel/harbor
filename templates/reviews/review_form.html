@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with title=object.application.project_title %}Review Application: {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Review Application" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4">
+    <i class="bi bi-clipboard-check me-2"></i>{% blocktrans with title=object.application.project_title %}Review Application: {{ title }}{% endblocktrans %}
+</h1>
+
+<!-- Application Summary Card -->
+<div class="card border-primary mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <small class="text-muted d-block">{% trans "Project Title" %}</small>
+                <span class="fw-semibold">{{ object.application.project_title }}</span>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">{% trans "Applicant" %}</small>
+                <span>{{ object.application.applicant.get_full_name|default:object.application.applicant.username }}</span>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">{% trans "Organization" %}</small>
+                <span>{{ object.application.organization }}</span>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">{% trans "Requested" %}</small>
+                <span class="fw-semibold">${{ object.application.requested_amount|intcomma }}</span>
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">{% trans "Grant Program" %}</small>
+                <span>{{ object.application.grant_program.title|truncatewords:5 }}</span>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <small class="text-muted d-block">{% trans "Project Description" %}</small>
+                <p class="mb-0 small">{{ object.application.project_description|truncatewords:50 }}</p>
+            </div>
+        </div>
+        <div class="mt-2">
+            <a href="{% url 'applications:detail' object.application.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                <i class="bi bi-box-arrow-up-right me-1"></i>{% trans "View Full Application" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Rubric Information -->
+<div class="alert alert-info mb-4">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle me-2 fs-5"></i>
+        <div>
+            <strong>{% blocktrans with name=object.rubric.name %}Rubric: {{ name }}{% endblocktrans %}</strong>
+            {% if object.rubric.description %}
+                <br><small>{{ object.rubric.description }}</small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Scoring Form -->
+<form method="post" id="reviewForm">
+    {% csrf_token %}
+
+    {% for criterion in criteria %}
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="card-title mb-0">
+                    {{ forloop.counter }}. {{ criterion.name }}
+                </h5>
+                {% if criterion.description %}
+                    <small class="text-muted">{{ criterion.description }}</small>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                <span class="badge bg-light text-dark">
+                    {% blocktrans with max=criterion.max_score %}Max Score: {{ max }}{% endblocktrans %}
+                </span>
+                {% if criterion.weight != 1 %}
+                    <span class="badge bg-light text-dark ms-1">
+                        {% blocktrans with weight=criterion.weight %}Weight: {{ weight }}x{% endblocktrans %}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="score_{{ criterion.pk }}" class="form-label fw-semibold">{% trans "Score" %}</label>
+                    <div class="input-group">
+                        <input type="number"
+                               name="score_{{ criterion.pk }}"
+                               id="score_{{ criterion.pk }}"
+                               class="form-control criterion-score"
+                               min="0"
+                               max="{{ criterion.max_score }}"
+                               data-max="{{ criterion.max_score }}"
+                               data-weight="{{ criterion.weight }}"
+                               step="1"
+                               required
+                               {% if existing_scores %}
+                                   {% for score in existing_scores %}
+                                       {% if score.criterion_id == criterion.pk %}
+                                           value="{{ score.score }}"
+                                       {% endif %}
+                                   {% endfor %}
+                               {% endif %}>
+                        <span class="input-group-text">/ {{ criterion.max_score }}</span>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <label for="comment_{{ criterion.pk }}" class="form-label fw-semibold">{% trans "Comments" %}</label>
+                    <textarea name="comment_{{ criterion.pk }}"
+                              id="comment_{{ criterion.pk }}"
+                              class="form-control"
+                              rows="3"
+                              placeholder="{% trans "Provide feedback for this criterion..." %}">{% if existing_scores %}{% for score in existing_scores %}{% if score.criterion_id == criterion.pk %}{{ score.comment }}{% endif %}{% endfor %}{% endif %}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Total Score Display -->
+    <div class="card mb-4 border-primary">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calculator me-2"></i>
+                        {% trans "Total Score:" %}
+                        <span id="totalScore" class="text-primary">0</span>
+                        <span class="text-muted">/ <span id="maxTotalScore">0</span></span>
+                    </h4>
+                    <small class="text-muted" id="scorePercentage">0%</small>
+                </div>
+                <div class="col-md-6">
+                    <div class="progress" style="height: 24px;">
+                        <div class="progress-bar bg-primary" role="progressbar"
+                             id="scoreProgressBar"
+                             style="width: 0%;"
+                             aria-valuenow="0"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            0%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Buttons -->
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="javascript:history.back();" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{% trans "Back" %}
+        </a>
+        <button type="submit" class="btn btn-success btn-lg" id="submitReview"
+                onclick="return confirm('{% trans "Are you sure you want to submit this review? Please verify all scores and comments are correct." %}');">
+            <i class="bi bi-check-circle me-1"></i>{% trans "Submit Review" %}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    function calculateTotal() {
+        var total = 0;
+        var maxTotal = 0;
+        var inputs = document.querySelectorAll('.criterion-score');
+
+        inputs.forEach(function(input) {
+            var score = parseFloat(input.value) || 0;
+            var max = parseFloat(input.dataset.max) || 0;
+            var weight = parseFloat(input.dataset.weight) || 1;
+
+            total += score * weight;
+            maxTotal += max * weight;
+        });
+
+        document.getElementById('totalScore').textContent = total.toFixed(1);
+        document.getElementById('maxTotalScore').textContent = maxTotal.toFixed(1);
+
+        var percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(1) : 0;
+        document.getElementById('scorePercentage').textContent = percentage + '%';
+
+        var bar = document.getElementById('scoreProgressBar');
+        bar.style.width = percentage + '%';
+        bar.textContent = percentage + '%';
+        bar.setAttribute('aria-valuenow', percentage);
+
+        if (percentage >= 80) {
+            bar.className = 'progress-bar bg-success';
+        } else if (percentage >= 60) {
+            bar.className = 'progress-bar bg-primary';
+        } else if (percentage >= 40) {
+            bar.className = 'progress-bar bg-warning';
+        } else {
+            bar.className = 'progress-bar bg-danger';
+        }
+    }
+
+    // Attach event listeners
+    document.querySelectorAll('.criterion-score').forEach(function(input) {
+        input.addEventListener('input', function() {
+            var max = parseInt(this.dataset.max);
+            var val = parseInt(this.value);
+            if (val > max) this.value = max;
+            if (val < 0) this.value = 0;
+            calculateTotal();
+        });
+    });
+
+    // Initial calculation
+    calculateTotal();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans "Federal Funding Opportunities" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans "breadcrumb" %}" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb py-2 mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Federal Opportunities" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+        <h1 class="fw-bold mb-1">{% trans "Federal Funding Opportunities" %}</h1>
+        <p class="text-muted mb-0">{% trans "Browse federal grant opportunities from Grants.gov" %}</p>
+    </div>
+    <div class="btn-group" role="group" aria-label="{% trans "View toggle" %}">
+        <a href="?view=cards{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.agency %}&agency={{ current_filters.agency }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}"
+           class="btn btn-sm {% if view_mode != 'list' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           title="{% trans "Card view" %}">
+            <i class="bi bi-grid-3x3-gap"></i>
+        </a>
+        <a href="?view=list{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.agency %}&agency={{ current_filters.agency }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}"
+           class="btn btn-sm {% if view_mode == 'list' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           title="{% trans "List view" %}">
+            <i class="bi bi-list-ul"></i>
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4 mt-3">
+    <div class="card-body">
+        <form method="get" action="{% url 'portal:federal-opportunities' %}">
+            {% if view_mode == 'list' %}
+            <input type="hidden" name="view" value="list">
+            {% endif %}
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="filter-search" class="form-label fw-semibold">{% trans "Search" %}</label>
+                    <input type="text" name="q" id="filter-search" class="form-control"
+                           placeholder="{% trans "Search title or description..." %}"
+                           value="{{ current_filters.q }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-agency" class="form-label fw-semibold">{% trans "Agency Code" %}</label>
+                    <select name="agency" id="filter-agency" class="form-select">
+                        <option value="">{% trans "All Agencies" %}</option>
+                        {% for code in agency_codes %}
+                        <option value="{{ code }}"
+                            {% if current_filters.agency == code %}selected{% endif %}>
+                            {{ code }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-status" class="form-label fw-semibold">{% trans "Status" %}</label>
+                    <select name="status" id="filter-status" class="form-select">
+                        <option value="">{% trans "All Statuses" %}</option>
+                        {% for value, label in statuses %}
+                        <option value="{{ value }}"
+                            {% if current_filters.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                    </button>
+                    <a href="{% url 'portal:federal-opportunities' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>{% trans "Clear" %}
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if opportunities %}
+
+{% if view_mode == 'list' %}
+<!-- ===================== LIST VIEW ===================== -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Title" %}</th>
+                    <th>{% trans "Agency" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th class="text-end">{% trans "Funding Range" %}</th>
+                    <th>{% trans "Close Date" %}</th>
+                    {% if user.is_authenticated and user.can_manage_federal %}
+                    <th>{% trans "Track" %}</th>
+                    {% endif %}
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opp in opportunities %}
+                <tr>
+                    <td>
+                        <a href="{% url 'portal:federal-opportunity-detail' pk=opp.pk %}" class="text-decoration-none fw-semibold">
+                            {{ opp.title|truncatewords:10 }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge badge-grant-type">{{ opp.agency_code }}</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ opp.opportunity_status }}">
+                            {{ opp.get_opportunity_status_display }}
+                        </span>
+                    </td>
+                    <td class="text-end small">
+                        {% if opp.award_floor and opp.award_ceiling %}
+                            ${{ opp.award_floor|intcomma }} &ndash; ${{ opp.award_ceiling|intcomma }}
+                        {% elif opp.award_ceiling %}
+                            {% trans "Up to" %} ${{ opp.award_ceiling|intcomma }}
+                        {% elif opp.award_floor %}
+                            {% trans "From" %} ${{ opp.award_floor|intcomma }}
+                        {% else %}
+                            <span class="text-muted">{% trans "Not specified" %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-nowrap">
+                        {% if opp.close_date %}
+                            {{ opp.close_date|date:"M d, Y" }}
+                            {% if opp.days_until_close is not None %}
+                                <span class="badge {% if opp.days_until_close <= 7 %}bg-danger{% elif opp.days_until_close <= 30 %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
+                                    {{ opp.days_until_close }}{% trans "d" %}
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">{% trans "N/A" %}</span>
+                        {% endif %}
+                    </td>
+                    {% if user.is_authenticated and user.can_manage_federal %}
+                    <td>
+                        <form method="post" action="{% url 'grants:tracked-add' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="federal_opportunity_id" value="{{ opp.pk }}">
+                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{% trans 'Track' %}">
+                                <i class="bi bi-bookmark-plus"></i>
+                            </button>
+                        </form>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <a href="{% url 'portal:federal-opportunity-detail' pk=opp.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>{% trans "View" %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- ===================== CARD VIEW (default) ===================== -->
+<div class="row g-4">
+    {% for opp in opportunities %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge badge-grant-type">
+                        {{ opp.agency_code }}
+                    </span>
+                    <span class="badge badge-{{ opp.opportunity_status }}">
+                        {{ opp.get_opportunity_status_display }}
+                    </span>
+                </div>
+
+                <h5 class="card-title fw-bold">{{ opp.title|truncatewords:15 }}</h5>
+
+                <p class="text-muted small mb-2">
+                    <i class="bi bi-building me-1"></i>{{ opp.agency_name }}
+                </p>
+
+                <p class="text-muted small mb-3">
+                    {{ opp.description|truncatechars:200 }}
+                </p>
+
+                <div class="border-top pt-3 mt-auto">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="small text-muted">{% trans "Funding Range" %}</div>
+                            <div class="fw-semibold small">
+                                {% if opp.award_floor and opp.award_ceiling %}
+                                    ${{ opp.award_floor|intcomma }} &ndash; ${{ opp.award_ceiling|intcomma }}
+                                {% elif opp.award_ceiling %}
+                                    {% trans "Up to" %} ${{ opp.award_ceiling|intcomma }}
+                                {% elif opp.award_floor %}
+                                    {% trans "From" %} ${{ opp.award_floor|intcomma }}
+                                {% else %}
+                                    <span class="text-muted">{% trans "Not specified" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <div class="small text-muted">{% trans "Total Funding" %}</div>
+                            <div class="fw-semibold small text-success">
+                                {% if opp.total_funding %}
+                                    ${{ opp.total_funding|intcomma }}
+                                {% else %}
+                                    <span class="text-muted">{% trans "N/A" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted small">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            {% if opp.close_date %}
+                                {% trans "Closes:" %} {{ opp.close_date|date:"M d, Y" }}
+                            {% else %}
+                                {% trans "Close date: N/A" %}
+                            {% endif %}
+                        </span>
+                        {% if opp.days_until_close is not None %}
+                        <span class="badge {% if opp.days_until_close <= 7 %}bg-danger{% elif opp.days_until_close <= 30 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            {% blocktrans with days=opp.days_until_close %}{{ days }} days left{% endblocktrans %}
+                        </span>
+                        {% elif opp.close_date %}
+                        <span class="badge bg-secondary">{% trans "Deadline passed" %}</span>
+                        {% endif %}
+                    </div>
+                    {% if user.is_authenticated and user.can_manage_federal %}
+                    <form method="post" action="{% url 'grants:tracked-add' %}" class="mb-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="federal_opportunity_id" value="{{ opp.pk }}">
+                        <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                            <i class="bi bi-bookmark-plus me-1"></i>{% trans "Track" %}
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'portal:federal-opportunity-detail' pk=opp.pk %}"
+                       class="btn btn-outline-primary btn-sm w-100">
+                        {% trans "View Details" %} <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="{% trans "Federal opportunity pagination" %}" class="mt-5">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if view_mode == 'list' %}&view=list{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.agency %}&agency={{ current_filters.agency }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">
+                <i class="bi bi-chevron-left"></i> {% trans "Previous" %}
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> {% trans "Previous" %}</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if view_mode == 'list' %}&view=list{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.agency %}&agency={{ current_filters.agency }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if view_mode == 'list' %}&view=list{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.agency %}&agency={{ current_filters.agency }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">
+                {% trans "Next" %} <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">{% trans "Next" %} <i class="bi bi-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+    <p class="text-center text-muted small">
+        {% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages count_total=page_obj.paginator.count %}Showing page {{ current }} of {{ total }} ({{ count_total }} total opportunities){% endblocktrans %}
+    </p>
+</nav>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-5">
+    <div class="mb-4">
+        <i class="bi bi-search display-1 text-muted"></i>
+    </div>
+    <h3 class="text-muted fw-bold">{% trans "No Federal Opportunities Found" %}</h3>
+    <p class="text-muted mb-4">
+        {% if current_filters.agency or current_filters.status or current_filters.q or current_filters.category %}
+            {% trans "No federal opportunities match your current filters. Try adjusting your search criteria." %}
+        {% else %}
+            {% trans "There are no federal funding opportunities available at this time. Please check back later." %}
+        {% endif %}
+    </p>
+    {% if current_filters.agency or current_filters.status or current_filters.q or current_filters.category %}
+    <a href="{% url 'portal:federal-opportunities' %}" class="btn btn-outline-primary">
+        <i class="bi bi-x-circle me-1"></i>{% trans "Clear Filters" %}
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

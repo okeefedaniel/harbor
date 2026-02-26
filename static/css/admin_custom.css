@@ -1,0 +1,623 @@
+/* ============================================
+   Grantify Admin — CT Brand Identity Overrides
+   Comprehensive theme with WCAG AA contrast.
+   ============================================ */
+
+/* -- Light Theme -- */
+html[data-theme="light"],
+:root {
+    --primary: #1F64E5;           /* ct-blue */
+    --secondary: #00214D;         /* ct-dark-blue */
+    --accent: #F27124;            /* ct-orange */
+    --primary-fg: #fff;
+
+    --body-fg: #1a1a2e;           /* near-black for max readability */
+    --body-bg: #f5f7fb;           /* soft blue-white, not harsh white */
+    --body-quiet-color: #555e6e;  /* muted but readable */
+    --body-medium-color: #333d4d;
+    --body-loud-color: #00214D;   /* ct-dark-blue for emphasis */
+
+    --header-color: #fff;
+    --header-branding-color: #F27124;  /* ct-orange */
+    --header-bg: #00214D;              /* ct-dark-blue */
+    --header-link-color: #fff;
+
+    --breadcrumbs-fg: #fff;
+    --breadcrumbs-link-fg: #fff;
+    --breadcrumbs-bg: #1F64E5;    /* ct-blue — lighter than header for layering */
+
+    --link-fg: #0D4FBF;           /* darkened ct-blue for AA on light bg */
+    --link-hover-color: #003D9C;  /* ct-bold-blue */
+    --link-selected-fg: #003D9C;
+
+    --error-fg: #C91A1D;          /* darkened ct-red for contrast */
+
+    --message-success-bg: #d4edda;
+    --message-warning-bg: #fff3cd;
+    --message-error-bg: #f8d7da;
+
+    --hairline-color: #d6dce8;    /* blue-tinted dividers */
+    --border-color: #bfc8d9;
+    --darkened-bg: #eaeff6;       /* blue-tinted zebra stripe */
+    --selected-bg: #dce3f0;
+    --selected-row: #dae4fb;      /* ct-pale-blue, clearly visible */
+
+    --button-fg: #fff;
+    --button-bg: #1F64E5;         /* ct-blue */
+    --button-hover-bg: #003D9C;   /* ct-bold-blue */
+    --default-button-bg: #00214D; /* ct-dark-blue */
+    --default-button-hover-bg: #003D9C;
+
+    --close-button-bg: #6C757D;
+    --close-button-hover-bg: #495057;
+
+    --delete-button-bg: #C91A1D;  /* ct-red (slightly darkened) */
+    --delete-button-hover-bg: #a31517;
+
+    --object-tools-fg: #fff;
+    --object-tools-bg: #1F64E5;        /* ct-blue */
+    --object-tools-hover-bg: #003D9C;  /* ct-bold-blue */
+
+    --font-family-primary:
+        "Poppins",
+        "Segoe UI",
+        system-ui,
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif,
+        "Apple Color Emoji",
+        "Segoe UI Emoji",
+        "Segoe UI Symbol",
+        "Noto Color Emoji";
+}
+
+
+/* -- Dark Theme -- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary: #2D6FE8;
+        --secondary: #0a1e3d;
+        --accent: #F27124;
+
+        --body-fg: #e4e8f0;
+        --body-bg: #0d1117;
+        --body-quiet-color: #9aa5b4;
+        --body-medium-color: #c0c8d4;
+        --body-loud-color: #fff;
+
+        --header-bg: #00214D;
+        --header-link-color: #fff;
+
+        --breadcrumbs-fg: #c0c8d4;
+        --breadcrumbs-link-fg: #e4e8f0;
+        --breadcrumbs-bg: #0a1e3d;
+
+        --link-fg: #6BA3FF;
+        --link-hover-color: #9DC2FF;
+        --link-selected-fg: #5690E8;
+
+        --hairline-color: #1e2a3a;
+        --border-color: #2a3a4e;
+        --darkened-bg: #151b24;
+        --selected-bg: #131920;
+        --selected-row: #152040;
+
+        --error-fg: #ff6b6b;
+
+        --message-success-bg: #0d3320;
+        --message-warning-bg: #3d2a05;
+        --message-error-bg: #3d0d0d;
+
+        --close-button-bg: #2a3a4e;
+        --close-button-hover-bg: #3d5068;
+
+        --delete-button-bg: #d42020;
+        --delete-button-hover-bg: #b81a1a;
+
+        --button-bg: #2D6FE8;
+        --button-hover-bg: #1F64E5;
+        --default-button-bg: #1a3a6e;
+        --default-button-hover-bg: #2D6FE8;
+
+        --object-tools-bg: #1a3a6e;
+        --object-tools-hover-bg: #2D6FE8;
+
+        color-scheme: dark;
+    }
+}
+
+html[data-theme="dark"] {
+    --primary: #2D6FE8;
+    --secondary: #0a1e3d;
+    --accent: #F27124;
+
+    --body-fg: #e4e8f0;
+    --body-bg: #0d1117;
+    --body-quiet-color: #9aa5b4;
+    --body-medium-color: #c0c8d4;
+    --body-loud-color: #fff;
+
+    --header-bg: #00214D;
+    --header-link-color: #fff;
+
+    --breadcrumbs-fg: #c0c8d4;
+    --breadcrumbs-link-fg: #e4e8f0;
+    --breadcrumbs-bg: #0a1e3d;
+
+    --link-fg: #6BA3FF;
+    --link-hover-color: #9DC2FF;
+    --link-selected-fg: #5690E8;
+
+    --hairline-color: #1e2a3a;
+    --border-color: #2a3a4e;
+    --darkened-bg: #151b24;
+    --selected-bg: #131920;
+    --selected-row: #152040;
+
+    --error-fg: #ff6b6b;
+
+    --message-success-bg: #0d3320;
+    --message-warning-bg: #3d2a05;
+    --message-error-bg: #3d0d0d;
+
+    --close-button-bg: #2a3a4e;
+    --close-button-hover-bg: #3d5068;
+
+    --delete-button-bg: #d42020;
+    --delete-button-hover-bg: #b81a1a;
+
+    --button-bg: #2D6FE8;
+    --button-hover-bg: #1F64E5;
+    --default-button-bg: #1a3a6e;
+    --default-button-hover-bg: #2D6FE8;
+
+    --object-tools-bg: #1a3a6e;
+    --object-tools-hover-bg: #2D6FE8;
+
+    color-scheme: dark;
+}
+
+
+/* ============================================
+   CT Accent Bar
+   ============================================ */
+.ct-admin-accent-bar {
+    height: 4px;
+    min-height: 4px;
+    flex-shrink: 0;
+    background: linear-gradient(90deg, #1F64E5 0%, #F27124 50%, #FAAA19 100%);
+}
+
+html[data-theme="dark"] .ct-admin-accent-bar {
+    opacity: 0.85;
+}
+
+@media (prefers-color-scheme: dark) {
+    .ct-admin-accent-bar {
+        opacity: 0.85;
+    }
+}
+
+
+/* ============================================
+   Typography — Poppins for headings
+   ============================================ */
+#site-name,
+#site-name a:link,
+#site-name a:visited {
+    font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 1.375rem;
+    letter-spacing: 0.25px;
+}
+
+#site-name a:link,
+#site-name a:visited {
+    color: #fff;
+}
+
+#content h1,
+#content h2,
+.module h2,
+.module caption,
+.inline-group h2 {
+    font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Page title */
+#content h1 {
+    color: var(--body-loud-color);
+    font-weight: 600;
+}
+
+
+/* ============================================
+   Branding Icon
+   ============================================ */
+.grantify-brand-icon {
+    font-size: 1.125rem;
+    color: #F27124;  /* ct-orange */
+    margin-right: 8px;
+    vertical-align: baseline;
+}
+
+
+/* ============================================
+   Module & Inline Group Headers
+   ============================================ */
+.module h2,
+.module caption,
+.inline-group h2 {
+    background: #00214D;  /* ct-dark-blue */
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    font-weight: 600;
+}
+
+html[data-theme="dark"] .module h2,
+html[data-theme="dark"] .module caption,
+html[data-theme="dark"] .inline-group h2 {
+    background: #0a1e3d;
+    color: #e4e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .module h2,
+    .module caption,
+    .inline-group h2 {
+        background: #0a1e3d;
+        color: #e4e8f0;
+    }
+}
+
+
+/* ============================================
+   Dashboard Model Tables — Better Row Contrast
+   ============================================ */
+
+/* Make "Add" and "Change" action links more prominent (dashboard index only) */
+#content-main .module a.addlink,
+#content-main .module a.changelink,
+#content-main .module a.viewlink {
+    font-weight: 500;
+    text-decoration: none;
+    padding: 2px 6px 2px 20px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+}
+
+#content-main .module a.addlink:hover,
+#content-main .module a.changelink:hover,
+#content-main .module a.viewlink:hover {
+    background-color: var(--selected-row);
+}
+
+/* Zebra stripe rows — ensure link contrast on darkened rows */
+.module table tr:nth-child(even) {
+    background: var(--darkened-bg);
+}
+
+.module table tr:nth-child(odd) {
+    background: var(--body-bg);
+}
+
+/* Model name links — bold for scannability */
+.module table th a {
+    font-weight: 500;
+}
+
+
+/* ============================================
+   "Recent Actions" Sidebar
+   ============================================ */
+#content-related h2 {
+    background: #00214D;
+    color: #fff;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+}
+
+html[data-theme="dark"] #content-related h2,
+html[data-theme="dark"] #content-related .module h2 {
+    background: #0a1e3d;
+    color: #e4e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    #content-related h2,
+    #content-related .module h2 {
+        background: #0a1e3d;
+        color: #e4e8f0;
+    }
+}
+
+#content-related .module {
+    background: var(--darkened-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+
+/* ============================================
+   Nav Sidebar
+   ============================================ */
+#nav-sidebar .current-model {
+    background: #dae4fb;
+}
+
+html[data-theme="dark"] #nav-sidebar .current-model {
+    background: #152040;
+}
+
+@media (prefers-color-scheme: dark) {
+    #nav-sidebar .current-model {
+        background: #152040;
+    }
+}
+
+#nav-sidebar .module h2 {
+    background: #00214D;
+}
+
+html[data-theme="dark"] #nav-sidebar .module h2 {
+    background: #0a1e3d;
+}
+
+@media (prefers-color-scheme: dark) {
+    #nav-sidebar .module h2 {
+        background: #0a1e3d;
+    }
+}
+
+
+/* ============================================
+   Input Focus States
+   ============================================ */
+input:not([type]):focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #1F64E5;
+    outline: 2px solid rgba(31, 100, 229, 0.25);
+    outline-offset: -1px;
+}
+
+html[data-theme="dark"] input:not([type]):focus,
+html[data-theme="dark"] input[type="text"]:focus,
+html[data-theme="dark"] input[type="password"]:focus,
+html[data-theme="dark"] input[type="email"]:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] select:focus {
+    border-color: #6BA3FF;
+    outline-color: rgba(107, 163, 255, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+    input:not([type]):focus,
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    input[type="email"]:focus,
+    textarea:focus,
+    select:focus {
+        border-color: #6BA3FF;
+        outline-color: rgba(107, 163, 255, 0.3);
+    }
+}
+
+
+/* ============================================
+   User Tools (header links)
+   ============================================ */
+#user-tools {
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+#user-tools a:link,
+#user-tools a:visited {
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+    text-decoration: none;
+}
+
+#user-tools a:hover,
+#user-tools a:focus {
+    color: #fff;
+    border-bottom-color: #F27124;
+}
+
+
+/* ============================================
+   Calendar & Date Shortcuts
+   ============================================ */
+.calendarbox .calendarnav-previous,
+.calendarbox .calendarnav-next {
+    background: #1F64E5;
+}
+
+.calendarbox .calendarnav-previous:hover,
+.calendarbox .calendarnav-next:hover {
+    background: #003D9C;
+}
+
+
+/* ============================================
+   Changelist Filters Sidebar
+   ============================================ */
+#changelist-filter {
+    background: var(--darkened-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+#changelist-filter h2 {
+    background: #00214D;
+    color: #fff;
+}
+
+html[data-theme="dark"] #changelist-filter h2 {
+    background: #0a1e3d;
+    color: #e4e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    #changelist-filter h2 {
+        background: #0a1e3d;
+        color: #e4e8f0;
+    }
+}
+
+#changelist-filter li.selected a {
+    color: var(--body-fg);
+    font-weight: 600;
+}
+
+
+/* ============================================
+   Submit Row Buttons
+   ============================================ */
+.submit-row input[type="submit"],
+.submit-row a.button {
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: none;
+    padding: 8px 16px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.submit-row input[type="submit"]:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Delete link in submit row */
+.submit-row .deletelink {
+    border-radius: 4px;
+    padding: 8px 16px;
+}
+
+
+/* ============================================
+   Object Tools (action buttons on change pages)
+   ============================================ */
+.object-tools a:link,
+.object-tools a:visited {
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.15s ease;
+}
+
+
+/* ============================================
+   Breadcrumbs — improve text contrast
+   ============================================ */
+div.breadcrumbs {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    padding: 8px 16px;
+}
+
+div.breadcrumbs a:link,
+div.breadcrumbs a:visited {
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+div.breadcrumbs a:hover {
+    color: #fff;
+    text-decoration-color: #F27124;
+}
+
+
+/* ============================================
+   WCAG Focus Visible
+   ============================================ */
+*:focus-visible {
+    outline: 3px solid #F27124 !important;
+    outline-offset: 2px;
+}
+
+
+/* ============================================
+   Login Page Polish
+   ============================================ */
+body.login #header {
+    padding: 16px 20px;
+}
+
+body.login #container {
+    background: var(--body-bg);
+}
+
+body.login .submit-row input[type="submit"] {
+    background: #1F64E5;
+    border: none;
+    padding: 10px 24px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+body.login .submit-row input[type="submit"]:hover {
+    background: #003D9C;
+}
+
+
+/* ============================================
+   Footer
+   ============================================ */
+#footer {
+    padding: 16px 40px;
+    font-size: 0.75rem;
+    color: var(--body-quiet-color);
+    text-align: center;
+    border-top: 1px solid var(--hairline-color);
+}
+
+
+/* ============================================
+   General Polish
+   ============================================ */
+
+/* Slightly round module corners */
+.module {
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+/* Space between modules on dashboard */
+#content-main .module {
+    margin-bottom: 20px;
+}
+
+/* Smoother transitions on interactive elements */
+a,
+input[type="submit"],
+button {
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+/* Help text readability */
+.help,
+.helptext,
+p.help {
+    color: var(--body-quiet-color);
+    font-size: 0.8125rem;
+}

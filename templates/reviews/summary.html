@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with title=application.project_title %}Review Summary: {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'applications:list' %}">{% trans "Applications" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'applications:detail' application.pk %}">{{ application.project_title|truncatewords:5 }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Review Summary" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h2 mb-1"><i class="bi bi-bar-chart-line me-2"></i>{% trans "Review Summary" %}</h1>
+        <p class="text-muted mb-0">{{ application.project_title }}</p>
+    </div>
+    <a href="{% url 'applications:detail' application.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Application" %}
+    </a>
+</div>
+
+<!-- Summary Cards Row -->
+<div class="row g-4 mb-4">
+    <!-- Overall Score Card -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title text-muted">{% trans "Average Score" %}</h5>
+                {% if summary %}
+                    <div class="display-4 fw-bold text-primary mb-2">{{ summary.average_score }}</div>
+                {% else %}
+                    <div class="display-4 fw-bold text-muted mb-2">--</div>
+                {% endif %}
+                <div class="text-muted">
+                    {% if summary %}
+                        {% blocktrans with count=summary.total_reviews %}{{ count }} review{{ count|pluralize }}{% endblocktrans %}
+                    {% else %}
+                        {% trans "No reviews completed" %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendation Card -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title text-muted">{% trans "Recommendation" %}</h5>
+                {% if summary and summary.recommendation %}
+                    {% if summary.recommendation == "fund" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-success fs-4 px-4 py-2">{% trans "Fund" %}</span>
+                        </div>
+                    {% elif summary.recommendation == "do_not_fund" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-danger fs-4 px-4 py-2">{% trans "Do Not Fund" %}</span>
+                        </div>
+                    {% elif summary.recommendation == "fund_with_conditions" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-warning text-dark fs-4 px-4 py-2">{% trans "Fund with Conditions" %}</span>
+                        </div>
+                    {% elif summary.recommendation == "needs_discussion" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-info text-dark fs-4 px-4 py-2">{% trans "Needs Discussion" %}</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="display-6 mb-2">
+                        <span class="badge bg-secondary fs-5 px-4 py-2">{% trans "Pending" %}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Assessment Card -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title text-muted">{% trans "Risk Assessment" %}</h5>
+                {% if summary and summary.risk_level %}
+                    {% if summary.risk_level == "low" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-success fs-4 px-4 py-2">
+                                <i class="bi bi-shield-check me-1"></i>{% trans "Low Risk" %}
+                            </span>
+                        </div>
+                    {% elif summary.risk_level == "medium" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-warning text-dark fs-4 px-4 py-2">
+                                <i class="bi bi-exclamation-triangle me-1"></i>{% trans "Medium Risk" %}
+                            </span>
+                        </div>
+                    {% elif summary.risk_level == "high" %}
+                        <div class="display-6 mb-2">
+                            <span class="badge bg-danger fs-4 px-4 py-2">
+                                <i class="bi bi-exclamation-octagon me-1"></i>{% trans "High Risk" %}
+                            </span>
+                        </div>
+                    {% endif %}
+                    {% if summary.risk_notes %}
+                        <p class="small text-muted mt-2 mb-0">{{ summary.risk_notes|truncatewords:20 }}</p>
+                    {% endif %}
+                {% else %}
+                    <div class="display-6 mb-2">
+                        <span class="badge bg-secondary fs-5 px-4 py-2">{% trans "Not Assessed" %}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if summary and summary.risk_notes %}
+<!-- Risk Notes Detail -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="bi bi-shield-exclamation me-2"></i>{% trans "Risk Assessment Details" %}</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-0">{{ summary.risk_notes|linebreaksbr }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Individual Reviewer Scores -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="bi bi-people me-2"></i>{% trans "Individual Reviewer Scores" %}</h5>
+    </div>
+    {% if assignments %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Reviewer" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    {% for criterion in criteria %}
+                        <th class="text-center" title="{{ criterion.name }}">
+                            {{ criterion.name|truncatewords:3 }}
+                            <br><small class="text-muted">{% blocktrans with max=criterion.max_score %}(max {{ max }}){% endblocktrans %}</small>
+                        </th>
+                    {% endfor %}
+                    <th class="text-center">{% trans "Total" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assignment in assignments %}
+                <tr>
+                    <td class="fw-semibold">{% blocktrans with num=forloop.counter %}Reviewer {{ num }}{% endblocktrans %}</td>
+                    <td>
+                        {% if assignment.status == "completed" %}
+                            <span class="badge bg-success">{% trans "Completed" %}</span>
+                        {% elif assignment.status == "in_progress" %}
+                            <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
+                        {% elif assignment.status == "assigned" %}
+                            <span class="badge bg-info text-dark">{% trans "Assigned" %}</span>
+                        {% elif assignment.status == "recused" %}
+                            <span class="badge bg-dark">{% trans "Recused" %}</span>
+                        {% endif %}
+                    </td>
+                    {% if assignment.status == "completed" %}
+                        {% for criterion in criteria %}
+                            <td class="text-center">
+                                {% for score in assignment.scores.all %}
+                                    {% if score.criterion_id == criterion.pk %}
+                                        <span class="fw-semibold {% if score.score >= criterion.max_score|floatformat:"0" %}text-success{% elif score.score <= 1 %}text-danger{% endif %}">
+                                            {{ score.score }}
+                                        </span>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                        {% endfor %}
+                        <td class="text-center">
+                            <span class="badge bg-primary fs-6">
+                                {% with total=0 %}
+                                    {% for score in assignment.scores.all %}
+                                        {% if forloop.last %}
+                                            {{ assignment.total_score|default:"--" }}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                            </span>
+                        </td>
+                    {% else %}
+                        {% for criterion in criteria %}
+                            <td class="text-center text-muted">--</td>
+                        {% endfor %}
+                        <td class="text-center text-muted">--</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-center py-4">
+        <p class="text-muted mb-0">{% trans "No reviewers have been assigned to this application yet." %}</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Per-Criterion Breakdown -->
+{% if criteria_breakdown %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>{% trans "Per-Criterion Breakdown" %}</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Criterion" %}</th>
+                    <th>{% trans "Description" %}</th>
+                    <th class="text-center">{% trans "Max Score" %}</th>
+                    <th class="text-center">{% trans "Weight" %}</th>
+                    <th class="text-center">{% trans "Average Score" %}</th>
+                    <th class="text-center">{% trans "Min" %}</th>
+                    <th class="text-center">{% trans "Max" %}</th>
+                    <th class="text-center">{% trans "Weighted Avg" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in criteria_breakdown %}
+                <tr>
+                    <td class="fw-semibold">{{ item.criterion.name }}</td>
+                    <td class="small text-muted">{{ item.criterion.description|truncatewords:10 }}</td>
+                    <td class="text-center">{{ item.criterion.max_score }}</td>
+                    <td class="text-center">{{ item.criterion.weight }}x</td>
+                    <td class="text-center">
+                        <span class="fw-semibold">{{ item.average_score|floatformat:1 }}</span>
+                    </td>
+                    <td class="text-center text-muted">{{ item.min_score }}</td>
+                    <td class="text-center text-muted">{{ item.max_score }}</td>
+                    <td class="text-center">
+                        <span class="badge bg-light text-dark">{{ item.weighted_average|floatformat:1 }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if criteria_breakdown %}
+            <tfoot class="table-light">
+                <tr class="fw-bold">
+                    <td colspan="4">{% trans "Overall Totals" %}</td>
+                    <td class="text-center">{{ summary.average_score|floatformat:1 }}</td>
+                    <td colspan="2"></td>
+                    <td class="text-center">
+                        <span class="badge bg-primary">{{ total_weighted_average|floatformat:1|default:"--" }}</span>
+                    </td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% elif criteria %}
+<!-- Fallback: Show criteria without breakdown data when no completed reviews -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>{% trans "Scoring Criteria" %}</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>{% trans "Criterion" %}</th>
+                    <th>{% trans "Description" %}</th>
+                    <th class="text-center">{% trans "Max Score" %}</th>
+                    <th class="text-center">{% trans "Weight" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for criterion in criteria %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-semibold">{{ criterion.name }}</td>
+                    <td class="small text-muted">{{ criterion.description|truncatewords:15 }}</td>
+                    <td class="text-center">{{ criterion.max_score }}</td>
+                    <td class="text-center">{{ criterion.weight }}x</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body border-top">
+        <p class="text-muted small mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            {% trans "Per-criterion breakdown will be available once reviews are completed." %}
+        </p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

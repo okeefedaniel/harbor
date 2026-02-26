@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Reports" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Reports" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">
+        <i class="bi bi-file-earmark-bar-graph me-2"></i>{% trans "Reports" %}
+    </h1>
+    <div class="d-flex align-items-center gap-2">
+        <a href="?export=csv{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.award %}&award={{ request.GET.award }}{% endif %}"
+           class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download me-1"></i>{% trans "Export CSV" %}
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="report_type" class="form-label fw-semibold">{% trans "Report Type" %}</label>
+                <select name="report_type" id="report_type" class="form-select">
+                    <option value="">{% trans "All Types" %}</option>
+                    <option value="progress" {% if request.GET.report_type == 'progress' %}selected{% endif %}>{% trans "Progress" %}</option>
+                    <option value="fiscal" {% if request.GET.report_type == 'fiscal' %}selected{% endif %}>{% trans "Fiscal" %}</option>
+                    <option value="programmatic" {% if request.GET.report_type == 'programmatic' %}selected{% endif %}>{% trans "Programmatic" %}</option>
+                    <option value="final_progress" {% if request.GET.report_type == 'final_progress' %}selected{% endif %}>{% trans "Final Progress" %}</option>
+                    <option value="final_fiscal" {% if request.GET.report_type == 'final_fiscal' %}selected{% endif %}>{% trans "Final Fiscal" %}</option>
+                    <option value="sf425" {% if request.GET.report_type == 'sf425' %}selected{% endif %}>{% trans "SF-425" %}</option>
+                    <option value="custom" {% if request.GET.report_type == 'custom' %}selected{% endif %}>{% trans "Custom" %}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label fw-semibold">{% trans "Status" %}</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>{% trans "Draft" %}</option>
+                    <option value="submitted" {% if request.GET.status == 'submitted' %}selected{% endif %}>{% trans "Submitted" %}</option>
+                    <option value="under_review" {% if request.GET.status == 'under_review' %}selected{% endif %}>{% trans "Under Review" %}</option>
+                    <option value="revision_requested" {% if request.GET.status == 'revision_requested' %}selected{% endif %}>{% trans "Revision Requested" %}</option>
+                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>{% trans "Approved" %}</option>
+                    <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>{% trans "Rejected" %}</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="award" class="form-label fw-semibold">{% trans "Award" %}</label>
+                <select name="award" id="award" class="form-select">
+                    <option value="">{% trans "All Awards" %}</option>
+                    {% for aw in awards %}
+                    <option value="{{ aw.pk }}" {% if request.GET.award == aw.pk|slugify %}selected{% endif %}>
+                        {{ aw.award_number }} - {{ aw.title|truncatewords:5 }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                </button>
+            </div>
+            <div class="col-md-1">
+                <a href="{% url 'reporting:list' %}" class="btn btn-outline-secondary w-100" title="{% trans "Clear filters" %}">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reports Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    {% sortable_th 'report_type' _("Report Type") %}
+                    {% sortable_th 'award' _("Award") %}
+                    <th>{% trans "Period" %}</th>
+                    {% sortable_th 'status' _("Status") %}
+                    {% sortable_th 'due_date' _("Due Date") %}
+                    {% sortable_th 'submitted_at' _("Submitted") %}
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td class="fw-semibold">{{ report.get_report_type_display }}</td>
+                    <td>
+                        <a href="{% url 'awards:detail' report.award.pk %}" class="text-decoration-none">
+                            {{ report.award.award_number }}
+                        </a>
+                        <br><small class="text-muted">{{ report.award.title|truncatewords:5 }}</small>
+                    </td>
+                    <td>
+                        {{ report.reporting_period_start|date:"m/d/Y" }} &ndash;
+                        {{ report.reporting_period_end|date:"m/d/Y" }}
+                    </td>
+                    <td>
+                        {% if report.status == 'draft' %}
+                            <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                        {% elif report.status == 'submitted' %}
+                            <span class="badge bg-warning text-dark">{% trans "Submitted" %}</span>
+                        {% elif report.status == 'under_review' %}
+                            <span class="badge bg-info text-dark">{% trans "Under Review" %}</span>
+                        {% elif report.status == 'revision_requested' %}
+                            <span class="badge bg-danger">{% trans "Revision Requested" %}</span>
+                        {% elif report.status == 'approved' %}
+                            <span class="badge bg-success">{% trans "Approved" %}</span>
+                        {% elif report.status == 'rejected' %}
+                            <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ report.due_date|date:"M d, Y" }}
+                        {% if report.is_overdue %}
+                            <span class="badge bg-danger ms-1">{% trans "Overdue" %}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ report.submitted_at|date:"M d, Y"|default:"--" }}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'reporting:detail' report.pk %}" class="btn btn-outline-primary"
+                               title="{% trans "View Details" %}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if report.status == 'draft' or report.status == 'revision_requested' %}
+                            <a href="{% url 'reporting:edit' report.pk %}" class="btn btn-outline-secondary"
+                               title="{% trans "Edit" %}">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-file-earmark-bar-graph display-4 d-block mb-3"></i>
+                        <p class="mb-0">{% trans "No reports found matching your criteria." %}</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="{% trans "Report list pagination" %}" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">{% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

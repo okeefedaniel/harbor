@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Log In" %}{% endblock %}
+
+{% block main_class %}container py-5{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-card {
+        max-width: 450px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-card">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <div class="mb-3">
+                    <i class="bi bi-bank2 display-4 text-primary"></i>
+                </div>
+                <h2 class="fw-bold">Grantify</h2>
+                <p class="text-muted">{% trans "State Grants Management Solution" %}</p>
+            </div>
+
+            <!-- Login Form -->
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
+                        {% trans "Username" %}
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold">
+                        {% trans "Password" %}
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.password.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Log In" %}
+                    </button>
+                </div>
+            </form>
+
+            <!-- SSO Divider -->
+            <div class="d-flex align-items-center my-4">
+                <hr class="flex-grow-1">
+                <span class="px-3 text-muted small">{% trans "OR" %}</span>
+                <hr class="flex-grow-1">
+            </div>
+
+            <!-- Microsoft SSO -->
+            <div class="d-grid">
+                <a href="{% url 'microsoft_login' %}"
+                   class="btn btn-outline-dark btn-lg d-flex align-items-center justify-content-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21" class="me-2">
+                        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                    </svg>
+                    {% trans "Sign in with Microsoft" %}
+                </a>
+            </div>
+            <p class="text-center text-muted small mt-2">
+                {% trans "State employees: use your CT.gov account" %}
+            </p>
+
+            <!-- Links -->
+            <div class="text-center mt-3">
+                <p class="mb-2">
+                    <span class="text-muted small" title="{% trans "Contact your system administrator to reset your password" %}">
+                        {% trans "Forgot password? Contact your administrator." %}
+                    </span>
+                </p>
+                <p class="mb-0 small">
+                    {% trans "Don't have an account?" %}
+                    <a href="{% url 'core:register' %}" class="text-decoration-none fw-semibold">
+                        {% trans "Register" %}
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

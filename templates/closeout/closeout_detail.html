@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with title=closeout.award.title %}Closeout - {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' closeout.award.pk %}">{{ closeout.award.award_number }}</a></li>
+            <li class="breadcrumb-item active">{% trans "Closeout" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-lock me-2"></i>{% blocktrans with title=closeout.award.title %}Closeout for {{ title }}{% endblocktrans %}
+        </h1>
+        <p class="text-muted mb-0">{{ closeout.award.award_number }}</p>
+    </div>
+    <a href="{% url 'awards:detail' closeout.award.pk %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Award" %}
+    </a>
+</div>
+
+<!-- Status Card -->
+<div class="card border-0 shadow-sm mb-4 border-start border-4 {% if closeout.status == 'completed' %}border-success{% elif closeout.status == 'in_progress' %}border-primary{% elif closeout.status == 'pending_review' %}border-warning{% elif closeout.status == 'reopened' %}border-danger{% else %}border-secondary{% endif %}">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <small class="text-muted text-uppercase d-block">{% trans "Status" %}</small>
+                {% if closeout.status == 'not_started' %}
+                    <span class="badge bg-secondary fs-6">{% trans "Not Started" %}</span>
+                {% elif closeout.status == 'in_progress' %}
+                    <span class="badge bg-primary fs-6">{% trans "In Progress" %}</span>
+                {% elif closeout.status == 'pending_review' %}
+                    <span class="badge bg-warning text-dark fs-6">{% trans "Pending Review" %}</span>
+                {% elif closeout.status == 'completed' %}
+                    <span class="badge bg-success fs-6">{% trans "Completed" %}</span>
+                {% elif closeout.status == 'reopened' %}
+                    <span class="badge bg-danger fs-6">{% trans "Reopened" %}</span>
+                {% endif %}
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted text-uppercase d-block">{% trans "Initiated" %}</small>
+                <span class="fw-semibold">{{ closeout.initiated_at|date:"M d, Y" }}</span>
+                <br><small class="text-muted">{% blocktrans with name=closeout.initiated_by.get_full_name %}by {{ name }}{% endblocktrans %}</small>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted text-uppercase d-block">{% trans "Award Amount" %}</small>
+                <span class="fw-semibold">${{ closeout.award.award_amount|intcomma }}</span>
+            </div>
+            <div class="col-md-3">
+                {% if closeout.completed_at %}
+                <small class="text-muted text-uppercase d-block">{% trans "Completed" %}</small>
+                <span class="fw-semibold">{{ closeout.completed_at|date:"M d, Y" }}</span>
+                <br><small class="text-muted">{% blocktrans with name=closeout.completed_by.get_full_name %}by {{ name }}{% endblocktrans %}</small>
+                {% else %}
+                <small class="text-muted text-uppercase d-block">{% trans "Completed" %}</small>
+                <span class="text-muted">{% trans "Pending" %}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checklist Section -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 fw-bold">
+            <i class="bi bi-check2-square me-1"></i>{% trans "Closeout Checklist" %}
+        </h5>
+        <span class="text-muted small">
+            {% blocktrans with completed=completed_count|default:"0" total=total_count|default:"0" %}{{ completed }} of {{ total }} items completed{% endblocktrans %}
+        </span>
+    </div>
+    <div class="card-body p-0">
+        {% if checklist_items %}
+        <div class="list-group list-group-flush">
+            {% for item in checklist_items %}
+            <div class="list-group-item d-flex align-items-start py-3">
+                <div class="me-3 mt-1">
+                    {% if item.is_completed %}
+                    <form method="post" action="{% url 'closeout:checklist-toggle' item.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-success rounded-circle p-0"
+                                style="width: 28px; height: 28px;" title="{% trans "Mark incomplete" %}">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'closeout:checklist-toggle' item.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-circle p-0"
+                                style="width: 28px; height: 28px;" title="{% trans "Mark complete" %}">
+                            &nbsp;
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1 {% if item.is_completed %}text-decoration-line-through text-muted{% endif %}">
+                                {{ item.item_name }}
+                            </h6>
+                            {% if item.item_description %}
+                            <p class="text-muted small mb-1">{{ item.item_description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="ms-2 text-nowrap">
+                            {% if item.is_required %}
+                                <span class="badge bg-danger">{% trans "Required" %}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border">{% trans "Optional" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if item.is_completed %}
+                    <small class="text-muted">
+                        <i class="bi bi-check-circle text-success me-1"></i>
+                        {% blocktrans with name=item.completed_by.get_full_name date=item.completed_at|date:"M d, Y g:i A" %}Completed by {{ name }} on {{ date }}{% endblocktrans %}
+                    </small>
+                    {% endif %}
+                    {% if item.notes %}
+                    <div class="mt-1">
+                        <small class="text-muted"><i class="bi bi-sticky me-1"></i>{{ item.notes }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <p class="mb-0">{% trans "No checklist items have been defined." %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Documents Section -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 fw-bold">
+            <i class="bi bi-folder me-1"></i>{% trans "Closeout Documents" %}
+        </h5>
+        <a href="{% url 'closeout:document-upload' closeout.pk %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-upload me-1"></i>{% trans "Upload Document" %}
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if documents %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Title" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Uploaded By" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th class="text-center">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-file-earmark me-1 text-muted"></i>
+                            {{ doc.title }}
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display }}</span></td>
+                        <td>{{ doc.uploaded_by.get_full_name }}</td>
+                        <td>{{ doc.created_at|date:"M d, Y" }}</td>
+                        <td class="text-center">
+                            <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="bi bi-download me-1"></i>{% trans "Download" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <p class="mb-0">{% trans "No closeout documents have been uploaded." %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Fund Returns Section -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 fw-bold">
+            <i class="bi bi-arrow-return-left me-1"></i>{% trans "Fund Returns" %}
+        </h5>
+        <a href="{% url 'closeout:fund-return-create' closeout.pk %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>{% trans "Record Fund Return" %}
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if fund_returns %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-end">{% trans "Amount" %}</th>
+                        <th>{% trans "Reason" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Payment Reference" %}</th>
+                        <th>{% trans "Date" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fr in fund_returns %}
+                    <tr>
+                        <td class="text-end fw-bold">${{ fr.amount|intcomma }}</td>
+                        <td>{{ fr.reason|truncatewords:12 }}</td>
+                        <td>
+                            {% if fr.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">{% trans "Pending" %}</span>
+                            {% elif fr.status == 'processed' %}
+                                <span class="badge bg-info text-dark">{% trans "Processed" %}</span>
+                            {% elif fr.status == 'confirmed' %}
+                                <span class="badge bg-success">{% trans "Confirmed" %}</span>
+                            {% endif %}
+                        </td>
+                        <td><code class="small">{{ fr.payment_reference|default:"--" }}</code></td>
+                        <td>{{ fr.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td class="text-end">${{ fund_returns_total|intcomma|default:"0" }}</td>
+                        <td colspan="4">{% trans "Total Returns" %}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <p class="mb-0">{% trans "No fund returns have been recorded." %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Complete Closeout Button -->
+{% if closeout.status != 'completed' %}
+<div class="card border-0 shadow-sm border-top border-4 border-success">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-1">{% trans "Complete Closeout" %}</h5>
+            <p class="text-muted mb-0 small">
+                {% if all_required_completed %}
+                    {% trans "All required checklist items have been completed. You may now finalize the closeout." %}
+                {% else %}
+                    {% trans "All required checklist items must be completed before the closeout can be finalized." %}
+                {% endif %}
+            </p>
+        </div>
+        <form method="post" action="{% url 'closeout:complete' closeout.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-lg"
+                    {% if not all_required_completed %}disabled{% endif %}>
+                <i class="bi bi-lock-fill me-1"></i>{% trans "Complete Closeout" %}
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

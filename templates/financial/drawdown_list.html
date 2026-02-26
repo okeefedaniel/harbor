@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load sortable_tags %}
+
+{% block title %}Cash Requests / Drawdowns{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Cash Requests</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">
+        <i class="bi bi-cash-stack me-2"></i>Cash Requests / Drawdowns
+    </h1>
+    <div class="d-flex align-items-center gap-2">
+        <a href="?export=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.award %}&award={{ request.GET.award }}{% endif %}"
+           class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="status" class="form-label fw-semibold">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="submitted" {% if request.GET.status == 'submitted' %}selected{% endif %}>Submitted</option>
+                    <option value="under_review" {% if request.GET.status == 'under_review' %}selected{% endif %}>Under Review</option>
+                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="paid" {% if request.GET.status == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="denied" {% if request.GET.status == 'denied' %}selected{% endif %}>Denied</option>
+                    <option value="returned" {% if request.GET.status == 'returned' %}selected{% endif %}>Returned</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label for="award" class="form-label fw-semibold">Award</label>
+                <select name="award" id="award" class="form-select">
+                    <option value="">All Awards</option>
+                    {% for aw in awards %}
+                    <option value="{{ aw.pk }}" {% if request.GET.award == aw.pk|slugify %}selected{% endif %}>
+                        {{ aw.award_number }} - {{ aw.title|truncatewords:6 }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'financial:drawdown-list' %}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-lg me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Drawdowns Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    {% sortable_th 'request_number' _("Request #") %}
+                    {% sortable_th 'award' _("Award") %}
+                    {% sortable_th 'amount' _("Amount") %}
+                    <th>Period</th>
+                    {% sortable_th 'status' _("Status") %}
+                    {% sortable_th 'submitted_at' _("Submitted") %}
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dd in drawdowns %}
+                <tr>
+                    <td>
+                        <a href="{% url 'financial:drawdown-detail' dd.pk %}" class="fw-semibold text-decoration-none">
+                            {{ dd.request_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{% url 'awards:detail' dd.award.pk %}" class="text-decoration-none">
+                            {{ dd.award.award_number }}
+                        </a>
+                        <br><small class="text-muted">{{ dd.award.title|truncatewords:5 }}</small>
+                    </td>
+                    <td class="text-end fw-semibold">${{ dd.amount|intcomma }}</td>
+                    <td>{{ dd.period_start|date:"m/d/Y" }} &ndash; {{ dd.period_end|date:"m/d/Y" }}</td>
+                    <td>
+                        {% if dd.status == 'draft' %}
+                            <span class="badge bg-secondary">Draft</span>
+                        {% elif dd.status == 'submitted' %}
+                            <span class="badge bg-warning text-dark">Submitted</span>
+                        {% elif dd.status == 'under_review' %}
+                            <span class="badge bg-info text-dark">Under Review</span>
+                        {% elif dd.status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif dd.status == 'paid' %}
+                            <span class="badge bg-primary">Paid</span>
+                        {% elif dd.status == 'denied' %}
+                            <span class="badge bg-danger">Denied</span>
+                        {% elif dd.status == 'returned' %}
+                            <span class="badge bg-warning text-dark">Returned</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ dd.submitted_at|date:"M d, Y"|default:"--" }}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'financial:drawdown-detail' dd.pk %}" class="btn btn-outline-primary"
+                               title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if dd.status == 'draft' %}
+                            <a href="{% url 'financial:drawdown-edit' dd.pk %}" class="btn btn-outline-secondary"
+                               title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-cash-stack display-4 d-block mb-3"></i>
+                        <p class="mb-0">No drawdown requests found.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Drawdown list pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

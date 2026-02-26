@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}{% blocktrans with title=award.title %}Request Amendment - {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:list' %}">{% trans "Awards" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'awards:detail' award.pk %}">{{ award.award_number }}</a></li>
+            <li class="breadcrumb-item active">{% trans "Request Amendment" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-2">
+            <i class="bi bi-file-earmark-diff me-2"></i>{% trans "Request Amendment" %}
+        </h1>
+        <p class="text-muted mb-4">{% blocktrans with title=award.title %}for {{ title }}{% endblocktrans %}</p>
+
+        <!-- Award Summary -->
+        <div class="card border-0 shadow-sm mb-4 bg-light">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">{% trans "Award Number" %}</small>
+                        <span class="fw-semibold">{{ award.award_number }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">{% trans "Amount" %}</small>
+                        <span class="fw-semibold">${{ award.award_amount|intcomma }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">{% trans "Period" %}</small>
+                        <span class="fw-semibold">
+                            {{ award.start_date|date:"m/d/Y"|default:"TBD" }} &ndash;
+                            {{ award.end_date|date:"m/d/Y"|default:"TBD" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amendment Form -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_amendment_type" class="form-label fw-semibold">{% trans "Amendment Type" %}</label>
+                        <select name="amendment_type" id="id_amendment_type" class="form-select" required>
+                            <option value="">{% trans "Select amendment type..." %}</option>
+                            <option value="budget_modification">{% trans "Budget Modification" %}</option>
+                            <option value="time_extension">{% trans "Time Extension" %}</option>
+                            <option value="scope_change">{% trans "Scope Change" %}</option>
+                            <option value="personnel_change">{% trans "Personnel Change" %}</option>
+                            <option value="other">{% trans "Other" %}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label fw-semibold">{% trans "Description of Requested Changes" %}</label>
+                        <textarea name="description" id="id_description" class="form-control" rows="5"
+                                  placeholder="{% trans "Describe the specific changes you are requesting..." %}"
+                                  required></textarea>
+                        <div class="form-text">
+                            {% trans "Be specific about what is changing. For budget modifications, include the line items and amounts. For time extensions, include the new end date requested." %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_justification" class="form-label fw-semibold">{% trans "Justification" %}</label>
+                        <textarea name="justification" id="id_justification" class="form-control" rows="4"
+                                  placeholder="{% trans "Explain why this amendment is necessary..." %}"
+                                  required></textarea>
+                        <div class="form-text">
+                            {% trans "Provide a clear rationale for the requested change, including any supporting circumstances or documentation references." %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'awards:detail' award.pk %}#amendments" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="save_draft" value="1" class="btn btn-outline-primary">
+                                <i class="bi bi-save me-1"></i>{% trans "Save Draft" %}
+                            </button>
+                            <button type="submit" name="submit" value="1" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>{% trans "Submit Amendment Request" %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

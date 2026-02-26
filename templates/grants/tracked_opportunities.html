@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load i18n %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Tracked Federal Opportunities" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Tracked Opportunities" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bookmark-star me-2"></i>{% trans "Tracked Federal Opportunities" %}</h2>
+    <a href="{% url 'portal:federal-opportunities' %}" class="btn btn-primary">
+        <i class="bi bi-globe me-1"></i>{% trans "Browse Opportunities" %}
+    </a>
+</div>
+
+{# -- Filter Bar -- #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="status-filter" class="form-label small fw-bold">{% trans "Tracking Status" %}</label>
+                <select name="status" id="status-filter" class="form-select form-select-sm">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="priority-filter" class="form-label small fw-bold">{% trans "Priority" %}</label>
+                <select name="priority" id="priority-filter" class="form-select form-select-sm">
+                    <option value="">{% trans "All Priorities" %}</option>
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if current_priority == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                </button>
+                <a href="{% url 'grants:tracked-list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>{% trans "Clear" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# -- Tracked Opportunities Table -- #}
+{% if tracked_opportunities %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        {% sortable_th 'opportunity' _("Opportunity") %}
+                        {% sortable_th 'agency' _("Agency") %}
+                        {% sortable_th 'status' _("Tracking Status") %}
+                        {% sortable_th 'priority' _("Priority") %}
+                        {% sortable_th 'close_date' _("Close Date") %}
+                        <th>{% trans "Linked Program" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in tracked_opportunities %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'grants:tracked-detail' item.pk %}" class="text-decoration-none fw-bold">
+                                {{ item.federal_opportunity.title|truncatewords:10 }}
+                            </a>
+                            {% if item.federal_opportunity.opportunity_number %}
+                            <br><small class="text-muted">{{ item.federal_opportunity.opportunity_number }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ item.federal_opportunity.agency_name|truncatewords:4 }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ item.status }}">
+                                {{ item.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if item.priority == 'high' %}
+                            <span class="badge bg-danger">{% trans "High" %}</span>
+                            {% elif item.priority == 'medium' %}
+                            <span class="badge bg-warning text-dark">{% trans "Medium" %}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{% trans "Low" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.federal_opportunity.close_date %}
+                                {% with days=item.federal_opportunity.days_until_close %}
+                                <span class="{% if days is not None and days < 14 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                    {{ item.federal_opportunity.close_date|date:"M d, Y" }}
+                                </span>
+                                {% if days is not None %}
+                                <br><small class="{% if days < 14 %}text-danger{% else %}text-muted{% endif %}">
+                                    {{ days }} {% trans "day" %}{{ days|pluralize }} {% trans "left" %}
+                                </small>
+                                {% else %}
+                                <br><small class="text-danger">{% trans "Closed" %}</small>
+                                {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <span class="text-muted">{% trans "Not specified" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.grant_program %}
+                            <a href="{% url 'grants:program-detail' item.grant_program.pk %}" class="text-decoration-none small">
+                                {{ item.grant_program.title|truncatewords:5 }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted small">{% trans "None" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'grants:tracked-detail' item.pk %}" class="btn btn-outline-primary" title="{% trans 'View' %}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'grants:tracked-update' item.pk %}" class="btn btn-outline-secondary" title="{% trans 'Edit' %}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Pagination #}
+{% if is_paginated %}
+<nav class="mt-4" aria-label="{% trans 'Tracked opportunities pagination' %}">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i> {% trans "Previous" %}
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> {% trans "Previous" %}</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                {% trans "Next" %} <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">{% trans "Next" %} <i class="bi bi-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+    <p class="text-center text-muted small">
+        {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
+        Showing {{ start }}-{{ end }} of {{ total }} tracked opportunities
+        {% endblocktrans %}
+    </p>
+</nav>
+{% endif %}
+
+{% else %}
+{# Empty State #}
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="bi bi-bookmark-x d-block"></i>
+        <h5>{% trans "No Tracked Opportunities" %}</h5>
+        <p class="text-muted">
+            {% if current_status or current_priority %}
+                {% trans "No tracked opportunities match your current filters. Try adjusting your criteria." %}
+            {% else %}
+                {% trans "No tracked opportunities. Browse federal opportunities to start tracking." %}
+            {% endif %}
+        </p>
+        <a href="{% url 'portal:federal-opportunities' %}" class="btn btn-primary">
+            <i class="bi bi-globe me-1"></i>{% trans "Browse Federal Opportunities" %}
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

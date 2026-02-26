@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load i18n %}
+{% load sortable_tags %}
+
+{% block title %}{% trans "Saved Programs" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container py-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Saved Programs" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bookmark-star me-2"></i>{% trans "Saved Programs" %}</h2>
+    <a href="{% url 'portal:opportunities' %}" class="btn btn-primary">
+        <i class="bi bi-search me-1"></i>{% trans "Browse Opportunities" %}
+    </a>
+</div>
+
+{# -- Filter Bar -- #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="interest-filter" class="form-label small fw-bold">{% trans "Interest Level" %}</label>
+                <select name="interest_level" id="interest-filter" class="form-select form-select-sm">
+                    <option value="">{% trans "All Levels" %}</option>
+                    <option value="watching" {% if current_interest == 'watching' %}selected{% endif %}>{% trans "Watching" %}</option>
+                    <option value="interested" {% if current_interest == 'interested' %}selected{% endif %}>{% trans "Interested" %}</option>
+                    <option value="planning_to_apply" {% if current_interest == 'planning_to_apply' %}selected{% endif %}>{% trans "Planning to Apply" %}</option>
+                </select>
+            </div>
+            <div class="col-md-8 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-funnel me-1"></i>{% trans "Filter" %}
+                </button>
+                <a href="{% url 'grants:saved-list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>{% trans "Clear" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# -- Saved Programs Table -- #}
+{% if saved_programs %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        {% sortable_th 'program' _("Program") %}
+                        <th>{% trans "Agency" %}</th>
+                        {% sortable_th 'interest_level' _("Interest Level") %}
+                        {% sortable_th 'deadline' _("Deadline") %}
+                        <th>{% trans "Award Range" %}</th>
+                        <th>{% trans "Notes" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for saved in saved_programs %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'portal:opportunity-detail' saved.grant_program.pk %}" class="text-decoration-none fw-bold">
+                                {{ saved.grant_program.title|truncatewords:10 }}
+                            </a>
+                            <br><small class="text-muted">{% trans "Saved" %} {{ saved.created_at|date:"M d, Y" }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ saved.grant_program.agency.name|default:"--" }}</span>
+                        </td>
+                        <td>
+                            {% if saved.interest_level == 'planning_to_apply' %}
+                                <span class="badge bg-success">{% trans "Planning to Apply" %}</span>
+                            {% elif saved.interest_level == 'interested' %}
+                                <span class="badge bg-info text-dark">{% trans "Interested" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{% trans "Watching" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if saved.grant_program.application_deadline %}
+                                {{ saved.grant_program.application_deadline|date:"M d, Y" }}
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if saved.grant_program.min_award %}
+                                ${{ saved.grant_program.min_award|intcomma }} &ndash; ${{ saved.grant_program.max_award|intcomma }}
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">
+                            {{ saved.notes|truncatewords:10|default:"--" }}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'portal:opportunity-detail' saved.grant_program.pk %}" class="btn btn-outline-primary" title="{% trans 'View' %}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary" title="{% trans 'Update' %}"
+                                        data-bs-toggle="collapse" data-bs-target="#update-{{ saved.pk }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="post" action="{% url 'grants:saved-toggle' %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="grant_program_id" value="{{ saved.grant_program.pk }}">
+                                    <input type="hidden" name="next" value="{% url 'grants:saved-list' %}">
+                                    <button type="submit" class="btn btn-outline-danger" title="{% trans 'Remove' %}">
+                                        <i class="bi bi-bookmark-x"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {# Inline edit row #}
+                    <tr class="collapse" id="update-{{ saved.pk }}">
+                        <td colspan="7" class="bg-light">
+                            <form method="post" action="{% url 'grants:saved-update' saved.pk %}" class="row g-2 align-items-end p-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'grants:saved-list' %}">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">{% trans "Interest Level" %}</label>
+                                    <select name="interest_level" class="form-select form-select-sm">
+                                        <option value="watching" {% if saved.interest_level == 'watching' %}selected{% endif %}>{% trans "Watching" %}</option>
+                                        <option value="interested" {% if saved.interest_level == 'interested' %}selected{% endif %}>{% trans "Interested" %}</option>
+                                        <option value="planning_to_apply" {% if saved.interest_level == 'planning_to_apply' %}selected{% endif %}>{% trans "Planning to Apply" %}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">{% trans "Notes" %}</label>
+                                    <input type="text" name="notes" class="form-control form-control-sm"
+                                           value="{{ saved.notes }}" placeholder="{% trans "Personal notes..." %}">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                                        <i class="bi bi-check me-1"></i>{% trans "Save" %}
+                                    </button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Pagination #}
+{% if is_paginated %}
+<nav class="mt-4" aria-label="{% trans 'Saved programs pagination' %}">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                <i class="bi bi-chevron-left"></i> {% trans "Previous" %}
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> {% trans "Previous" %}</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if pagination_params %}&{{ pagination_params }}{% endif %}">
+                {% trans "Next" %} <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">{% trans "Next" %} <i class="bi bi-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+{# Empty State #}
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="bi bi-bookmark-x d-block"></i>
+        <h5>{% trans "No Saved Programs" %}</h5>
+        <p class="text-muted">
+            {% if current_interest %}
+                {% trans "No saved programs match your current filter. Try adjusting your criteria." %}
+            {% else %}
+                {% trans "You haven't saved any programs yet. Browse opportunities to start your watchlist." %}
+            {% endif %}
+        </p>
+        <a href="{% url 'portal:opportunities' %}" class="btn btn-primary">
+            <i class="bi bi-search me-1"></i>{% trans "Browse Opportunities" %}
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

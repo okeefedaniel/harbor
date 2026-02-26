@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Privacy Policy" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans "breadcrumb" %}" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb py-2 mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Privacy Policy" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-2">{% trans "Privacy Policy" %}</h1>
+        <p class="text-muted mb-4">{% trans "Last updated: February 2026" %}</p>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-shield-lock me-2 text-primary"></i>{% trans "Introduction" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "The State of DOK, through the Department of Commerce and Development, is committed to protecting the privacy of individuals who use the Grantify grants management platform. This Privacy Policy describes how we collect, use, store, and protect your personal information when you access and use the system." %}
+                </p>
+                <p class="lh-lg">
+                    {% trans "Grantify is a government system subject to state law, including applicable data privacy statutes. By using this platform, you acknowledge that your information will be handled in accordance with this policy and applicable law." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-collection me-2 text-primary"></i>{% trans "Information We Collect" %}
+                </h4>
+                <p class="lh-lg fw-semibold">{% trans "We collect the following categories of information:" %}</p>
+                <div class="mb-3">
+                    <h6 class="fw-bold text-primary">{% trans "Account Information" %}</h6>
+                    <ul class="lh-lg">
+                        <li>{% trans "Name, email address, phone number, and username" %}</li>
+                        <li>{% trans "Organization name, type, and contact details" %}</li>
+                        <li>{% trans "Job title and role within your organization" %}</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold text-primary">{% trans "Grant Application Data" %}</h6>
+                    <ul class="lh-lg">
+                        <li>{% trans "Project descriptions, budgets, and narrative responses" %}</li>
+                        <li>{% trans "Financial information including requested funding amounts and budget details" %}</li>
+                        <li>{% trans "Supporting documents uploaded as part of the application process" %}</li>
+                        <li>{% trans "Organization identifiers such as DUNS, UEI, and EIN numbers" %}</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold text-primary">{% trans "System Usage Data" %}</h6>
+                    <ul class="lh-lg">
+                        <li>{% trans "Login timestamps and session activity" %}</li>
+                        <li>{% trans "Actions performed within the system (audit trail)" %}</li>
+                        <li>{% trans "Browser type, IP address, and device information" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-gear me-2 text-primary"></i>{% trans "How We Use Your Information" %}
+                </h4>
+                <p class="lh-lg">{% trans "Your information is used for the following purposes:" %}</p>
+                <ul class="lh-lg">
+                    <li>{% trans "Processing and managing grant applications, awards, and related activities" %}</li>
+                    <li>{% trans "Communicating with you about your applications, awards, and required actions" %}</li>
+                    <li>{% trans "Verifying your identity and eligibility for grant programs" %}</li>
+                    <li>{% trans "Administering financial disbursements and monitoring compliance" %}</li>
+                    <li>{% trans "Generating reports required by state and federal oversight agencies" %}</li>
+                    <li>{% trans "Maintaining system security and preventing unauthorized access" %}</li>
+                    <li>{% trans "Improving platform functionality and user experience" %}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-share me-2 text-primary"></i>{% trans "Information Sharing and Disclosure" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "As a state government platform, information submitted through Grantify may be shared with:" %}
+                </p>
+                <ul class="lh-lg">
+                    <li>{% trans "State agencies involved in the administration and oversight of grant programs" %}</li>
+                    <li>{% trans "Federal agencies when required for compliance with federal grant regulations" %}</li>
+                    <li>{% trans "Authorized reviewers assigned to evaluate grant applications" %}</li>
+                    <li>{% trans "Auditors conducting financial or compliance audits of grant programs" %}</li>
+                </ul>
+                <p class="lh-lg">
+                    {% trans "Certain information may also be subject to disclosure under applicable Freedom of Information laws. We will not sell or rent your personal information to third parties." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-lock me-2 text-primary"></i>{% trans "Data Security" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "We implement industry-standard security measures to protect your information, including:" %}
+                </p>
+                <ul class="lh-lg">
+                    <li>{% trans "Encryption of data in transit using TLS/SSL protocols" %}</li>
+                    <li>{% trans "Role-based access controls (RBAC) to limit data access to authorized personnel" %}</li>
+                    <li>{% trans "Multi-factor authentication (MFA) support for enhanced account security" %}</li>
+                    <li>{% trans "Comprehensive audit logging of all system activities" %}</li>
+                    <li>{% trans "Regular security assessments and monitoring" %}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>{% trans "Data Retention" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Grant records and associated data are retained in accordance with the State Library's records retention schedules and applicable state and federal requirements. Grant records are typically retained for a minimum of seven (7) years following the closeout of the grant award, or longer if required by the funding source." %}
+                </p>
+                <p class="lh-lg">
+                    {% trans "Account information for users who have not participated in any grant activity may be removed after two (2) years of inactivity, following prior notification." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-person-check me-2 text-primary"></i>{% trans "Your Rights" %}
+                </h4>
+                <p class="lh-lg">{% trans "Under applicable state law, you have the right to:" %}</p>
+                <ul class="lh-lg">
+                    <li>{% trans "Access the personal information we hold about you" %}</li>
+                    <li>{% trans "Request correction of inaccurate personal information" %}</li>
+                    <li>{% trans "Request deletion of your account, subject to records retention requirements" %}</li>
+                    <li>{% trans "Obtain a copy of your personal data in a portable format" %}</li>
+                </ul>
+                <p class="lh-lg">
+                    {% trans "To exercise these rights, please contact us using the information provided below. Note that certain data related to active or closed grants may be retained as required by law, even after account deletion." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-cookie me-2 text-primary"></i>{% trans "Cookies and Tracking" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "Grantify uses essential cookies required for the functioning of the platform, including session management and security tokens (CSRF). We do not use third-party advertising or analytics tracking cookies. No personal information is shared with advertising networks." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-arrow-repeat me-2 text-primary"></i>{% trans "Changes to This Policy" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "We may update this Privacy Policy from time to time. When we make material changes, we will notify registered users via the platform's notification system and update the 'Last updated' date above. Continued use of the platform after changes are posted constitutes acceptance of the updated policy." %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-envelope me-2 text-primary"></i>{% trans "Contact Us" %}
+                </h4>
+                <p class="lh-lg">
+                    {% trans "If you have questions about this Privacy Policy or wish to exercise your data rights, please contact:" %}
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-semibold">{% trans "Grants Management Office" %}</p>
+                        <p class="text-muted mb-1">{% trans "Department of Commerce and Development" %}</p>
+                        <div class="mb-1">
+                            <i class="bi bi-envelope me-2 text-muted"></i>
+                            <a href="mailto:grants@dok.gov">grants@dok.gov</a>
+                        </div>
+                        <div class="mb-1">
+                            <i class="bi bi-telephone me-2 text-muted"></i>
+                            (555) 500-2300
+                        </div>
+                        <div>
+                            <i class="bi bi-geo-alt me-2 text-muted"></i>
+                            100 Capitol Avenue, Capital City, DOK 00100
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

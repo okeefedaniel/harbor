@@ -1,0 +1,23 @@
+{% load i18n %}{% trans "Grantify" %}
+{% trans "State Grants Management Solution" %}
+
+---
+
+{% trans "NEW APPLICATION SUBMITTED" %}
+
+{% blocktrans with name=staff_user.get_full_name|default:staff_user.username %}Hello {{ name }},{% endblocktrans %}
+
+{% trans "A new grant application has been submitted and requires your review." %}
+
+{% trans "Project Title" %}: {{ application.project_title }}
+{% trans "Applicant" %}: {{ applicant.get_full_name }}
+{% trans "Organization" %}: {{ org_name }}
+{% trans "Grant Program" %}: {{ program.title }}
+{% trans "Amount Requested" %}: ${{ application.requested_amount|floatformat:2 }}
+
+{% trans "Review Application" %}: {{ detail_url }}
+
+---
+
+{% trans "This is an automated message from Grantify. Do not reply directly." %}
+{% trans "State of DOK" %} -- {% trans "Grants Management System" %}
