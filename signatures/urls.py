@@ -1,10 +1,14 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views
 
 app_name = 'signatures'
 
 urlpatterns = [
+    # ---- Root redirect ----
+    path('', RedirectView.as_view(pattern_name='signatures:packet-list'), name='index'),
+
     # ---- Admin: Flow configuration ----
     path('flows/', views.FlowListView.as_view(), name='flow-list'),
     path('flows/create/', views.FlowCreateView.as_view(), name='flow-create'),
