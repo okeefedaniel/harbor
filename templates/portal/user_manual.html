@@ -193,7 +193,7 @@
                                 <i class="bi bi-trophy text-primary fs-5 mt-1"></i>
                                 <div>
                                     <strong>{% trans "Manage Awards" %}</strong>
-                                    <p class="small text-muted mb-0">{% trans "Issue awards, manage amendments, and collect e-signatures via DocuSign." %}</p>
+                                    <p class="small text-muted mb-0">{% trans "Issue awards, manage amendments, and collect e-signatures via built-in signing flows or DocuSign." %}</p>
                                 </div>
                             </div>
                         </div>
@@ -474,17 +474,65 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body p-4 lh-lg">
-                    <h5 class="fw-bold">{% trans "Creating Awards & E-Signatures" %}</h5>
-                    <p>{% trans "After approving an application, click <strong>Create Award</strong>. The form is pre-populated from the application. An award number is auto-generated." %}</p>
-                    <p>{% trans "To send an award agreement for electronic signature:" %}</p>
+                    <h5 class="fw-bold">{% trans "Creating Awards" %}</h5>
+                    <p class="mb-0">{% trans "After approving an application, click <strong>Create Award</strong>. The form is pre-populated from the application. An award number is auto-generated." %}</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold"><i class="bi bi-pen me-2 text-primary"></i>{% trans "Document Signing" %}</h5>
+                    <p>{% trans "Grantify offers two ways to collect signatures on award agreements. You can use either option depending on your agency's needs." %}</p>
+
+                    <h6 class="fw-bold mt-4"><i class="bi bi-diagram-3 me-2"></i>{% trans "Option A: Built-in Signing Flows (Recommended)" %}</h6>
+                    <p>{% trans "Native signing flows let you define a sequential chain of internal staff signers with full control over the process:" %}</p>
                     <ol>
-                        <li>{% trans "Navigate to the award detail page and click <strong>Request Signature</strong>." %}</li>
+                        <li>{% trans "Navigate to <strong>Awards &rarr; Signature Flows</strong> and create a flow (or use one already linked to your grant program)." %}</li>
+                        <li>{% trans "Add signing steps in order (e.g., Program Officer &rarr; Division Director &rarr; Commissioner). Each step can be assigned to a specific user or a role." %}</li>
+                        <li>{% trans "Upload the PDF award agreement as a document template." %}</li>
+                        <li>{% trans "Click <strong>Edit Placements</strong> to open the visual editor. Select a step, choose the field type (Signature, Initials, Date, or Name), and click on the PDF where it should appear." %}</li>
+                        <li>{% trans "From the award detail page, click <strong>Start Signing Flow</strong> and assign a signer to each step." %}</li>
+                        <li>{% trans "Each signer receives an email notification in sequence. They can sign using a typed name, an uploaded image, or by drawing with their mouse or finger." %}</li>
+                        <li>{% trans "Once all signers complete, a final signed PDF is generated automatically with all signatures overlaid at the defined positions. A full audit trail records who signed, when, and from which IP address." %}</li>
+                    </ol>
+
+                    <h6 class="fw-bold mt-4"><i class="bi bi-file-earmark-check me-2"></i>{% trans "Option B: DocuSign Integration" %}</h6>
+                    <p>{% trans "For external signers or organizations that already use DocuSign:" %}</p>
+                    <ol>
+                        <li>{% trans "Navigate to the award detail page and click <strong>Request Signature (DocuSign)</strong>." %}</li>
                         <li>{% trans "Enter the signer's name and email, optional CC, and notes." %}</li>
-                        <li>{% trans "Click <strong>Send for Signature</strong>. The system sends a DocuSign envelope." %}</li>
+                        <li>{% trans "Click <strong>Send for Signature</strong>. The system sends a DocuSign envelope via JWT-authenticated API." %}</li>
                         <li>{% trans "Once signed, the document is automatically downloaded and the award status updates to <strong>Executed</strong>." %}</li>
                     </ol>
+
+                    <div class="alert alert-light border mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>
+                        {% trans "Both options produce a signed document with a complete audit trail. Use <strong>built-in signing flows</strong> for internal staff sign-off chains (sequential approval workflows). Use <strong>DocuSign</strong> when you need external parties to sign or when your agency requires DocuSign specifically." %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 lh-lg">
+                    <h5 class="fw-bold"><i class="bi bi-diagram-3 me-2 text-primary"></i>{% trans "Managing Signature Flows" %}</h5>
+                    <p>{% trans "Signature flows are reusable templates that define who needs to sign and in what order. Administrators can configure flows, while any authenticated user can define where on a document signatures should be placed." %}</p>
+
+                    <h6 class="fw-bold">{% trans "Configuring Flows" %}</h6>
+                    <p>{% trans "Go to <strong>Awards &rarr; Signature Flows</strong> to create and manage flows. Each flow can optionally be linked to a grant program so it appears automatically on awards for that program." %}</p>
+
+                    <h6 class="fw-bold">{% trans "Adding Steps" %}</h6>
+                    <p>{% trans "Add steps with a label (e.g., 'Program Officer Approval'), an execution order, and an assignment type. Steps assigned by <strong>role</strong> allow you to pick the specific signer when initiating a packet; steps assigned to a <strong>specific user</strong> are pre-assigned." %}</p>
+
+                    <h6 class="fw-bold">{% trans "PDF Templates & Placement Editor" %}</h6>
+                    <p>{% trans "Upload the PDF document that needs signatures. Then open the <strong>Placement Editor</strong> — a visual tool where you click on the PDF to define where each signer's signature, initials, date, or printed name should appear. Placements are stored as percentages, so they work at any zoom level or resolution." %}</p>
+
+                    <h6 class="fw-bold">{% trans "Tracking Packets" %}</h6>
+                    <p>{% trans "View all active and completed signing packets under <strong>Awards &rarr; Signing Packets</strong>. Each packet shows a progress bar, the current active signer, and a full timeline. You can send reminders to the active signer or cancel a packet if needed." %}</p>
+
+                    <h6 class="fw-bold">{% trans "My Signatures" %}</h6>
+                    <p class="mb-0">{% trans "Each user can access <strong>My Signatures</strong> from the user menu to see pending signature requests and their signing history. Users can also save signature preferences (typed name, uploaded image, or drawn signature) for quick reuse." %}</p>
                 </div>
             </div>
         </section>

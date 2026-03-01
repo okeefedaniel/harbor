@@ -56,9 +56,15 @@
                 <h5 class="card-title mb-0 fw-bold">{% trans "Signer Information" %}</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted mb-4">
+                <p class="text-muted mb-3">
                     {% trans "The award agreement will be sent to the signer via DocuSign for electronic signature. Once signed, the award will be marked as executed." %}
                 </p>
+                <div class="alert alert-light border mb-4">
+                    <i class="bi bi-diagram-3 me-2 text-primary"></i>
+                    {% trans "Looking for internal staff sign-off?" %}
+                    <a href="{% url 'signatures:flow-list' %}">{% trans "Use built-in Signing Flows" %}</a>
+                    {% trans "for sequential approval chains with typed, uploaded, or drawn signatures." %}
+                </div>
                 <form method="post" action="{% url 'awards:signature_request' award.pk %}">
                     {% csrf_token %}
                     {% crispy form %}
