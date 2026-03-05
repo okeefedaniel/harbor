@@ -222,6 +222,9 @@ class UserSignatureForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Default to "typed" so the form is immediately valid for submission
+        if self.instance._state.adding:
+            self.fields['signature_type'].initial = 'typed'
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout(

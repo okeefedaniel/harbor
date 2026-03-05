@@ -31,7 +31,7 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
-                <form method="post" enctype="multipart/form-data" novalidate>
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% crispy form %}
 
