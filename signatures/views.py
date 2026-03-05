@@ -25,6 +25,7 @@ from .forms import (
     SignatureDocumentForm,
     SignatureFlowForm,
     SigningForm,
+    UserSignatureForm,
 )
 from .models import (
     SignatureDocument,
@@ -558,8 +559,8 @@ class UserSignatureListView(LoginRequiredMixin, ListView):
 
 class UserSignatureCreateView(LoginRequiredMixin, CreateView):
     model = UserSignature
+    form_class = UserSignatureForm
     template_name = 'signatures/user_signature_form.html'
-    fields = ['label', 'signature_type', 'typed_name', 'signature_image']
     success_url = reverse_lazy('signatures:user-signature-list')
 
     def form_valid(self, form):

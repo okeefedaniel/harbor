@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Fieldset, Layout, Row, Column, Submit
 
-from .models import SignatureDocument, SignatureFlow, SignatureFlowStep
+from .models import SignatureDocument, SignatureFlow, SignatureFlowStep, UserSignature
 
 
 class SignatureFlowForm(forms.ModelForm):
@@ -213,6 +213,23 @@ class SigningForm(forms.Form):
         elif sig_type == 'drawn' and not cleaned_data.get('drawn_data'):
             self.add_error('drawn_data', _('Please draw your signature.'))
         return cleaned_data
+
+
+class UserSignatureForm(forms.ModelForm):
+    class Meta:
+        model = UserSignature
+        fields = ['label', 'signature_type', 'typed_name', 'signature_image']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            'label',
+            'signature_type',
+            'typed_name',
+            'signature_image',
+        )
 
 
 class DeclineForm(forms.Form):
