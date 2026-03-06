@@ -16,7 +16,12 @@ from django.views.generic import (
     UpdateView,
 )
 
-from core.mixins import AgencyStaffRequiredMixin, GrantManagerRequiredMixin, SortableListMixin
+from .compat import (
+    AgencyStaffRequiredMixin,
+    GrantManagerRequiredMixin,
+    SortableListMixin,
+    get_audit_log_model,
+)
 
 from .forms import (
     DeclineForm,
@@ -391,13 +396,16 @@ class PacketAuditView(AgencyStaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from core.models import AuditLog
-        context['audit_entries'] = AuditLog.objects.filter(
-            entity_type__in=['SigningPacket', 'SigningStep'],
-            entity_id__in=[str(self.object.pk)] + [
-                str(s.pk) for s in self.object.steps.all()
-            ],
-        ).order_by('-timestamp')
+        AuditLog = get_audit_log_model()
+        if AuditLog is not None:
+            context['audit_entries'] = AuditLog.objects.filter(
+                entity_type__in=['SigningPacket', 'SigningStep'],
+                entity_id__in=[str(self.object.pk)] + [
+                    str(s.pk) for s in self.object.steps.all()
+                ],
+            ).order_by('-timestamp')
+        else:
+            context['audit_entries'] = []
         return context
 
 

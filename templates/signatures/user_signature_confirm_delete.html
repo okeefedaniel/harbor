@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends sig_base_template %}
 {% load i18n %}
 {% load crispy_forms_tags %}
 
@@ -8,7 +8,7 @@
 <nav aria-label="breadcrumb" class="bg-light border-bottom">
     <div class="container">
         <ol class="breadcrumb mb-0 py-2">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url sig_dashboard_url %}">{% trans "Dashboard" %}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'signatures:my-signatures' %}">{% trans "My Signatures" %}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'signatures:user-signature-list' %}">{% trans "Saved Signatures" %}</a></li>
             <li class="breadcrumb-item active">{% trans "Delete" %}</li>

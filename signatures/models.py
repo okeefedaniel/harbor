@@ -6,6 +6,15 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+# Detect whether the grants app is installed so we can conditionally
+# define the grant_program FK.  This runs at class-definition time
+# (after Django settings are loaded) and affects both the model AND
+# the migration auto-detector.
+_GRANTS_INSTALLED = any(
+    app == 'grants' or app.startswith('grants.')
+    for app in settings.INSTALLED_APPS
+)
+
 
 # ---------------------------------------------------------------------------
 # SignatureFlow — Reusable workflow template
@@ -16,17 +25,6 @@ class SignatureFlow(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_('name'), max_length=255)
     description = models.TextField(_('description'), blank=True, default='')
-
-    # Optional link to Grantify — nullable for standalone use
-    grant_program = models.ForeignKey(
-        'grants.GrantProgram',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='signature_flows',
-        verbose_name=_('grant program'),
-        help_text=_('Link to a grant program (leave blank for standalone use).'),
-    )
 
     is_active = models.BooleanField(_('active'), default=True)
     created_by = models.ForeignKey(
@@ -50,6 +48,23 @@ class SignatureFlow(models.Model):
     @property
     def step_count(self):
         return self.steps.count()
+
+
+# Conditionally add the grant_program FK only when the grants app is installed.
+# This ensures standalone (SignFlow) deployments have no dependency on grants.
+if _GRANTS_INSTALLED:
+    SignatureFlow.add_to_class(
+        'grant_program',
+        models.ForeignKey(
+            'grants.GrantProgram',
+            on_delete=models.SET_NULL,
+            null=True,
+            blank=True,
+            related_name='signature_flows',
+            verbose_name=_('grant program'),
+            help_text=_('Link to a grant program (leave blank for standalone use).'),
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------

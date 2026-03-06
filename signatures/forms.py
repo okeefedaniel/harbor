@@ -10,20 +10,29 @@ from .models import SignatureDocument, SignatureFlow, SignatureFlowStep, UserSig
 class SignatureFlowForm(forms.ModelForm):
     class Meta:
         model = SignatureFlow
-        fields = ['name', 'description', 'grant_program', 'is_active']
+        fields = ['name', 'description', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from .compat import is_grantify
+        # Include grant_program field only when the grants app is installed
+        show_program = is_grantify() and hasattr(SignatureFlow, 'grant_program')
+        layout_fields = ['name', 'description']
+        if show_program:
+            self.fields['grant_program'] = forms.ModelChoiceField(
+                queryset=SignatureFlow.grant_program.field.related_model.objects.all(),
+                required=False,
+                label=_('Grant Program'),
+                help_text=_('Link to a grant program (leave blank for standalone use).'),
+            )
+            if self.instance.pk and hasattr(self.instance, 'grant_program'):
+                self.fields['grant_program'].initial = self.instance.grant_program
+            layout_fields.append('grant_program')
+        layout_fields.append('is_active')
         self.helper = FormHelper()
         self.helper.form_method = 'post'
         self.helper.layout = Layout(
-            Fieldset(
-                _('Signature Flow'),
-                'name',
-                'description',
-                'grant_program',
-                'is_active',
-            ),
+            Fieldset(_('Signature Flow'), *layout_fields),
             Submit('submit', _('Save Flow'), css_class='btn-primary'),
         )
 
@@ -39,24 +48,11 @@ class FlowStepForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.flow = kwargs.pop('flow', None)
         super().__init__(*args, **kwargs)
-        # Filter assigned_user to agency staff only
-        from core.models import User
-        staff_roles = [
-            User.Role.SYSTEM_ADMIN,
-            User.Role.AGENCY_ADMIN,
-            User.Role.PROGRAM_OFFICER,
-            User.Role.FISCAL_OFFICER,
-            User.Role.FEDERAL_COORDINATOR,
-            User.Role.REVIEWER,
-        ]
-        self.fields['assigned_user'].queryset = User.objects.filter(
-            role__in=staff_roles,
-        ).order_by('last_name', 'first_name')
+        # Filter assigned_user to staff / agency roles
+        from .compat import get_assignable_users, get_role_choices
+        self.fields['assigned_user'].queryset = get_assignable_users()
         self.fields['assigned_role'].widget = forms.Select(
-            choices=[('', '---------')] + [
-                (role.value, role.label) for role in User.Role
-                if role.value in [r.value for r in staff_roles]
-            ],
+            choices=get_role_choices(),
         )
         self.helper = FormHelper()
         self.helper.form_method = 'post'
@@ -132,18 +128,11 @@ class PacketInitiateForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.flow = flow
         if flow:
-            from core.models import User
-            staff_roles = [
-                User.Role.SYSTEM_ADMIN,
-                User.Role.AGENCY_ADMIN,
-                User.Role.PROGRAM_OFFICER,
-                User.Role.FISCAL_OFFICER,
-                User.Role.FEDERAL_COORDINATOR,
-                User.Role.REVIEWER,
-            ]
-            staff_qs = User.objects.filter(
-                role__in=staff_roles,
-            ).order_by('last_name', 'first_name')
+            from django.contrib.auth import get_user_model
+            from .compat import get_assignable_users
+
+            User = get_user_model()
+            staff_qs = get_assignable_users()
 
             for step in flow.steps.all():
                 field_name = f'signer_{step.pk}'
@@ -158,7 +147,7 @@ class PacketInitiateForm(forms.Form):
                 else:
                     # Role-based or unassigned — show dropdown
                     qs = staff_qs
-                    if step.assigned_role:
+                    if step.assigned_role and hasattr(qs.model, 'role'):
                         qs = qs.filter(role=step.assigned_role)
                     self.fields[field_name] = forms.ModelChoiceField(
                         queryset=qs,

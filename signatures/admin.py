@@ -26,11 +26,17 @@ class SignatureDocumentInline(admin.TabularInline):
 
 @admin.register(SignatureFlow)
 class SignatureFlowAdmin(admin.ModelAdmin):
-    list_display = ['name', 'grant_program', 'is_active', 'created_by', 'created_at']
     list_filter = ['is_active', 'created_at']
     search_fields = ['name', 'description']
     readonly_fields = ['created_at', 'updated_at']
     inlines = [SignatureFlowStepInline, SignatureDocumentInline]
+
+    def get_list_display(self, request):
+        base = ['name']
+        if hasattr(SignatureFlow, 'grant_program'):
+            base.append('grant_program')
+        base.extend(['is_active', 'created_by', 'created_at'])
+        return base
 
 
 class SignaturePlacementInline(admin.TabularInline):

@@ -11,9 +11,13 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from core.audit import log_audit
-from core.models import AuditLog
-from core.notifications import _build_absolute_url, _create_notification, _send_notification_email
+from .compat import (
+    build_absolute_url,
+    create_notification,
+    get_audit_action,
+    log_audit,
+    send_notification_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +78,7 @@ def initiate_packet(flow, title, initiated_by, signer_assignments,
 
     log_audit(
         user=initiated_by,
-        action=AuditLog.Action.CREATE,
+        action=get_audit_action().CREATE,
         entity_type='SigningPacket',
         entity_id=str(packet.pk),
         description=f'Initiated signing packet "{title}" with {len(steps)} steps.',
@@ -116,7 +120,7 @@ def complete_step(signing_step, signature_type, signature_data, ip_address=None)
 
     log_audit(
         user=signing_step.signer,
-        action=AuditLog.Action.APPROVE,
+        action=get_audit_action().APPROVE,
         entity_type='SigningStep',
         entity_id=str(signing_step.pk),
         description=(
@@ -168,7 +172,7 @@ def _complete_packet(packet):
 
     log_audit(
         user=None,
-        action=AuditLog.Action.STATUS_CHANGE,
+        action=get_audit_action().STATUS_CHANGE,
         entity_type='SigningPacket',
         entity_id=str(packet.pk),
         description=f'Signing packet "{packet.title}" completed — all signatures collected.',
@@ -192,7 +196,7 @@ def decline_step(signing_step, reason, ip_address=None):
 
     log_audit(
         user=signing_step.signer,
-        action=AuditLog.Action.REJECT,
+        action=get_audit_action().REJECT,
         entity_type='SigningStep',
         entity_id=str(signing_step.pk),
         description=(
@@ -221,7 +225,7 @@ def cancel_packet(packet, cancelled_by, reason=''):
 
     log_audit(
         user=cancelled_by,
-        action=AuditLog.Action.STATUS_CHANGE,
+        action=get_audit_action().STATUS_CHANGE,
         entity_type='SigningPacket',
         entity_id=str(packet.pk),
         description=f'Signing packet "{packet.title}" cancelled by {cancelled_by.get_full_name()}.',
@@ -347,9 +351,9 @@ def _notify_signer_active(signing_step):
     from django.urls import reverse
 
     sign_url = reverse('signatures:sign', kwargs={'step_id': signing_step.pk})
-    absolute_url = _build_absolute_url(sign_url)
+    absolute_url = build_absolute_url(sign_url)
 
-    _create_notification(
+    create_notification(
         recipient=signing_step.signer,
         title=_('Signature Required'),
         message=_(
@@ -364,7 +368,7 @@ def _notify_signer_active(signing_step):
         priority='high',
     )
 
-    _send_notification_email(
+    send_notification_email(
         recipient_email=signing_step.signer.email,
         subject=_('Action Required: Signature Needed — %(packet)s') % {
             'packet': signing_step.packet.title,
@@ -384,13 +388,13 @@ def _notify_packet_completed(packet):
     from django.urls import reverse
 
     detail_url = reverse('signatures:packet-detail', kwargs={'pk': packet.pk})
-    absolute_url = _build_absolute_url(detail_url)
+    absolute_url = build_absolute_url(detail_url)
 
     notified = set()
 
     # Notify initiator
     if packet.initiated_by:
-        _create_notification(
+        create_notification(
             recipient=packet.initiated_by,
             title=_('Signing Complete'),
             message=_('All signatures have been collected for "%(packet)s".') % {
@@ -399,7 +403,7 @@ def _notify_packet_completed(packet):
             link=detail_url,
             priority='high',
         )
-        _send_notification_email(
+        send_notification_email(
             recipient_email=packet.initiated_by.email,
             subject=_('Signing Complete — %(packet)s') % {'packet': packet.title},
             template_name='emails/packet_completed.html',
@@ -414,7 +418,7 @@ def _notify_packet_completed(packet):
     # Notify each signer
     for step in packet.steps.select_related('signer'):
         if step.signer.pk not in notified:
-            _create_notification(
+            create_notification(
                 recipient=step.signer,
                 title=_('Signing Complete'),
                 message=_('All signatures have been collected for "%(packet)s".') % {
@@ -434,9 +438,9 @@ def _notify_packet_declined(packet, declined_step):
         return
 
     detail_url = reverse('signatures:packet-detail', kwargs={'pk': packet.pk})
-    absolute_url = _build_absolute_url(detail_url)
+    absolute_url = build_absolute_url(detail_url)
 
-    _create_notification(
+    create_notification(
         recipient=packet.initiated_by,
         title=_('Signature Declined'),
         message=_(
@@ -453,7 +457,7 @@ def _notify_packet_declined(packet, declined_step):
         priority='high',
     )
 
-    _send_notification_email(
+    send_notification_email(
         recipient_email=packet.initiated_by.email,
         subject=_('Signature Declined — %(packet)s') % {'packet': packet.title},
         template_name='emails/packet_declined.html',
@@ -471,9 +475,9 @@ def send_reminder(signing_step):
     from django.urls import reverse
 
     sign_url = reverse('signatures:sign', kwargs={'step_id': signing_step.pk})
-    absolute_url = _build_absolute_url(sign_url)
+    absolute_url = build_absolute_url(sign_url)
 
-    _send_notification_email(
+    send_notification_email(
         recipient_email=signing_step.signer.email,
         subject=_('Reminder: Signature Needed — %(packet)s') % {
             'packet': signing_step.packet.title,
