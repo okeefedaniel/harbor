@@ -84,12 +84,21 @@ WSGI_APPLICATION = 'signstreamer.wsgi.application'
 # Database — uses DATABASE_URL (provided automatically by Railway Postgres)
 import dj_database_url
 
-_db_url = os.environ.get('DATABASE_URL', '')
-if _db_url:
+_db_url = os.environ.get('DATABASE_URL', '').strip()
+if _db_url and '://' in _db_url:
+    # Use parse() with the value we already read, NOT config() which
+    # re-reads from os.environ and can get a stale/empty value.
     DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600)
+        'default': dj_database_url.parse(_db_url, conn_max_age=600)
     }
 else:
+    if _db_url:
+        import warnings
+        warnings.warn(
+            f'DATABASE_URL is set but looks invalid (no scheme): '
+            f'{_db_url[:20]}...',
+            stacklevel=1,
+        )
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

@@ -42,7 +42,16 @@ def main():
     # Diagnostics
     settings_module = os.environ.get('DJANGO_SETTINGS_MODULE', 'NOT SET')
     port = os.environ.get('PORT', 'NOT SET')
-    db_url = 'SET' if os.environ.get('DATABASE_URL') else 'NOT SET'
+    raw_db_url = os.environ.get('DATABASE_URL', '')
+    if raw_db_url:
+        # Show scheme + masked URL for debugging
+        if '://' in raw_db_url:
+            scheme = raw_db_url.split('://')[0]
+            db_url = f"SET ({scheme}://******, len={len(raw_db_url)})"
+        else:
+            db_url = f"SET but NO SCHEME (first 30 chars: {repr(raw_db_url[:30])})"
+    else:
+        db_url = 'NOT SET (empty)'
     secret = 'SET' if os.environ.get('DJANGO_SECRET_KEY') else 'NOT SET'
     log(f"DJANGO_SETTINGS_MODULE = {settings_module}")
     log(f"PORT = {port}")
