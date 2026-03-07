@@ -21,9 +21,14 @@
     <h1 class="fw-bold mb-0">
         <i class="bi bi-diagram-3 me-2"></i>{% trans "Signature Flows" %}
     </h1>
-    <a href="{% url 'signatures:flow-create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>{% trans "Create Flow" %}
-    </a>
+    <div class="btn-group">
+        <a href="{% url 'signatures:template-builder' %}" class="btn btn-primary">
+            <i class="bi bi-magic me-1"></i>{% trans "Template Builder" %}
+        </a>
+        <a href="{% url 'signatures:flow-create' %}" class="btn btn-outline-primary">
+            <i class="bi bi-plus-lg me-1"></i>{% trans "Create Flow" %}
+        </a>
+    </div>
 </div>
 
 <div class="card shadow-sm mb-4">

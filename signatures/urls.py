@@ -106,6 +106,24 @@ urlpatterns = [
         name='user-signature-set-default',
     ),
 
+    # ---- Template Builder wizard ----
+    path('builder/', views.TemplateBuilderView.as_view(), name='template-builder'),
+    path(
+        'builder/<uuid:pk>/',
+        views.TemplateBuilderView.as_view(),
+        name='template-builder-edit',
+    ),
+    path(
+        'api/builder/save/',
+        views.TemplateBuilderSaveAPIView.as_view(),
+        name='template-builder-save',
+    ),
+    path(
+        'api/builder/<uuid:pk>/save/',
+        views.TemplateBuilderSaveAPIView.as_view(),
+        name='template-builder-save-edit',
+    ),
+
     # ---- AJAX endpoints ----
     path(
         'api/packets/<uuid:pk>/status/',

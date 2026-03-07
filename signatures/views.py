@@ -639,3 +639,219 @@ class StepRemindAPIView(AgencyStaffRequiredMixin, View):
         step = get_object_or_404(SigningStep, pk=pk, status=SigningStep.Status.ACTIVE)
         services.send_reminder(step)
         return JsonResponse({'reminded': True})
+
+
+# ===========================================================================
+# Template Builder Wizard
+# ===========================================================================
+
+class TemplateBuilderView(GrantManagerRequiredMixin, TemplateView):
+    """Single-page wizard for creating/editing a complete signature flow."""
+    template_name = 'signatures/template_builder.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        flow_id = self.kwargs.get('pk')
+
+        if flow_id:
+            # Edit mode
+            flow = get_object_or_404(SignatureFlow, pk=flow_id)
+            context['flow'] = flow
+            context['flow_json'] = json.dumps({
+                'id': str(flow.pk),
+                'name': flow.name,
+                'description': flow.description,
+                'is_active': flow.is_active,
+            })
+            context['steps_json'] = json.dumps([
+                {
+                    'id': str(s.pk),
+                    'order': s.order,
+                    'label': s.label,
+                    'assignment_type': s.assignment_type,
+                    'assigned_user': str(s.assigned_user_id) if s.assigned_user_id else '',
+                    'assigned_user_name': (
+                        s.assigned_user.get_full_name() if s.assigned_user else ''
+                    ),
+                    'assigned_role': s.assigned_role,
+                    'is_required': s.is_required,
+                }
+                for s in flow.steps.order_by('order').select_related('assigned_user')
+            ])
+            documents = flow.documents.all()
+            context['documents_json'] = json.dumps([
+                {
+                    'id': str(d.pk),
+                    'title': d.title,
+                    'description': d.description,
+                    'file_url': d.file.url if d.file else '',
+                    'page_count': d.page_count,
+                    'placements': [
+                        {
+                            'id': str(p.pk),
+                            'step_id': str(p.step_id),
+                            'step_label': p.step.label,
+                            'step_order': p.step.order,
+                            'field_type': p.field_type,
+                            'page_number': p.page_number,
+                            'x': float(p.x),
+                            'y': float(p.y),
+                            'width': float(p.width),
+                            'height': float(p.height),
+                        }
+                        for p in d.placements.select_related('step')
+                    ],
+                }
+                for d in documents.prefetch_related('placements__step')
+            ])
+        else:
+            # Create mode
+            context['flow'] = None
+            context['flow_json'] = json.dumps(None)
+            context['steps_json'] = json.dumps([])
+            context['documents_json'] = json.dumps([])
+
+        # Provide assignable users and roles for step assignment
+        from .compat import get_assignable_users, get_role_choices
+        context['users_json'] = json.dumps([
+            {'id': str(u.pk), 'name': u.get_full_name() or u.username}
+            for u in get_assignable_users()
+        ])
+        context['roles_json'] = json.dumps(get_role_choices())
+        return context
+
+
+class TemplateBuilderSaveAPIView(GrantManagerRequiredMixin, View):
+    """AJAX endpoint that saves the entire template in one transaction."""
+
+    def post(self, request, pk=None):
+        try:
+            payload = json.loads(request.POST.get('payload', '{}'))
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
+
+        errors = self._validate(payload, request.FILES, pk)
+        if errors:
+            return JsonResponse({'errors': errors}, status=400)
+
+        from django.db import transaction
+        try:
+            with transaction.atomic():
+                flow = self._save_flow(payload, request.user, pk)
+                step_id_map = self._save_steps(flow, payload.get('steps', []))
+                self._save_document_and_placements(
+                    flow, payload, request.FILES, request.user, step_id_map,
+                )
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+        return JsonResponse({
+            'success': True,
+            'flow_id': str(flow.pk),
+            'redirect_url': reverse(
+                'signatures:flow-detail', kwargs={'pk': flow.pk},
+            ),
+        })
+
+    def _validate(self, payload, files, existing_pk):
+        errors = []
+        if not payload.get('name', '').strip():
+            errors.append({'field': 'name', 'message': _('Flow name is required.')})
+        steps = payload.get('steps', [])
+        if len(steps) < 1:
+            errors.append({
+                'field': 'steps',
+                'message': _('At least one signing step is required.'),
+            })
+        for i, step in enumerate(steps):
+            if not step.get('label', '').strip():
+                errors.append({
+                    'field': f'steps[{i}].label',
+                    'message': _('Step %(num)s label is required.') % {'num': i + 1},
+                })
+        if not existing_pk and 'document' not in files:
+            if not payload.get('existing_document_id'):
+                errors.append({
+                    'field': 'document',
+                    'message': _('A PDF document is required.'),
+                })
+        return errors
+
+    def _save_flow(self, payload, user, existing_pk):
+        if existing_pk:
+            flow = get_object_or_404(SignatureFlow, pk=existing_pk)
+            flow.name = payload['name'].strip()
+            flow.description = payload.get('description', '')
+            flow.is_active = payload.get('is_active', True)
+            flow.save()
+        else:
+            flow = SignatureFlow.objects.create(
+                name=payload['name'].strip(),
+                description=payload.get('description', ''),
+                is_active=payload.get('is_active', True),
+                created_by=user,
+            )
+        return flow
+
+    def _save_steps(self, flow, steps_data):
+        """Delete existing steps and recreate.  Returns temp_id -> real UUID map."""
+        flow.steps.all().delete()
+        step_id_map = {}
+        for i, s in enumerate(steps_data):
+            step = SignatureFlowStep.objects.create(
+                flow=flow,
+                order=i + 1,
+                label=s['label'].strip(),
+                assignment_type=s.get('assignment_type', 'role'),
+                assigned_user_id=s.get('assigned_user') or None,
+                assigned_role=s.get('assigned_role', ''),
+                is_required=s.get('is_required', True),
+            )
+            temp_id = s.get('temp_id') or s.get('id', '')
+            step_id_map[temp_id] = str(step.pk)
+        return step_id_map
+
+    def _save_document_and_placements(
+        self, flow, payload, files, user, step_id_map,
+    ):
+        pdf_file = files.get('document')
+        existing_doc_id = payload.get('existing_document_id')
+
+        if pdf_file:
+            flow.documents.all().delete()
+            page_count = 0
+            try:
+                from pypdf import PdfReader
+                reader = PdfReader(pdf_file)
+                page_count = len(reader.pages)
+                pdf_file.seek(0)
+            except Exception:
+                pass
+            doc = SignatureDocument.objects.create(
+                flow=flow,
+                title=payload.get('document_title') or pdf_file.name,
+                description=payload.get('document_description', ''),
+                file=pdf_file,
+                page_count=page_count,
+                uploaded_by=user,
+            )
+        elif existing_doc_id:
+            doc = get_object_or_404(
+                SignatureDocument, pk=existing_doc_id, flow=flow,
+            )
+            doc.placements.all().delete()
+        else:
+            return
+
+        for p in payload.get('placements', []):
+            real_step_id = step_id_map.get(p['step_id'], p['step_id'])
+            SignaturePlacement.objects.create(
+                document=doc,
+                step_id=real_step_id,
+                field_type=p.get('field_type', 'signature'),
+                page_number=p['page_number'],
+                x=p['x'],
+                y=p['y'],
+                width=p.get('width', 20.0),
+                height=p.get('height', 5.0),
+            )

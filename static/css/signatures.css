@@ -245,3 +245,93 @@
     .pdf-page-nav,
     .signature-pad-actions { display: none !important; }
 }
+
+/* ===================================================================
+   Template Builder Wizard
+   =================================================================== */
+
+.wizard-panel {
+    min-height: 350px;
+}
+
+.wizard-step-label {
+    color: #6c757d;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.wizard-step-label.active {
+    color: var(--ct-blue, #1F64E5);
+    font-weight: 600;
+}
+
+.wizard-step-label.completed {
+    color: #198754;
+}
+
+/* Step row in step 2 */
+.step-row {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.step-row:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.step-row.dragging-over {
+    border-color: var(--ct-blue, #1F64E5);
+    background: rgba(31, 100, 229, 0.03);
+}
+
+.step-row.dragging {
+    opacity: 0.5;
+}
+
+.step-row .drag-handle {
+    cursor: grab;
+    color: #adb5bd;
+    padding: 0 0.25rem;
+}
+
+.step-row .drag-handle:active {
+    cursor: grabbing;
+}
+
+/* PDF upload dropzone */
+.pdf-dropzone {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.pdf-dropzone:hover,
+.pdf-dropzone.dragover {
+    border-color: var(--ct-blue, #1F64E5);
+    background: rgba(31, 100, 229, 0.03);
+}
+
+.pdf-dropzone.has-file {
+    border-style: solid;
+    border-color: #198754;
+    background: rgba(25, 135, 84, 0.03);
+}
+
+/* Review summary */
+.review-section {
+    border-left: 3px solid var(--ct-blue, #1F64E5);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.review-section h5 {
+    color: var(--ct-dark-blue, #00214D);
+    margin-bottom: 0.75rem;
+}

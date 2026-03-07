@@ -41,6 +41,9 @@
             </p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{% url 'signatures:template-builder-edit' flow.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-magic me-1"></i>{% trans "Edit in Builder" %}
+            </a>
             <a href="{% url 'signatures:flow-edit' flow.pk %}" class="btn btn-outline-secondary">
                 <i class="bi bi-pencil me-1"></i>{% trans "Edit" %}
             </a>
