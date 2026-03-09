@@ -1,0 +1,53 @@
+{% extends sig_base_template %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}{% trans "Edit Role" %}{% else %}{% trans "Create Role" %}{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url sig_dashboard_url %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'signatures:role-list' %}">{% trans "Signature Roles" %}</a></li>
+            {% if object %}
+            <li class="breadcrumb-item active">{% trans "Edit" %} — {{ object.label }}</li>
+            {% else %}
+            <li class="breadcrumb-item active">{% trans "Create" %}</li>
+            {% endif %}
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="fw-bold mb-4">
+            <i class="bi bi-shield-check me-2"></i>
+            {% if object %}{% trans "Edit Role" %}{% else %}{% trans "Create Role" %}{% endif %}
+        </h1>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% crispy form %}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'signatures:role-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if object %}{% trans "Update Role" %}{% else %}{% trans "Create Role" %}{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

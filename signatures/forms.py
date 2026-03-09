@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Fieldset, Layout, Row, Column, Submit
 
-from .models import SignatureDocument, SignatureFlow, SignatureFlowStep, UserSignature
+from .models import SignatureDocument, SignatureFlow, SignatureFlowStep, SignatureRole, UserSignature
 
 
 class SignatureFlowForm(forms.ModelForm):
@@ -155,7 +155,7 @@ class PacketInitiateForm(forms.Form):
                         required=step.is_required,
                         help_text=_(
                             'Select the signer for this step (role: %(role)s).'
-                        ) % {'role': step.get_assigned_role_display() if step.assigned_role else _('any staff')},
+                        ) % {'role': step.get_role_display() if step.assigned_role else _('any staff')},
                     )
 
         self.helper = FormHelper()
@@ -231,3 +231,26 @@ class DeclineForm(forms.Form):
         label=_('Reason for declining'),
         help_text=_('Please explain why you are declining to sign.'),
     )
+
+
+class SignatureRoleForm(forms.ModelForm):
+    class Meta:
+        model = SignatureRole
+        fields = ['key', 'label', 'description', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Fieldset(
+                _('Signature Role'),
+                Row(
+                    Column('key', css_class='col-md-4'),
+                    Column('label', css_class='col-md-8'),
+                ),
+                'description',
+                'is_active',
+            ),
+            Submit('submit', _('Save Role'), css_class='btn-primary'),
+        )

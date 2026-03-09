@@ -29,6 +29,7 @@ from .forms import (
     PacketInitiateForm,
     SignatureDocumentForm,
     SignatureFlowForm,
+    SignatureRoleForm,
     SigningForm,
     UserSignatureForm,
 )
@@ -37,6 +38,7 @@ from .models import (
     SignatureFlow,
     SignatureFlowStep,
     SignaturePlacement,
+    SignatureRole,
     SigningPacket,
     SigningStep,
     UserSignature,
@@ -100,6 +102,63 @@ class FlowDeleteView(GrantManagerRequiredMixin, DeleteView):
     model = SignatureFlow
     template_name = 'signatures/flow_confirm_delete.html'
     success_url = reverse_lazy('signatures:flow-list')
+
+
+# ===========================================================================
+# Role Management (admin-only, used in standalone mode)
+# ===========================================================================
+
+class RoleListView(GrantManagerRequiredMixin, SortableListMixin, ListView):
+    model = SignatureRole
+    template_name = 'signatures/role_list.html'
+    context_object_name = 'roles'
+    paginate_by = 20
+    sortable_fields = {
+        'label': 'label',
+        'key': 'key',
+        'created_at': 'created_at',
+    }
+    default_sort = 'label'
+    default_dir = 'asc'
+
+
+class RoleCreateView(GrantManagerRequiredMixin, CreateView):
+    model = SignatureRole
+    form_class = SignatureRoleForm
+    template_name = 'signatures/role_form.html'
+    success_url = reverse_lazy('signatures:role-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, _('Role created successfully.'))
+        return super().form_valid(form)
+
+
+class RoleUpdateView(GrantManagerRequiredMixin, UpdateView):
+    model = SignatureRole
+    form_class = SignatureRoleForm
+    template_name = 'signatures/role_form.html'
+    success_url = reverse_lazy('signatures:role-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, _('Role updated successfully.'))
+        return super().form_valid(form)
+
+
+class RoleDeleteView(GrantManagerRequiredMixin, DeleteView):
+    model = SignatureRole
+    template_name = 'signatures/role_confirm_delete.html'
+    success_url = reverse_lazy('signatures:role-list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['usage_count'] = SignatureFlowStep.objects.filter(
+            assigned_role=self.object.key,
+        ).count()
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, _('Role deleted.'))
+        return super().form_valid(form)
 
 
 # ===========================================================================

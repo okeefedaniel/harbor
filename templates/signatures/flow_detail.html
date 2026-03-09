@@ -98,7 +98,7 @@
                         {% else %}
                             <i class="bi bi-people me-1"></i>
                             {% if step.assigned_role %}
-                                {{ step.assigned_role }}
+                                {{ step.get_role_display }}
                             {% else %}
                                 <span class="text-muted">{% trans "No role assigned" %}</span>
                             {% endif %}

@@ -6,6 +6,7 @@ from .models import (
     SignatureFlow,
     SignatureFlowStep,
     SignaturePlacement,
+    SignatureRole,
     SigningPacket,
     SigningStep,
     UserSignature,
@@ -76,3 +77,12 @@ class UserSignatureAdmin(admin.ModelAdmin):
     list_filter = ['signature_type', 'is_default']
     search_fields = ['user__first_name', 'user__last_name', 'label']
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(SignatureRole)
+class SignatureRoleAdmin(admin.ModelAdmin):
+    list_display = ['key', 'label', 'is_active', 'created_at']
+    list_filter = ['is_active']
+    search_fields = ['key', 'label']
+    readonly_fields = ['created_at', 'updated_at']
+    prepopulated_fields = {'key': ('label',)}

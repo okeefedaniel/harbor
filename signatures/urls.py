@@ -106,6 +106,12 @@ urlpatterns = [
         name='user-signature-set-default',
     ),
 
+    # ---- Role management ----
+    path('roles/', views.RoleListView.as_view(), name='role-list'),
+    path('roles/create/', views.RoleCreateView.as_view(), name='role-create'),
+    path('roles/<uuid:pk>/edit/', views.RoleUpdateView.as_view(), name='role-edit'),
+    path('roles/<uuid:pk>/delete/', views.RoleDeleteView.as_view(), name='role-delete'),
+
     # ---- Template Builder wizard ----
     path('builder/', views.TemplateBuilderView.as_view(), name='template-builder'),
     path(

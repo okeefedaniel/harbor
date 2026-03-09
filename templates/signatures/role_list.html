@@ -1,0 +1,91 @@
+{% extends sig_base_template %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans "Signature Roles" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url sig_dashboard_url %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Signature Roles" %}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">
+        <i class="bi bi-shield-check me-2"></i>{% trans "Signature Roles" %}
+    </h1>
+    <a href="{% url 'signatures:role-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>{% trans "Create Role" %}
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Label" %}</th>
+                    <th>{% trans "Key" %}</th>
+                    <th>{% trans "Description" %}</th>
+                    <th class="text-center">{% trans "Active" %}</th>
+                    <th>{% trans "Created" %}</th>
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in roles %}
+                <tr>
+                    <td class="fw-semibold">
+                        <i class="bi bi-shield-check me-1 text-muted"></i>{{ role.label }}
+                    </td>
+                    <td><code>{{ role.key }}</code></td>
+                    <td>
+                        {% if role.description %}
+                            {{ role.description|truncatewords:10 }}
+                        {% else %}
+                            <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if role.is_active %}
+                            <i class="bi bi-check-circle-fill text-success" title="{% trans 'Active' %}"></i>
+                        {% else %}
+                            <i class="bi bi-x-circle-fill text-danger" title="{% trans 'Inactive' %}"></i>
+                        {% endif %}
+                    </td>
+                    <td>{{ role.created_at|date:"M d, Y" }}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'signatures:role-edit' role.pk %}" class="btn btn-outline-secondary"
+                               title="{% trans 'Edit' %}">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'signatures:role-delete' role.pk %}" class="btn btn-outline-danger"
+                               title="{% trans 'Delete' %}">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-shield-check display-4 d-block mb-3"></i>
+                        <p class="mb-1">{% trans "No roles have been created yet." %}</p>
+                        <a href="{% url 'signatures:role-create' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-plus-lg me-1"></i>{% trans "Create Your First Role" %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

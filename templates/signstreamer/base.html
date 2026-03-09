@@ -55,6 +55,11 @@
                             <i class="bi bi-diagram-3 me-1"></i>{% trans "Flows" %}
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'signatures:role-list' %}">
+                            <i class="bi bi-shield-check me-1"></i>{% trans "Roles" %}
+                        </a>
+                    </li>
                     {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'signatures:my-signatures' %}">
@@ -156,6 +161,7 @@
                         <li><a href="{% url 'signatures:packet-list' %}" class="text-muted text-decoration-none">{% trans "Signing Packets" %}</a></li>
                         {% if user.is_staff %}
                         <li><a href="{% url 'signatures:flow-list' %}" class="text-muted text-decoration-none">{% trans "Signature Flows" %}</a></li>
+                        <li><a href="{% url 'signatures:role-list' %}" class="text-muted text-decoration-none">{% trans "Roles" %}</a></li>
                         {% endif %}
                         <li><a href="{% url 'signatures:my-signatures' %}" class="text-muted text-decoration-none">{% trans "My Signatures" %}</a></li>
                         <li><a href="{% url 'signatures:user-signature-list' %}" class="text-muted text-decoration-none">{% trans "Saved Signatures" %}</a></li>

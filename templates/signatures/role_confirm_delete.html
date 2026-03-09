@@ -1,0 +1,57 @@
+{% extends sig_base_template %}
+{% load i18n %}
+
+{% block title %}{% trans "Delete Role" %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 py-2">
+            <li class="breadcrumb-item"><a href="{% url sig_dashboard_url %}">{% trans "Dashboard" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'signatures:role-list' %}">{% trans "Signature Roles" %}</a></li>
+            <li class="breadcrumb-item active">{% trans "Delete" %} — {{ object.label }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-exclamation-triangle text-danger display-4 d-block mb-3"></i>
+                <h2 class="fw-bold mb-3">{% trans "Delete Role" %}</h2>
+                <p class="text-muted mb-2">
+                    {% blocktrans with label=object.label %}
+                    Are you sure you want to delete the role <strong>"{{ label }}"</strong>?
+                    {% endblocktrans %}
+                </p>
+
+                {% if usage_count > 0 %}
+                <div class="alert alert-warning text-start mt-3">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    {% blocktrans count count=usage_count %}
+                    This role is currently assigned to <strong>{{ count }}</strong> signing step. Those steps will retain the role key but it will no longer appear in role selection dropdowns.
+                    {% plural %}
+                    This role is currently assigned to <strong>{{ count }}</strong> signing steps. Those steps will retain the role key but it will no longer appear in role selection dropdowns.
+                    {% endblocktrans %}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <a href="{% url 'signatures:role-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>{% trans "Delete Role" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

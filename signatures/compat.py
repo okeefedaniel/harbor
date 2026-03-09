@@ -257,4 +257,24 @@ def get_role_choices():
             (role.value, role.label) for role in User.Role
             if role.value in [r.value for r in staff_roles]
         ]
-    return [('', '---------'), ('staff', 'Staff'), ('admin', 'Admin')]
+    # Standalone mode: pull from the SignatureRole model
+    from .models import SignatureRole
+    roles = SignatureRole.objects.filter(is_active=True).order_by('label')
+    return [('', '---------')] + [(r.key, r.label) for r in roles]
+
+
+def get_role_label(role_key):
+    """Return the display label for a role key string."""
+    if not role_key:
+        return ''
+    if is_grantify():
+        from core.models import User
+        try:
+            return User.Role(role_key).label
+        except ValueError:
+            return role_key
+    from .models import SignatureRole
+    try:
+        return SignatureRole.objects.get(key=role_key).label
+    except SignatureRole.DoesNotExist:
+        return role_key

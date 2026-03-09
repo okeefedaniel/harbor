@@ -128,6 +128,11 @@ class SignatureFlowStep(models.Model):
     def __str__(self):
         return f"Step {self.order}: {self.label}"
 
+    def get_role_display(self):
+        """Return the human-readable label for assigned_role."""
+        from .compat import get_role_label
+        return get_role_label(self.assigned_role)
+
 
 # ---------------------------------------------------------------------------
 # SignatureDocument — PDF template attached to a flow
@@ -511,3 +516,41 @@ class UserSignature(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} — {self.label} ({self.get_signature_type_display()})"
+
+
+# ---------------------------------------------------------------------------
+# SignatureRole — Manageable roles for standalone mode
+# ---------------------------------------------------------------------------
+class SignatureRole(models.Model):
+    """Manageable roles for standalone (SignStreamer) mode.
+
+    In Grantify mode, roles come from core.models.User.Role instead.
+    This model provides a database-backed alternative so admins can
+    add, edit, and delete roles through the UI.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    key = models.SlugField(
+        _('key'),
+        max_length=25,
+        unique=True,
+        help_text=_('Machine-readable identifier (e.g. "director").'),
+    )
+    label = models.CharField(
+        _('label'),
+        max_length=100,
+        help_text=_('Human-readable name (e.g. "Director").'),
+    )
+    description = models.TextField(_('description'), blank=True, default='')
+    is_active = models.BooleanField(_('active'), default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['label']
+        verbose_name = _('Signature Role')
+        verbose_name_plural = _('Signature Roles')
+
+    def __str__(self):
+        return self.label
