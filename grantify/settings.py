@@ -22,7 +22,7 @@ if not SECRET_KEY:
 
 # Demo mode — enables quick-login cards on the demo page without full DEBUG.
 # Safe to enable in production because it only allows login as existing seed users.
-DEMO_MODE = os.environ.get('DEMO_MODE', str(DEBUG)).lower() in ('true', '1', 'yes')
+DEMO_MODE = os.environ.get('DEMO_MODE', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 

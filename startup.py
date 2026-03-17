@@ -145,20 +145,23 @@ def main():
         su_pass = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '').strip()
         if su_user and su_pass:
             log(f"=== Ensuring superuser '{su_user}' exists ===")
-            run(f"{manage_cmd} shell -c \""
-                f"from django.contrib.auth import get_user_model; "
-                f"User = get_user_model(); "
-                f"u, created = User.objects.get_or_create("
-                f"username='{su_user}', "
-                f"defaults={{'email': '{su_email}', 'is_staff': True, 'is_superuser': True}}); "
-                f"u.set_password('{su_pass}'); u.save(); "
-                f"print('Created' if created else 'Updated', 'superuser:', u.username)"
-                f"\"")
+            env = os.environ.copy()
+            env['DJANGO_SUPERUSER_USERNAME'] = su_user
+            env['DJANGO_SUPERUSER_EMAIL'] = su_email
+            env['DJANGO_SUPERUSER_PASSWORD'] = su_pass
+            result = subprocess.run(
+                f"{manage_cmd} createsuperuser --noinput",
+                shell=True, env=env,
+                stdout=sys.stdout, stderr=sys.stderr,
+            )
+            if result.returncode != 0:
+                log("Superuser may already exist (this is OK)")
         else:
             log("Skipping superuser creation (DJANGO_SUPERUSER_* env vars not set)")
     else:
         log("=== Running background startup tasks ===")
-        run(f"{manage_cmd} shell < seed_data.py")
+        if os.environ.get('SEED_ON_DEPLOY', '').lower() in ('true', '1', 'yes'):
+            run(f"{manage_cmd} shell < seed_data.py")
         run(f"{manage_cmd} sync_federal_grants --limit 10")
         run(f"{manage_cmd} match_opportunities")
         log("=== Background tasks complete ===")

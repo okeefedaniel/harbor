@@ -244,9 +244,15 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'application'
 
     def get_queryset(self):
-        return Application.objects.select_related(
+        user = self.request.user
+        qs = Application.objects.select_related(
             'grant_program', 'applicant', 'organization',
         )
+        if user.is_superuser or user.role == 'system_admin':
+            return qs
+        if user.is_agency_staff and user.agency:
+            return qs.filter(grant_program__agency=user.agency)
+        return qs.filter(applicant=user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

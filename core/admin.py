@@ -47,7 +47,6 @@ class UserAdmin(BaseUserAdmin):
             'fields': (
                 'role', 'title', 'phone', 'agency', 'organization',
                 'is_state_user', 'accepted_terms', 'accepted_terms_at',
-                'anthropic_api_key',
             ),
         }),
         ('Metadata', {

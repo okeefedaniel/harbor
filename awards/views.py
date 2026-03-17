@@ -137,10 +137,16 @@ class AwardDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'award'
 
     def get_queryset(self):
-        return Award.objects.select_related(
+        user = self.request.user
+        qs = Award.objects.select_related(
             'application', 'grant_program', 'agency',
             'recipient', 'organization', 'approved_by',
         )
+        if user.is_superuser or user.role == 'system_admin':
+            return qs
+        if user.is_agency_staff and user.agency:
+            return qs.filter(agency=user.agency)
+        return qs.filter(recipient=user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

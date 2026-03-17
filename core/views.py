@@ -70,11 +70,11 @@ class ProfileView(LoginRequiredMixin, UpdateView):
     def _handle_api_key(self, request):
         api_key = request.POST.get('anthropic_api_key', '').strip()
         if request.POST.get('clear_key'):
-            request.user.anthropic_api_key = ''
+            request.user.set_anthropic_api_key('')
             request.user.save(update_fields=['anthropic_api_key'])
             messages.success(request, _('API key removed.'))
         elif api_key:
-            request.user.anthropic_api_key = api_key
+            request.user.set_anthropic_api_key(api_key)
             request.user.save(update_fields=['anthropic_api_key'])
             messages.success(request, _('API key saved successfully.'))
         else:
@@ -277,7 +277,7 @@ def user_api_key_update(request, pk):
     target_user = get_object_or_404(User, pk=pk)
 
     if request.POST.get('clear_key'):
-        target_user.anthropic_api_key = ''
+        target_user.set_anthropic_api_key('')
         target_user.save(update_fields=['anthropic_api_key'])
         messages.success(
             request,
@@ -286,7 +286,7 @@ def user_api_key_update(request, pk):
     else:
         api_key = request.POST.get('anthropic_api_key', '').strip()
         if api_key:
-            target_user.anthropic_api_key = api_key
+            target_user.set_anthropic_api_key(api_key)
             target_user.save(update_fields=['anthropic_api_key'])
             messages.success(
                 request,

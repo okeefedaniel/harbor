@@ -139,7 +139,7 @@ def score_opportunity(preference, opportunity):
     Returns a dict ``{'score': int, 'explanation': str}`` or ``None`` on
     failure.  Scores range from 0 (no relevance) to 100 (perfect match).
     """
-    api_key = getattr(preference.user, 'anthropic_api_key', '')
+    api_key = preference.user.get_anthropic_api_key()
     if not api_key:
         logger.warning('No API key for user %s — skipping AI scoring', preference.user)
         return None
@@ -352,6 +352,9 @@ def run_matching_async(user, include_state=False):
 
     Called from the preferences view so the user doesn't wait for all
     API calls to finish before getting a response.
+
+    .. note:: For production workloads consider replacing this with a
+       Celery task for proper retries, monitoring, and resource management.
     """
     import django
 
@@ -359,12 +362,20 @@ def run_matching_async(user, include_state=False):
         try:
             # Ensure DB connections are available in the thread
             django.db.connections.close_all()
-            run_matching_for_user(user, include_state=include_state)
+            result = run_matching_for_user(user, include_state=include_state)
+            logger.info(
+                'Background matching completed for %s: %s',
+                user.username, result,
+            )
         except Exception:
             logger.exception('Background matching failed for %s', user)
         finally:
             django.db.connections.close_all()
 
-    thread = threading.Thread(target=_worker, daemon=True)
+    thread = threading.Thread(
+        target=_worker,
+        daemon=True,
+        name=f'match-{user.username}',
+    )
     thread.start()
     logger.info('Started background matching thread for %s', user.username)

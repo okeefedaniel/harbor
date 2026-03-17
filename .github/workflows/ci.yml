@@ -103,7 +103,9 @@ jobs:
           pip install safety bandit
 
       - name: Check for known vulnerabilities
-        run: safety check --output text 2>&1 || true
+        continue-on-error: true
+        run: safety check --output text 2>&1
 
       - name: Run security linter
-        run: bandit -r . -x ./venv,./staticfiles,./.github --severity-level medium 2>&1 || true
+        continue-on-error: true
+        run: bandit -r . -x ./venv,./staticfiles,./.github --severity-level medium 2>&1

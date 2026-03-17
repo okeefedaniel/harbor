@@ -106,7 +106,7 @@ class Command(BaseCommand):
         for pref in prefs:
             user = pref.user
 
-            if not user.anthropic_api_key:
+            if not user.get_anthropic_api_key():
                 self.stdout.write(
                     self.style.WARNING(
                         f'Skipping {user.username} — no API key configured.'

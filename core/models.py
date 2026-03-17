@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import logging
 import uuid
 
 from django.conf import settings
@@ -5,6 +8,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +242,37 @@ class User(AbstractUser):
             self.Role.PROGRAM_OFFICER,
             self.Role.REVIEWER,
         }
+
+    # ----- API key encryption -----
+
+    @staticmethod
+    def _get_fernet():
+        """Return a Fernet instance keyed from SECRET_KEY."""
+        from cryptography.fernet import Fernet
+        key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+        return Fernet(base64.urlsafe_b64encode(key))
+
+    def set_anthropic_api_key(self, raw_key):
+        """Encrypt and store the API key."""
+        if not raw_key:
+            self.anthropic_api_key = ''
+            return
+        encrypted = self._get_fernet().encrypt(raw_key.encode()).decode()
+        self.anthropic_api_key = encrypted
+
+    def get_anthropic_api_key(self):
+        """Decrypt and return the API key, or '' on failure."""
+        if not self.anthropic_api_key:
+            return ''
+        try:
+            return self._get_fernet().decrypt(
+                self.anthropic_api_key.encode()
+            ).decode()
+        except Exception:
+            logger.warning('Failed to decrypt API key for user %s — '
+                           'key may be legacy plaintext; treating as empty.',
+                           self.pk)
+            return ''
 
     @property
     def has_ai_access(self):

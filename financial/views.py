@@ -182,9 +182,15 @@ class DrawdownDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'drawdown'
 
     def get_queryset(self):
-        return DrawdownRequest.objects.select_related(
+        user = self.request.user
+        qs = DrawdownRequest.objects.select_related(
             'award', 'submitted_by', 'reviewed_by',
         )
+        if user.is_superuser or user.role == 'system_admin':
+            return qs
+        if user.is_agency_staff and user.agency:
+            return qs.filter(award__agency=user.agency)
+        return qs.filter(award__recipient=user)
 
 
 # ---------------------------------------------------------------------------

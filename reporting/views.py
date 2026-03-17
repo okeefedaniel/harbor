@@ -109,9 +109,15 @@ class ReportDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'report'
 
     def get_queryset(self):
-        return Report.objects.select_related(
+        user = self.request.user
+        qs = Report.objects.select_related(
             'award', 'template', 'submitted_by', 'reviewed_by',
         )
+        if user.is_superuser or user.role == 'system_admin':
+            return qs
+        if user.is_agency_staff and user.agency:
+            return qs.filter(award__agency=user.agency)
+        return qs.filter(award__recipient=user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

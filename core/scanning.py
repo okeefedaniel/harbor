@@ -1,9 +1,9 @@
 """
 File scanning utilities for uploaded documents.
 
-In production, this would integrate with ClamAV or a cloud-based
-malware scanning service. The current implementation is a stub that
-logs scan requests and validates file extensions.
+Validates file extensions and size, and optionally scans for malware
+via ClamAV when ``CLAMAV_ENABLED=True`` and the ``pyclamd`` package is
+installed.
 """
 import logging
 import os
@@ -47,14 +47,31 @@ def scan_file(file_obj):
             message=f"File size ({file_size} bytes) exceeds maximum ({max_size} bytes)"
         )
 
-    # TODO: Integrate ClamAV or cloud scanning service
-    # Example ClamAV integration:
-    # import pyclamd
-    # cd = pyclamd.ClamdUnixSocket()
-    # result = cd.scan_stream(file_obj.read())
-    # file_obj.seek(0)  # Reset file pointer
-    # if result:
-    #     return ScanResult(is_clean=False, message=f"Malware detected: {result}")
+    # ClamAV malware scanning (opt-in via settings)
+    if getattr(settings, 'CLAMAV_ENABLED', False):
+        try:
+            import pyclamd
+            socket_path = getattr(
+                settings, 'CLAMAV_SOCKET', '/var/run/clamav/clamd.ctl')
+            cd = pyclamd.ClamdUnixSocket(filename=socket_path)
+            cd.ping()
+            file_obj.seek(0)
+            result = cd.scan_stream(file_obj.read())
+            file_obj.seek(0)
+            if result:
+                status = list(result.values())[0]
+                return ScanResult(
+                    is_clean=False,
+                    message=f"Malware detected: {status}")
+            logger.info(f"ClamAV scan clean: {filename}")
+        except ImportError:
+            logger.warning(
+                'CLAMAV_ENABLED is True but pyclamd is not installed. '
+                'Install it with: pip install pyclamd')
+        except Exception as exc:
+            logger.warning(
+                'ClamAV scan failed for %s: %s — allowing upload (fail-open)',
+                filename, exc)
 
     logger.info(f"File scan passed: {filename}")
     return ScanResult(is_clean=True, message='File scan passed')

@@ -1,6 +1,8 @@
 """
 Permission mixins for role-based access control and reusable view utilities.
 """
+from urllib.parse import quote
+
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models.expressions import BaseExpression
 
@@ -119,7 +121,7 @@ class SortableListMixin:
         for key in self.request.GET:
             if key not in exclude:
                 for val in self.request.GET.getlist(key):
-                    parts.append(f'{key}={val}')
+                    parts.append(f'{quote(key)}={quote(val)}')
         return '&'.join(parts)
 
     def get_context_data(self, **kwargs):
