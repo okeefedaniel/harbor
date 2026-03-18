@@ -1,5 +1,5 @@
 """
-Grantify URL Configuration
+Beacon URL Configuration
 """
 from django.contrib import admin
 from django.urls import path, include
@@ -32,8 +32,8 @@ def robots_txt(request):
 
 from django.utils.translation import gettext_lazy as _
 
-admin.site.site_header = _('Grantify Administration')
-admin.site.site_title = _('Grantify Admin')
+admin.site.site_header = _('Beacon Administration')
+admin.site.site_title = _('Beacon Admin')
 admin.site.index_title = _('Grants Management System')
 
 urlpatterns = [

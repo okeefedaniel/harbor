@@ -1,5 +1,5 @@
 /* ============================================
-   Grantify Admin — CT Brand Identity Overrides
+   Beacon Admin — CT Brand Identity Overrides
    Comprehensive theme with WCAG AA contrast.
    ============================================ */
 
@@ -237,7 +237,7 @@ html[data-theme="dark"] .ct-admin-accent-bar {
 /* ============================================
    Branding Icon
    ============================================ */
-.grantify-brand-icon {
+.beacon-brand-icon {
     font-size: 1.125rem;
     color: #F27124;  /* ct-orange */
     margin-right: 8px;

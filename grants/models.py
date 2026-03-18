@@ -330,7 +330,7 @@ class FederalOpportunity(models.Model):
         help_text=_('Link to the opportunity on Grants.gov'),
     )
 
-    # Internal link to Grantify FundingSource (populated when staff creates
+    # Internal link to Beacon FundingSource (populated when staff creates
     # a GrantProgram from this opportunity)
     funding_source = models.ForeignKey(
         FundingSource,
@@ -474,13 +474,13 @@ class OpportunityCollaborator(models.Model):
         on_delete=models.CASCADE,
         null=True, blank=True,
         related_name='federal_collaborations',
-        help_text=_('Internal Grantify user'),
+        help_text=_('Internal Beacon user'),
     )
 
     # External collaborator (if not in the system)
     email = models.EmailField(
         blank=True, default='',
-        help_text=_('Email for external collaborators not yet in Grantify'),
+        help_text=_('Email for external collaborators not yet in Beacon'),
     )
     name = models.CharField(
         max_length=255, blank=True, default='',

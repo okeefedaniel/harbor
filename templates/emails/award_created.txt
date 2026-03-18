@@ -1,4 +1,4 @@
-{% load i18n %}{% trans "Grantify" %}
+{% load i18n %}{% trans "Beacon" %}
 {% trans "State Grants Management Solution" %}
 
 ---
@@ -19,5 +19,5 @@
 
 ---
 
-{% trans "This is an automated message from Grantify. Do not reply directly." %}
+{% trans "This is an automated message from Beacon. Do not reply directly." %}
 {% trans "State of DOK" %} -- {% trans "Grants Management System" %}

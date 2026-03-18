@@ -71,14 +71,14 @@ class Migration(migrations.Migration):
             name='OpportunityCollaborator',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('email', models.EmailField(blank=True, default='', help_text='Email for external collaborators not yet in Grantify', max_length=254)),
+                ('email', models.EmailField(blank=True, default='', help_text='Email for external collaborators not yet in Beacon', max_length=254)),
                 ('name', models.CharField(blank=True, default='', help_text='Name for external collaborators', max_length=255)),
                 ('role', models.CharField(choices=[('lead', 'Lead'), ('contributor', 'Contributor'), ('reviewer', 'Reviewer'), ('observer', 'Observer')], default='contributor', max_length=15)),
                 ('invited_at', models.DateTimeField(auto_now_add=True)),
                 ('accepted_at', models.DateTimeField(blank=True, null=True)),
                 ('is_active', models.BooleanField(default=True)),
                 ('invited_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='federal_invitations_sent', to=settings.AUTH_USER_MODEL)),
-                ('user', models.ForeignKey(blank=True, help_text='Internal Grantify user', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='federal_collaborations', to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(blank=True, help_text='Internal Beacon user', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='federal_collaborations', to=settings.AUTH_USER_MODEL)),
                 ('tracked_opportunity', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='collaborators', to='grants.trackedopportunity')),
             ],
             options={

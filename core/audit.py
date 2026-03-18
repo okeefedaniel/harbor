@@ -1,4 +1,4 @@
-"""Audit logging utilities for Grantify."""
+"""Audit logging utilities for Beacon."""
 import logging
 
 from core.models import AuditLog

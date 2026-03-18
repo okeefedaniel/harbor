@@ -4,7 +4,7 @@ from django.utils import timezone
 def site_context(request):
     """Inject site-wide template variables into every template context."""
     context = {
-        'SITE_NAME': 'Grantify',
+        'SITE_NAME': 'Beacon',
         'CURRENT_YEAR': timezone.now().year,
     }
 

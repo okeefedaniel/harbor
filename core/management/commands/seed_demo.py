@@ -15,7 +15,7 @@ from core.models import User
 
 
 class Command(BaseCommand):
-    help = 'Seed the database with demo data for Grantify'
+    help = 'Seed the database with demo data for Beacon'
 
     def add_arguments(self, parser):
         parser.add_argument(

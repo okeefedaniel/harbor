@@ -1,6 +1,6 @@
 """
 Compatibility layer for running the signatures app standalone (SignStreamer)
-or within the full Grantify project.
+or within the full Beacon project.
 
 Detection is based on ``django.apps.apps.is_installed('core')``.
 When the ``core`` app is present we re-export its permission mixins, audit
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 # Mode detection
 # ---------------------------------------------------------------------------
 
-def is_grantify():
-    """Return ``True`` when running inside the full Grantify project."""
+def is_beacon():
+    """Return ``True`` when running inside the full Beacon project."""
     return apps.is_installed('core')
 
 
@@ -45,8 +45,8 @@ class _StandaloneAuditAction:
 
 
 def get_audit_action():
-    """Return the audit-action enum (Grantify) or the standalone stub."""
-    if is_grantify():
+    """Return the audit-action enum (Beacon) or the standalone stub."""
+    if is_beacon():
         from core.models import AuditLog
         return AuditLog.Action
     return _StandaloneAuditAction
@@ -55,7 +55,7 @@ def get_audit_action():
 def log_audit(user, action, entity_type, entity_id,
               description='', changes=None, ip_address=None):
     """Create an audit record — delegates to ``core.audit`` or logs."""
-    if is_grantify():
+    if is_beacon():
         from core.audit import log_audit as _core_log
         return _core_log(user, action, entity_type, entity_id,
                          description, changes, ip_address)
@@ -68,7 +68,7 @@ def log_audit(user, action, entity_type, entity_id,
 
 def get_audit_log_model():
     """Return ``core.models.AuditLog`` if available, else ``None``."""
-    if is_grantify():
+    if is_beacon():
         from core.models import AuditLog
         return AuditLog
     return None
@@ -80,7 +80,7 @@ def get_audit_log_model():
 
 def build_absolute_url(path):
     """Return a fully-qualified URL for *path*."""
-    if is_grantify():
+    if is_beacon():
         from core.notifications import _build_absolute_url
         return _build_absolute_url(path)
     domain = getattr(settings, 'SIGNSTREAMER_SITE_URL', None)
@@ -90,8 +90,8 @@ def build_absolute_url(path):
 
 
 def create_notification(recipient, title, message, link='', priority='medium'):
-    """Create an in-app notification (Grantify) or just log it."""
-    if is_grantify():
+    """Create an in-app notification (Beacon) or just log it."""
+    if is_beacon():
         from core.notifications import _create_notification
         return _create_notification(recipient, title, message, link, priority)
     logger.info('NOTIFICATION [%s] %s: %s', recipient, title, message)
@@ -99,7 +99,7 @@ def create_notification(recipient, title, message, link='', priority='medium'):
 
 def send_notification_email(recipient_email, subject, template_name, context):
     """Send an HTML email notification."""
-    if is_grantify():
+    if is_beacon():
         from core.notifications import _send_notification_email
         return _send_notification_email(
             recipient_email, subject, template_name, context,
@@ -223,7 +223,7 @@ class SortableListMixin:
 def get_assignable_users():
     """Return a queryset of users who can be assigned as signers."""
     User = get_user_model()
-    if is_grantify():
+    if is_beacon():
         from core.models import User as CoreUser
         staff_roles = [
             CoreUser.Role.SYSTEM_ADMIN,
@@ -243,7 +243,7 @@ def get_assignable_users():
 
 def get_role_choices():
     """Return role choices suitable for step-assignment forms."""
-    if is_grantify():
+    if is_beacon():
         from core.models import User
         staff_roles = [
             User.Role.SYSTEM_ADMIN,
@@ -267,7 +267,7 @@ def get_role_label(role_key):
     """Return the display label for a role key string."""
     if not role_key:
         return ''
-    if is_grantify():
+    if is_beacon():
         from core.models import User
         try:
             return User.Role(role_key).label

@@ -1,5 +1,5 @@
 """
-DocuSign e-Signature API wrapper for the Grantify platform.
+DocuSign e-Signature API wrapper for the Beacon platform.
 
 Provides JWT grant authentication and envelope management for
 sending award agreements for electronic signature.

@@ -1,5 +1,5 @@
 /**
- * Grantify - State Grants Management Solution
+ * Beacon - State Grants Management Solution
  * Main JavaScript
  */
 

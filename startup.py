@@ -67,9 +67,9 @@ def main():
         manage_cmd = f"{sys.executable} manage_signstreamer.py"
         wsgi_module = "signstreamer.wsgi"
     else:
-        log("=== Grantify Mode ===")
+        log("=== Beacon Mode ===")
         manage_cmd = f"{sys.executable} manage.py"
-        wsgi_module = "grantify.wsgi"
+        wsgi_module = "beacon.wsgi"
 
     # Test that Django settings can be imported
     log("Testing Django settings import...")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Translate Grantify .po file from English to Spanish.
+Translate Beacon .po file from English to Spanish.
 Comprehensive dictionary-based translation for CT grants management system.
 """
 import re
@@ -380,8 +380,8 @@ TRANSLATIONS = {
     "Users": "Usuarios",
 
     # --- Admin ---
-    "Grantify Administration": "Administración de Grantify",
-    "Grantify Admin": "Admin de Grantify",
+    "Beacon Administration": "Administración de Beacon",
+    "Beacon Admin": "Admin de Beacon",
     "Grants Management System": "Sistema de gestión de subvenciones",
 
     # --- Common Help Text ---
@@ -462,7 +462,7 @@ TRANSLATIONS = {
     "This Month": "Este mes",
 
     # --- Portal ---
-    "Welcome to Grantify": "Bienvenido a Grantify",
+    "Welcome to Beacon": "Bienvenido a Beacon",
     "Funding Opportunities": "Oportunidades de financiamiento",
     "Opportunities": "Oportunidades",
     "About": "Acerca de",
@@ -644,7 +644,7 @@ TRANSLATIONS = {
     # --- Misc ---
     "State Grants Management Solution": "Solución de gestión de subvenciones estatal",
     "State of DOK": "Estado de DOK",
-    "Grantify": "Grantify",
+    "Beacon": "Beacon",
     "No Opportunities Found": "No se encontraron oportunidades",
     "Deadline passed": "Fecha límite vencida",
     "Not Accepting Applications": "No se aceptan solicitudes",

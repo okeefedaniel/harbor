@@ -1,5 +1,5 @@
 /**
- * Grantify — Interactive Mapbox GL JS map view
+ * Beacon — Interactive Mapbox GL JS map view
  *
  * Displays a choropleth of state municipalities coloured by
  * grant award metrics (total funding or award count).  Data is fetched

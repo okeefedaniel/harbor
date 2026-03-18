@@ -1,5 +1,5 @@
 """
-FilterSet classes for django-filter integration across Grantify apps.
+FilterSet classes for django-filter integration across Beacon apps.
 
 Provides full-text search and advanced filtering for all list views.
 """

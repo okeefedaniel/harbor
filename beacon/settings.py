@@ -1,5 +1,5 @@
 """
-Grantify - State Grants Management Solution
+Beacon - State Grants Management Solution
 Django settings
 """
 import os
@@ -86,7 +86,7 @@ MIDDLEWARE = [
     'core.middleware.AuditMiddleware',
 ]
 
-ROOT_URLCONF = 'grantify.urls'
+ROOT_URLCONF = 'beacon.urls'
 
 TEMPLATES = [
     {
@@ -105,7 +105,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'grantify.wsgi.application'
+WSGI_APPLICATION = 'beacon.wsgi.application'
 
 # Database - SQLite for dev, PostgreSQL for production
 import dj_database_url
@@ -317,8 +317,8 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
-ACCOUNT_ADAPTER = 'core.sso.GrantifyAccountAdapter'
-SOCIALACCOUNT_ADAPTER = 'core.sso.GrantifySocialAccountAdapter'
+ACCOUNT_ADAPTER = 'core.sso.BeaconAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'core.sso.BeaconSocialAccountAdapter'
 
 # Where to redirect after social login
 SOCIALACCOUNT_LOGIN_ON_GET = True  # Skip the intermediate "Continue?" page
@@ -352,7 +352,7 @@ SOCIALACCOUNT_PROVIDERS = {
 # MFA configuration
 MFA_ADAPTER = 'allauth.mfa.adapter.DefaultMFAAdapter'
 MFA_SUPPORTED_TYPES = ['totp', 'webauthn', 'recovery_codes']
-MFA_TOTP_ISSUER = 'Grantify'
+MFA_TOTP_ISSUER = 'Beacon'
 # Require MFA for agency staff (enforced in adapter)
 MFA_PASSKEY_LOGIN_ENABLED = True
 

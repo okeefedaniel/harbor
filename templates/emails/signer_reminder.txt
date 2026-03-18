@@ -9,4 +9,4 @@
 
 {% trans "Review & Sign Now" %}: {{ sign_url }}
 
-{% trans "This is an automated message from the Grantify platform." %}
+{% trans "This is an automated message from the Beacon platform." %}

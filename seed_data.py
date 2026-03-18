@@ -1,5 +1,5 @@
 """
-Seed Grantify with realistic demo data.
+Seed Beacon with realistic demo data.
 
 Run with:  python manage.py shell < seed_data.py
 
@@ -14,7 +14,7 @@ from decimal import Decimal
 
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'grantify.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'beacon.settings')
 django.setup()
 
 from django.utils import timezone

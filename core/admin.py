@@ -43,7 +43,7 @@ class UserAdmin(BaseUserAdmin):
     readonly_fields = ('id', 'created_at', 'updated_at')
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Grantify Profile', {
+        ('Beacon Profile', {
             'fields': (
                 'role', 'title', 'phone', 'agency', 'organization',
                 'is_state_user', 'accepted_terms', 'accepted_terms_at',
@@ -55,7 +55,7 @@ class UserAdmin(BaseUserAdmin):
     )
 
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ('Grantify Profile', {
+        ('Beacon Profile', {
             'fields': ('role', 'agency', 'organization', 'is_state_user'),
         }),
     )

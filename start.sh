@@ -8,15 +8,15 @@ echo "DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE"
 echo "PORT=$PORT"
 echo "DATABASE_URL is $([ -n "$DATABASE_URL" ] && echo 'SET' || echo 'NOT SET')"
 
-# Detect standalone SignStreamer mode vs Grantify mode
+# Detect standalone SignStreamer mode vs Beacon mode
 if [ "$DJANGO_SETTINGS_MODULE" = "signstreamer.settings" ]; then
     echo "=== SignStreamer Mode ==="
     MANAGE_CMD="python manage_signstreamer.py"
     WSGI_MODULE="signstreamer.wsgi"
 else
-    echo "=== Grantify Mode ==="
+    echo "=== Beacon Mode ==="
     MANAGE_CMD="python manage.py"
-    WSGI_MODULE="grantify.wsgi"
+    WSGI_MODULE="beacon.wsgi"
 fi
 
 # Collect static files FIRST (no DB needed, but required before gunicorn
@@ -36,7 +36,7 @@ sleep 2
 echo "=== Running migrations ==="
 $MANAGE_CMD migrate --noinput 2>&1 || echo "ERROR: Migrations failed — see output above"
 
-# Grantify-only background tasks (skip in SignStreamer mode)
+# Beacon-only background tasks (skip in SignStreamer mode)
 if [ "$DJANGO_SETTINGS_MODULE" != "signstreamer.settings" ]; then
     echo "=== Running background startup tasks ==="
     (

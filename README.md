@@ -1,4 +1,4 @@
-# Grantify
+# Beacon
 
 **Enterprise grants management platform for state agencies.** End-to-end lifecycle coverage from opportunity posting through award closeout.
 
@@ -7,11 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/okeefedaniel/grantify/actions/workflows/ci.yml/badge.svg)](https://github.com/okeefedaniel/grantify/actions)
 
-![Grantify Demo](static/img/grantify-sizzle-reel.gif)
+![Beacon Demo](static/img/beacon-sizzle-reel.gif)
 
 ## Live Demo
 
-**[https://web-production-4b928.up.railway.app](https://web-production-4b928.up.railway.app)**
+**[https://beacon.docklabs.ai](https://beacon.docklabs.ai)**
 
 Log in with any demo account (password: `demo2026`):
 
@@ -90,7 +90,7 @@ Log in with any demo account (password: `demo2026`):
 The project is organized into 9 Django apps, each owning a distinct domain:
 
 ```
-grantify/
+beacon/
   core/          Auth, users, organizations, audit logging, notifications
   portal/        Public-facing pages (home, about, opportunities, demo guide)
   grants/        Grant programs, federal opportunities, AI matching, preferences
@@ -107,7 +107,7 @@ grantify/
 ```bash
 # Clone
 git clone https://github.com/okeefedaniel/grantify.git
-cd grantify
+cd beacon
 
 # Virtual environment
 python -m venv venv

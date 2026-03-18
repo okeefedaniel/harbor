@@ -14,9 +14,9 @@ class SignatureFlowForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from .compat import is_grantify
+        from .compat import is_beacon
         # Include grant_program field only when the grants app is installed
-        show_program = is_grantify() and hasattr(SignatureFlow, 'grant_program')
+        show_program = is_beacon() and hasattr(SignatureFlow, 'grant_program')
         layout_fields = ['name', 'description']
         if show_program:
             self.fields['grant_program'] = forms.ModelChoiceField(

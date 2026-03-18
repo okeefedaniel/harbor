@@ -1,5 +1,5 @@
 """
-Notification utilities for the Grantify platform.
+Notification utilities for the Beacon platform.
 
 Provides functions that both create in-app Notification records AND send
 HTML email notifications.  All email sending is wrapped in try/except so

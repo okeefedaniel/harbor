@@ -1,5 +1,5 @@
 /**
- * Grantify Analytics Dashboard Charts
+ * Beacon Analytics Dashboard Charts
  *
  * Renders four interactive Chart.js charts using data embedded in the page
  * via Django's json_script template filter.

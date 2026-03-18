@@ -18,9 +18,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: grantify
-          POSTGRES_PASSWORD: grantify
-          POSTGRES_DB: grantify_test
+          POSTGRES_USER: beacon
+          POSTGRES_PASSWORD: beacon
+          POSTGRES_DB: beacon_test
         ports:
           - 5432:5432
         options: >-
@@ -30,7 +30,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://grantify:grantify@localhost:5432/grantify_test
+      DATABASE_URL: postgres://beacon:beacon@localhost:5432/beacon_test
       DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
       DJANGO_DEBUG: 'True'
 

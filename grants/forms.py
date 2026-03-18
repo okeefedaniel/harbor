@@ -147,7 +147,7 @@ class CollaboratorForm(forms.Form):
     username = forms.CharField(
         required=False,
         label=_lazy('Username'),
-        help_text=_lazy('Grantify username for internal collaborators.'),
+        help_text=_lazy('Beacon username for internal collaborators.'),
     )
     email = forms.EmailField(
         required=False,
