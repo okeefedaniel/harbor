@@ -67,9 +67,9 @@ def main():
         manage_cmd = f"{sys.executable} manage_signstreamer.py"
         wsgi_module = "signstreamer.wsgi"
     else:
-        log("=== Beacon Mode ===")
+        log("=== Harbor Mode ===")
         manage_cmd = f"{sys.executable} manage.py"
-        wsgi_module = "beacon.wsgi"
+        wsgi_module = "harbor.wsgi"
 
     # Test that Django settings can be imported
     log("Testing Django settings import...")

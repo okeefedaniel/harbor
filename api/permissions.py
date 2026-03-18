@@ -1,5 +1,5 @@
 """
-Custom permission classes for the Beacon REST API.
+Custom permission classes for the Harbor REST API.
 
 These permissions leverage the ``core.User.Role`` choices and the convenience
 properties defined on the custom User model (``is_agency_staff``,

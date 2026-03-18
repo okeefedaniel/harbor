@@ -1,5 +1,5 @@
 """
-Django REST Framework serializers for the Beacon grant management system.
+Django REST Framework serializers for the Harbor grant management system.
 
 Each model that is exposed through the API has a full serializer and, where
 appropriate, a lightweight "list" serializer that omits heavy nested data to

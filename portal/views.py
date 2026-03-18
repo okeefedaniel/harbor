@@ -6,7 +6,7 @@ from grants.models import FederalOpportunity, GrantProgram, TrackedOpportunity
 
 
 class HomeView(TemplateView):
-    """Public landing page for the Beacon portal."""
+    """Public landing page for the Harbor portal."""
 
     template_name = 'portal/home.html'
 
@@ -204,7 +204,7 @@ class HelpView(TemplateView):
 
 
 class UserManualView(TemplateView):
-    """Comprehensive user manual for the Beacon system."""
+    """Comprehensive user manual for the Harbor system."""
 
     template_name = 'portal/user_manual.html'
 

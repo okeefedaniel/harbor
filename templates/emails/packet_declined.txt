@@ -11,4 +11,4 @@
 
 {% trans "View Details" %}: {{ detail_url }}
 
-{% trans "This is an automated message from the Beacon platform." %}
+{% trans "This is an automated message from the Harbor platform." %}

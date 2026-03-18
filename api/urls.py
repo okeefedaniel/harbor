@@ -1,5 +1,5 @@
 """
-URL configuration for the Beacon REST API.
+URL configuration for the Harbor REST API.
 
 All endpoints are registered through a DRF ``DefaultRouter`` and served
 under the ``/api/`` prefix (configured in the project-level ``urls.py``).

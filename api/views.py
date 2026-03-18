@@ -1,5 +1,5 @@
 """
-Django REST Framework ViewSets for the Beacon grant management system.
+Django REST Framework ViewSets for the Harbor grant management system.
 
 All viewsets enforce role-based queryset filtering:
 

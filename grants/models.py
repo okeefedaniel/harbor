@@ -330,7 +330,7 @@ class FederalOpportunity(models.Model):
         help_text=_('Link to the opportunity on Grants.gov'),
     )
 
-    # Internal link to Beacon FundingSource (populated when staff creates
+    # Internal link to Harbor FundingSource (populated when staff creates
     # a GrantProgram from this opportunity)
     funding_source = models.ForeignKey(
         FundingSource,
@@ -474,13 +474,13 @@ class OpportunityCollaborator(models.Model):
         on_delete=models.CASCADE,
         null=True, blank=True,
         related_name='federal_collaborations',
-        help_text=_('Internal Beacon user'),
+        help_text=_('Internal Harbor user'),
     )
 
     # External collaborator (if not in the system)
     email = models.EmailField(
         blank=True, default='',
-        help_text=_('Email for external collaborators not yet in Beacon'),
+        help_text=_('Email for external collaborators not yet in Harbor'),
     )
     name = models.CharField(
         max_length=255, blank=True, default='',

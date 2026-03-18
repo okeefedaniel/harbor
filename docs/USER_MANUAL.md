@@ -1,4 +1,4 @@
-# Beacon User Manual
+# Harbor User Manual
 
 **State Grants Management Solution**
 Version 1.0 | February 2026
@@ -33,7 +33,7 @@ Version 1.0 | February 2026
 
 ## 1. Introduction
 
-Beacon is the state grants management system, built to streamline the entire grant lifecycle for state agencies, municipalities, nonprofits, and businesses. The system covers everything from discovering funding opportunities and submitting applications to managing awards, tracking finances, filing reports, and closing out completed grants.
+Harbor is the state grants management system, built to streamline the entire grant lifecycle for state agencies, municipalities, nonprofits, and businesses. The system covers everything from discovering funding opportunities and submitting applications to managing awards, tracking finances, filing reports, and closing out completed grants.
 
 ### Key Capabilities
 
@@ -49,7 +49,7 @@ Beacon is the state grants management system, built to streamline the entire gra
 
 ### User Roles
 
-Beacon uses role-based access control with seven roles. Each role sees a tailored dashboard and has access to specific features:
+Harbor uses role-based access control with seven roles. Each role sees a tailored dashboard and has access to specific features:
 
 | Role | Description |
 |------|-------------|
@@ -58,7 +58,7 @@ Beacon uses role-based access control with seven roles. Each role sees a tailore
 | **Program Officer** | Agency staff who create and manage grant programs |
 | **Fiscal Officer** | Agency staff who manage budgets, drawdowns, and financial transactions |
 | **Agency Administrator** | Agency leadership with full control over their agency's programs and staff |
-| **System Administrator** | Beacon administrators with full access to all features across all agencies |
+| **System Administrator** | Harbor administrators with full access to all features across all agencies |
 | **Auditor** | Compliance staff with read-only access to audit logs, reports, and financial records |
 
 ---
@@ -69,7 +69,7 @@ Beacon uses role-based access control with seven roles. Each role sees a tailore
 
 If you are applying for a grant on behalf of an organization:
 
-1. Navigate to the Beacon home page.
+1. Navigate to the Harbor home page.
 2. Click **Register to Apply**.
 3. Fill in the registration form:
    - Username
@@ -86,7 +86,7 @@ If you are applying for a grant on behalf of an organization:
 
 ### 2.2 Logging In
 
-Beacon supports two authentication methods:
+Harbor supports two authentication methods:
 
 - **Username and password** -- enter your credentials on the login page.
 - **Microsoft SSO** -- click **Sign in with Microsoft** to authenticate via Microsoft Entra ID (Azure AD). This is the preferred method for state employees.
@@ -430,7 +430,7 @@ The system creates a DocuSign envelope and tracks its status. Once signed, the s
 
 ### 6.11 Signature Flows (Built-In)
 
-Beacon includes a built-in document signing system as an alternative to DocuSign. Signature flows define a sequential series of signing steps, each assigned to a specific user or organizational role.
+Harbor includes a built-in document signing system as an alternative to DocuSign. Signature flows define a sequential series of signing steps, each assigned to a specific user or organizational role.
 
 #### Overview
 
@@ -907,7 +907,7 @@ The interactive map shows grant distribution across state municipalities:
 
 ## 15. Notifications
 
-Beacon sends in-app notifications (and optionally email notifications) for key events:
+Harbor sends in-app notifications (and optionally email notifications) for key events:
 
 | Event | Notified User(s) |
 |-------|-------------------|
@@ -932,7 +932,7 @@ Beacon sends in-app notifications (and optionally email notifications) for key e
 
 ## 16. Language Settings
 
-Beacon supports English and Spanish. To change your language:
+Harbor supports English and Spanish. To change your language:
 
 1. Look for the language selector in the navigation bar or footer.
 2. Select your preferred language.
@@ -944,7 +944,7 @@ Language preferences are stored in your session and persist until you change the
 
 ## 17. REST API Reference
 
-Beacon provides a REST API for programmatic access. All endpoints require authentication.
+Harbor provides a REST API for programmatic access. All endpoints require authentication.
 
 **Base URL:** `/api/`
 
@@ -1033,4 +1033,4 @@ When an application is submitted, the following compliance items are automatical
 
 ---
 
-*This manual covers Beacon version 1.0, deployed February 2026. For technical support, contact the system administrator.*
+*This manual covers Harbor version 1.0, deployed February 2026. For technical support, contact the system administrator.*

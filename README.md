@@ -1,17 +1,17 @@
-# Beacon
+# Harbor
 
 **Enterprise grants management platform for state agencies.** End-to-end lifecycle coverage from opportunity posting through award closeout.
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Django 6.x](https://img.shields.io/badge/django-6.x-green.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/okeefedaniel/beacon/actions/workflows/ci.yml/badge.svg)](https://github.com/okeefedaniel/beacon/actions)
+[![CI](https://github.com/okeefedaniel/harbor/actions/workflows/ci.yml/badge.svg)](https://github.com/okeefedaniel/harbor/actions)
 
-![Beacon Demo](static/img/beacon-sizzle-reel.gif)
+![Harbor Demo](static/img/harbor-sizzle-reel.gif)
 
 ## Live Demo
 
-**[https://beacon.docklabs.ai](https://beacon.docklabs.ai)**
+**[https://harbor.docklabs.ai](https://harbor.docklabs.ai)**
 
 Log in with any demo account (password: `demo2026`):
 
@@ -90,7 +90,7 @@ Log in with any demo account (password: `demo2026`):
 The project is organized into 9 Django apps, each owning a distinct domain:
 
 ```
-beacon/
+harbor/
   core/          Auth, users, organizations, audit logging, notifications
   portal/        Public-facing pages (home, about, opportunities, demo guide)
   grants/        Grant programs, federal opportunities, AI matching, preferences
@@ -106,7 +106,7 @@ beacon/
 
 ```bash
 # Clone
-git clone https://github.com/okeefedaniel/beacon.git
+git clone https://github.com/okeefedaniel/harbor.git
 cd beacon
 
 # Virtual environment

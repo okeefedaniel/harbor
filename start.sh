@@ -8,15 +8,15 @@ echo "DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE"
 echo "PORT=$PORT"
 echo "DATABASE_URL is $([ -n "$DATABASE_URL" ] && echo 'SET' || echo 'NOT SET')"
 
-# Detect standalone Manifest mode vs Beacon mode
+# Detect standalone Manifest mode vs Harbor mode
 if [ "$DJANGO_SETTINGS_MODULE" = "signstreamer.settings" ]; then
     echo "=== Manifest Mode ==="
     MANAGE_CMD="python manage_signstreamer.py"
     WSGI_MODULE="signstreamer.wsgi"
 else
-    echo "=== Beacon Mode ==="
+    echo "=== Harbor Mode ==="
     MANAGE_CMD="python manage.py"
-    WSGI_MODULE="beacon.wsgi"
+    WSGI_MODULE="harbor.wsgi"
 fi
 
 # Collect static files FIRST (no DB needed, but required before gunicorn
@@ -36,7 +36,7 @@ sleep 2
 echo "=== Running migrations ==="
 $MANAGE_CMD migrate --noinput 2>&1 || echo "ERROR: Migrations failed — see output above"
 
-# Beacon-only background tasks (skip in Manifest mode)
+# Harbor-only background tasks (skip in Manifest mode)
 if [ "$DJANGO_SETTINGS_MODULE" != "signstreamer.settings" ]; then
     echo "=== Running background startup tasks ==="
     (

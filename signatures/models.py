@@ -524,7 +524,7 @@ class UserSignature(models.Model):
 class SignatureRole(models.Model):
     """Manageable roles for standalone (Manifest) mode.
 
-    In Beacon mode, roles come from core.models.User.Role instead.
+    In Harbor mode, roles come from core.models.User.Role instead.
     This model provides a database-backed alternative so admins can
     add, edit, and delete roles through the UI.
     """

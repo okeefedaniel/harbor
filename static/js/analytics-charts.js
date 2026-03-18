@@ -1,5 +1,5 @@
 /**
- * Beacon Analytics Dashboard Charts
+ * Harbor Analytics Dashboard Charts
  *
  * Renders four interactive Chart.js charts using data embedded in the page
  * via Django's json_script template filter.

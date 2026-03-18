@@ -138,7 +138,7 @@ class Agency(models.Model):
 # User (custom, extends AbstractUser)
 # ---------------------------------------------------------------------------
 class User(AbstractUser):
-    """Custom user model for the Beacon platform."""
+    """Custom user model for the Harbor platform."""
 
     class Role(models.TextChoices):
         SYSTEM_ADMIN = 'system_admin', _('System Administrator')

@@ -1,4 +1,4 @@
-"""Shared utilities for the Beacon project."""
+"""Shared utilities for the Harbor project."""
 
 import functools
 import hashlib

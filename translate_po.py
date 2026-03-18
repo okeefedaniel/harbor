@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Translate Beacon .po file from English to Spanish.
+Translate Harbor .po file from English to Spanish.
 Comprehensive dictionary-based translation for CT grants management system.
 """
 import re
@@ -380,8 +380,8 @@ TRANSLATIONS = {
     "Users": "Usuarios",
 
     # --- Admin ---
-    "Beacon Administration": "Administración de Beacon",
-    "Beacon Admin": "Admin de Beacon",
+    "Harbor Administration": "Administración de Harbor",
+    "Harbor Admin": "Admin de Harbor",
     "Grants Management System": "Sistema de gestión de subvenciones",
 
     # --- Common Help Text ---
@@ -462,7 +462,7 @@ TRANSLATIONS = {
     "This Month": "Este mes",
 
     # --- Portal ---
-    "Welcome to Beacon": "Bienvenido a Beacon",
+    "Welcome to Harbor": "Bienvenido a Harbor",
     "Funding Opportunities": "Oportunidades de financiamiento",
     "Opportunities": "Oportunidades",
     "About": "Acerca de",
@@ -644,7 +644,7 @@ TRANSLATIONS = {
     # --- Misc ---
     "State Grants Management Solution": "Solución de gestión de subvenciones estatal",
     "State of DOK": "Estado de DOK",
-    "Beacon": "Beacon",
+    "Harbor": "Harbor",
     "No Opportunities Found": "No se encontraron oportunidades",
     "Deadline passed": "Fecha límite vencida",
     "Not Accepting Applications": "No se aceptan solicitudes",

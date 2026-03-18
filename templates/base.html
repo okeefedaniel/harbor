@@ -6,15 +6,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Beacon{% endblock %} | {% trans "State Grants Management" %}</title>
-    {% block meta_description %}<meta name="description" content="{% trans 'Beacon — State Grants Management Solution for streamlined grant lifecycle management.' %}">{% endblock %}
+    <title>{% block title %}Harbor{% endblock %} | {% trans "State Grants Management" %}</title>
+    {% block meta_description %}<meta name="description" content="{% trans 'Harbor — State Grants Management Solution for streamlined grant lifecycle management.' %}">{% endblock %}
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{% static 'css/beacon.css' %}" rel="stylesheet">
+    <link href="{% static 'css/harbor.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
     <!-- WCAG 2.1 AA: Focus-visible styles for keyboard navigation -->
     <style>
@@ -34,7 +34,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top" role="navigation" aria-label="{% trans "Main navigation" %}">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{% url 'portal:home' %}">
-                <i class="bi bi-bank2 me-2"></i>Beacon
+                <i class="bi bi-bank2 me-2"></i>Harbor
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="{% trans "Toggle navigation menu" %}" aria-controls="mainNav" aria-expanded="false">
                 <span class="navbar-toggler-icon"></span>
@@ -273,7 +273,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h6 class="fw-bold"><i class="bi bi-bank2 me-2"></i>Beacon</h6>
+                    <h6 class="fw-bold"><i class="bi bi-bank2 me-2"></i>Harbor</h6>
                     <p class="small text-muted mb-0">
                         {% trans "State Grants Management Solution" %}<br>
                         {% trans "Department of Commerce and Development" %}
@@ -311,7 +311,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/beacon.js' %}"></script>
+    <script src="{% static 'js/harbor.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

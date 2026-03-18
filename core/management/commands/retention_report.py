@@ -17,7 +17,7 @@ class Command(BaseCommand):
         now = timezone.now()
 
         self.stdout.write('=' * 60)
-        self.stdout.write('  BEACON DATA RETENTION COMPLIANCE REPORT')
+        self.stdout.write('  HARBOR DATA RETENTION COMPLIANCE REPORT')
         self.stdout.write(f'  Generated: {now.strftime("%Y-%m-%d %H:%M:%S")}')
         self.stdout.write('=' * 60)
         self.stdout.write('')

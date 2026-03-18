@@ -18,9 +18,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: beacon
-          POSTGRES_PASSWORD: beacon
-          POSTGRES_DB: beacon_test
+          POSTGRES_USER: harbor
+          POSTGRES_PASSWORD: harbor
+          POSTGRES_DB: harbor_test
         ports:
           - 5432:5432
         options: >-
@@ -30,7 +30,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://beacon:beacon@localhost:5432/beacon_test
+      DATABASE_URL: postgres://harbor:harbor@localhost:5432/harbor_test
       DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
       DJANGO_DEBUG: 'True'
 

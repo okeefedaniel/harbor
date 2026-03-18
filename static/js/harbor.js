@@ -1,5 +1,5 @@
 /**
- * Beacon - State Grants Management Solution
+ * Harbor - State Grants Management Solution
  * Main JavaScript
  */
 

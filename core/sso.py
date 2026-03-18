@@ -3,7 +3,7 @@ Custom allauth adapters for Microsoft Entra ID (Azure AD) SSO integration.
 
 Handles:
 - Auto-creating users from Microsoft SSO with correct roles
-- Mapping Azure AD group claims to Beacon roles
+- Mapping Azure AD group claims to Harbor roles
 - Marking SSO users as state employees
 - Linking SSO users to their agency based on email domain
 """
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-# Map Microsoft group names or email domains to Beacon roles.
+# Map Microsoft group names or email domains to Harbor roles.
 # Extend this as your Azure AD configuration grows.
 ROLE_DOMAIN_MAP = {
     # State agency email domains → default role for new SSO users
@@ -26,7 +26,7 @@ ROLE_DOMAIN_MAP = {
 }
 
 
-class BeaconAccountAdapter(DefaultAccountAdapter):
+class HarborAccountAdapter(DefaultAccountAdapter):
     """Custom account adapter.
 
     - Ensures the login redirect goes to /dashboard/
@@ -40,11 +40,11 @@ class BeaconAccountAdapter(DefaultAccountAdapter):
         return '/dashboard/'
 
 
-class BeaconSocialAccountAdapter(DefaultSocialAccountAdapter):
+class HarborSocialAccountAdapter(DefaultSocialAccountAdapter):
     """Custom social account adapter for Microsoft SSO.
 
     When a user signs in via Microsoft for the first time, this adapter
-    populates their Beacon profile from the Microsoft token data.
+    populates their Harbor profile from the Microsoft token data.
     """
 
     def pre_social_login(self, request, sociallogin):

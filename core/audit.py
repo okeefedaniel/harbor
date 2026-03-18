@@ -1,4 +1,4 @@
-"""Audit logging utilities for Beacon."""
+"""Audit logging utilities for Harbor."""
 import logging
 
 from core.models import AuditLog

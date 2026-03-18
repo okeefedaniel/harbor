@@ -1,4 +1,4 @@
-{% load i18n %}{% trans "Beacon" %}
+{% load i18n %}{% trans "Harbor" %}
 {% trans "State Grants Management Solution" %}
 
 ---
@@ -16,9 +16,9 @@
 
 {% trans "View Opportunity" %}: {{ detail_url }}
 
-{% trans "You can manage your matching preferences and view all recommendations from your Beacon dashboard." %}
+{% trans "You can manage your matching preferences and view all recommendations from your Harbor dashboard." %}
 
 ---
 
-{% trans "This is an automated message from Beacon. Do not reply directly." %}
+{% trans "This is an automated message from Harbor. Do not reply directly." %}
 {% trans "State of DOK" %} -- {% trans "Grants Management System" %}

@@ -1,5 +1,5 @@
 """
-Management command to test all Beacon workflows end-to-end.
+Management command to test all Harbor workflows end-to-end.
 
 Uses Django's test Client to simulate authenticated requests against
 the applicant and grant-manager workflows, verifying correct behaviour
@@ -55,7 +55,7 @@ class TestResult:
 
         print('\n')
         print('=' * 78)
-        print('  BEACON WORKFLOW TEST REPORT')
+        print('  HARBOR WORKFLOW TEST REPORT')
         print('=' * 78)
 
         for section, label, ok, detail in self.results:
@@ -116,7 +116,7 @@ def follow_redirect(response):
 # ── The Command ──────────────────────────────────────────────────────────────
 
 class Command(BaseCommand):
-    help = 'Run end-to-end workflow tests for Beacon using Django test Client'
+    help = 'Run end-to-end workflow tests for Harbor using Django test Client'
 
     def handle(self, *args, **options):
         # Django's test Client sends requests with SERVER_NAME='testserver'.
