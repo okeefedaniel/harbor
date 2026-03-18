@@ -33,7 +33,7 @@
     <!-- Top Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top" role="navigation" aria-label="{% trans "Main navigation" %}">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{% url 'portal:home' %}">
+            <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'portal:home' %}{% endif %}">
                 <i class="bi bi-bank2 me-2"></i>Harbor
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="{% trans "Toggle navigation menu" %}" aria-controls="mainNav" aria-expanded="false">
