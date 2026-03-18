@@ -8,9 +8,9 @@ echo "DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE"
 echo "PORT=$PORT"
 echo "DATABASE_URL is $([ -n "$DATABASE_URL" ] && echo 'SET' || echo 'NOT SET')"
 
-# Detect standalone SignStreamer mode vs Beacon mode
+# Detect standalone Manifest mode vs Beacon mode
 if [ "$DJANGO_SETTINGS_MODULE" = "signstreamer.settings" ]; then
-    echo "=== SignStreamer Mode ==="
+    echo "=== Manifest Mode ==="
     MANAGE_CMD="python manage_signstreamer.py"
     WSGI_MODULE="signstreamer.wsgi"
 else
@@ -36,7 +36,7 @@ sleep 2
 echo "=== Running migrations ==="
 $MANAGE_CMD migrate --noinput 2>&1 || echo "ERROR: Migrations failed — see output above"
 
-# Beacon-only background tasks (skip in SignStreamer mode)
+# Beacon-only background tasks (skip in Manifest mode)
 if [ "$DJANGO_SETTINGS_MODULE" != "signstreamer.settings" ]; then
     echo "=== Running background startup tasks ==="
     (

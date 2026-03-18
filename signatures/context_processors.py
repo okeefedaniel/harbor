@@ -18,5 +18,5 @@ def signstreamer_context(request):
     return {
         'sig_base_template': 'signstreamer/base.html',
         'sig_dashboard_url': 'signatures:packet-list',
-        'signstreamer_brand': 'SignStreamer',
+        'signstreamer_brand': 'Manifest',
     }

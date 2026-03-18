@@ -63,7 +63,7 @@ def main():
 
     # Detect mode
     if settings_module == 'signstreamer.settings':
-        log("=== SignStreamer Mode ===")
+        log("=== Manifest Mode ===")
         manage_cmd = f"{sys.executable} manage_signstreamer.py"
         wsgi_module = "signstreamer.wsgi"
     else:

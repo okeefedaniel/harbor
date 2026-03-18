@@ -1,5 +1,5 @@
 """
-SignStreamer — Standalone Document Signing Platform
+Manifest — Standalone Document Signing Platform
 Django settings for standalone deployment.
 """
 import os
@@ -34,7 +34,7 @@ if RAILWAY_DOMAIN:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RAILWAY_DOMAIN}')
 CSRF_TRUSTED_ORIGINS = [o for o in CSRF_TRUSTED_ORIGINS if o]  # filter blanks
 
-SIGNSTREAMER_SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+SIGNSTREAMER_SITE_URL = os.environ.get('SITE_URL', 'https://manifest.docklabs.ai')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     # Third-party
     'crispy_forms',
     'crispy_bootstrap5',
-    # SignStreamer
+    # Manifest
     'signatures.apps.SignaturesConfig',
 ]
 
@@ -151,7 +151,7 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@signstreamer.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@manifest.docklabs.ai')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ---------------------------------------------------------------------------

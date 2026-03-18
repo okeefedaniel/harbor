@@ -440,7 +440,7 @@ Beacon includes a built-in document signing system as an alternative to DocuSign
 | Signing methods | DocuSign's UI | Typed, uploaded image, or drawn |
 | PDF field placement | Via DocuSign | Built-in PDF placement editor |
 | Multi-step approval | Single signer | Sequential steps with roles |
-| Standalone deployment | No | Yes (available as SignStreamer) |
+| Standalone deployment | No | Yes (available as Manifest) |
 
 #### Creating a Signature Flow
 

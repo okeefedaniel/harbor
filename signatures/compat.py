@@ -1,5 +1,5 @@
 """
-Compatibility layer for running the signatures app standalone (SignStreamer)
+Compatibility layer for running the signatures app standalone (Manifest)
 or within the full Beacon project.
 
 Detection is based on ``django.apps.apps.is_installed('core')``.
@@ -119,7 +119,7 @@ def send_notification_email(recipient_email, subject, template_name, context):
             subject=subject,
             message=text_body,
             from_email=getattr(
-                settings, 'DEFAULT_FROM_EMAIL', 'noreply@signstreamer.com',
+                settings, 'DEFAULT_FROM_EMAIL', 'noreply@manifest.docklabs.ai',
             ),
             recipient_list=[recipient_email],
             html_message=html_body,
@@ -141,7 +141,7 @@ class _StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 
 # Import mixins at module level.  We cannot rely on try/except ImportError
-# because the core/ package exists on disk even in standalone (SignStreamer)
+# because the core/ package exists on disk even in standalone (Manifest)
 # deployments — the import succeeds but the mixin expects the custom User
 # model.  Instead, check settings.INSTALLED_APPS directly (available before
 # the app registry is fully populated).

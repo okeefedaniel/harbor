@@ -51,7 +51,7 @@ class SignatureFlow(models.Model):
 
 
 # Conditionally add the grant_program FK only when the grants app is installed.
-# This ensures standalone (SignStreamer) deployments have no dependency on grants.
+# This ensures standalone (Manifest) deployments have no dependency on grants.
 if _GRANTS_INSTALLED:
     SignatureFlow.add_to_class(
         'grant_program',
@@ -522,7 +522,7 @@ class UserSignature(models.Model):
 # SignatureRole — Manageable roles for standalone mode
 # ---------------------------------------------------------------------------
 class SignatureRole(models.Model):
-    """Manageable roles for standalone (SignStreamer) mode.
+    """Manageable roles for standalone (Manifest) mode.
 
     In Beacon mode, roles come from core.models.User.Role instead.
     This model provides a database-backed alternative so admins can

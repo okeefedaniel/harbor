@@ -1,4 +1,4 @@
-"""SignStreamer standalone URL configuration."""
+"""Manifest standalone URL configuration."""
 from django.contrib import admin
 from django.contrib.auth.views import LoginView
 from django.http import JsonResponse

@@ -1,4 +1,4 @@
-"""ASGI config for SignStreamer standalone deployment."""
+"""ASGI config for Manifest standalone deployment."""
 import os
 from django.core.asgi import get_asgi_application
 

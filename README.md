@@ -49,7 +49,7 @@ Log in with any demo account (password: `demo2026`):
 - Three signature methods: typed, uploaded image, or drawn on-screen
 - Role-based signing steps (assign by user or by organizational role)
 - DocuSign integration for external e-signatures (JWT auth, webhooks)
-- Also available as **[SignStreamer](https://www.signstreamer.com)** &mdash; a standalone document signing platform
+- Also available as **[Manifest](https://manifest.docklabs.ai)** &mdash; a standalone document signing platform
 
 ### Interactive Map View
 - Mapbox GL JS choropleth showing grant distribution by municipality

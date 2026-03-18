@@ -5,8 +5,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}SignStreamer{% endblock %} | {% trans "Document Signing Platform" %}</title>
-    {% block meta_description %}<meta name="description" content="{% trans 'SignStreamer — Secure Document Signing Platform for streamlined signature workflows.' %}">{% endblock %}
+    <title>{% block title %}Manifest{% endblock %} | {% trans "Document Signing Platform" %}</title>
+    {% block meta_description %}<meta name="description" content="{% trans 'Manifest — Secure Document Signing Platform for streamlined signature workflows.' %}">{% endblock %}
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +34,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top" role="navigation" aria-label="{% trans 'Main navigation' %}">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{% url 'signatures:packet-list' %}">
-                <i class="bi bi-pen-fill me-2"></i>SignStreamer
+                <i class="bi bi-pen-fill me-2"></i>Manifest
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#mainNav" aria-controls="mainNav"
@@ -148,7 +148,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h6 class="fw-bold"><i class="bi bi-pen-fill me-2"></i>SignStreamer</h6>
+                    <h6 class="fw-bold"><i class="bi bi-pen-fill me-2"></i>Manifest</h6>
                     <p class="small text-muted mb-0">
                         {% trans "Secure Document Signing Platform" %}<br>
                         {% trans "Streamlined signature workflows for your organization." %}
@@ -173,7 +173,7 @@
                 <div class="col-md-3">
                     <h6 class="fw-bold">{% trans "Contact" %}</h6>
                     <ul class="list-unstyled small text-muted">
-                        <li><i class="bi bi-envelope me-1"></i> support@signstreamer.com</li>
+                        <li><i class="bi bi-envelope me-1"></i> support@docklabs.ai</li>
                         <li><i class="bi bi-telephone me-1"></i> (555) 500-2300</li>
                     </ul>
                 </div>
@@ -181,7 +181,7 @@
             <hr class="my-3 border-secondary">
             <div class="d-flex justify-content-between align-items-center">
                 <p class="text-muted small mb-0">
-                    &copy; {% now "Y" %} SignStreamer. {% trans "All rights reserved." %}
+                    &copy; {% now "Y" %} Manifest. {% trans "All rights reserved." %}
                 </p>
                 <p class="small mb-0 text-muted">
                     {% trans "Document Signing Platform" %}

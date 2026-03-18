@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Django management for SignStreamer standalone deployment."""
+"""Django management for Manifest standalone deployment."""
 import os
 import sys
 

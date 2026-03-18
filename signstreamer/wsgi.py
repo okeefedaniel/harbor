@@ -1,4 +1,4 @@
-"""WSGI config for SignStreamer standalone deployment."""
+"""WSGI config for Manifest standalone deployment."""
 import os
 from django.core.wsgi import get_wsgi_application
 
