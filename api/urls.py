@@ -5,6 +5,7 @@ All endpoints are registered through a DRF ``DefaultRouter`` and served
 under the ``/api/`` prefix (configured in the project-level ``urls.py``).
 """
 
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from . import views
@@ -22,4 +23,7 @@ router.register(r'organizations', views.OrganizationViewSet, basename='organizat
 router.register(r'notifications', views.NotificationViewSet, basename='notification')
 router.register(r'audit-logs', views.AuditLogViewSet, basename='auditlog')
 
-urlpatterns = router.urls
+urlpatterns = [
+    # Bounty → Harbor federal opportunity intake
+    path('federal-intake/', views.FederalIntakeView.as_view(), name='federal-intake'),
+] + router.urls

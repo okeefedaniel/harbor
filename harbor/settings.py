@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'keel.security',
     # Third party
     'rest_framework',
+    'rest_framework.authtoken',
     'crispy_forms',
     'crispy_bootstrap5',
     'django_filters',
@@ -278,6 +279,7 @@ AUTH_PASSWORD_VALIDATORS[1]['OPTIONS'] = {'min_length': 10}
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

@@ -14,7 +14,7 @@ Each viewset uses ``DjangoFilterBackend``, ``SearchFilter``, and
 """
 
 from django.utils import timezone
-from rest_framework import status, viewsets
+from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -459,3 +459,134 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return AuditLog.objects.select_related('user').all()
+
+
+# ---------------------------------------------------------------------------
+# Federal Intake  (Bounty → Harbor push endpoint)
+# ---------------------------------------------------------------------------
+
+class FederalIntakeView(views.APIView):
+    """
+    Receive an awarded federal opportunity from Bounty and create a draft
+    GrantProgram in Harbor.
+
+    **POST** ``/api/federal-intake/``
+
+    Bounty sends::
+
+        {
+            "title": "...",
+            "description": "...",
+            "agency": "Federal Agency Name",
+            "cfda_numbers": [...],
+            "award_floor": "100000.00",
+            "award_ceiling": "500000.00",
+            "eligible_applicants": "...",
+            "grants_gov_url": "https://...",
+            "bounty_opportunity_id": "123"
+        }
+
+    Returns ``{"program_id": "<uuid>"}`` on success.
+    """
+
+    permission_classes = [IsAuthenticated, IsGrantManager]
+
+    def post(self, request):
+        data = request.data
+        bounty_opp_id = str(data.get('bounty_opportunity_id', ''))
+        title = data.get('title', '')
+
+        if not bounty_opp_id or not title:
+            return Response(
+                {'error': 'bounty_opportunity_id and title are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ── 1. Find or create a FederalOpportunity record ──────────────
+        from decimal import Decimal, InvalidOperation
+        from grants.models import FederalOpportunity, FundingSource
+
+        def _to_decimal(val):
+            if not val:
+                return None
+            try:
+                return Decimal(str(val))
+            except (InvalidOperation, ValueError):
+                return None
+
+        fed_opp, _ = FederalOpportunity.objects.update_or_create(
+            opportunity_id=bounty_opp_id,
+            defaults={
+                'title': title,
+                'description': data.get('description', ''),
+                'agency_name': data.get('agency', ''),
+                'cfda_numbers': data.get('cfda_numbers') or [],
+                'award_floor': _to_decimal(data.get('award_floor')),
+                'award_ceiling': _to_decimal(data.get('award_ceiling')),
+                'eligible_applicants': data.get('eligible_applicants', ''),
+                'grants_gov_url': data.get('grants_gov_url', ''),
+                'opportunity_status': FederalOpportunity.OpportunityStatus.POSTED,
+            },
+        )
+
+        # ── 2. Find or create a federal FundingSource ──────────────────
+        agency_name = data.get('agency', 'Federal')
+        cfda_list = data.get('cfda_numbers') or []
+        cfda_str = cfda_list[0] if isinstance(cfda_list, list) and cfda_list else ''
+
+        funding_source, _ = FundingSource.objects.get_or_create(
+            source_type=FundingSource.SourceType.FEDERAL,
+            federal_agency=agency_name,
+            cfda_number=cfda_str,
+            defaults={
+                'name': f"Federal — {agency_name[:100]}",
+                'description': f"Auto-created from Bounty intake for {agency_name}",
+            },
+        )
+
+        # Link the FederalOpportunity to this FundingSource
+        if not fed_opp.funding_source_id:
+            fed_opp.funding_source = funding_source
+            fed_opp.save(update_fields=['funding_source'])
+
+        # ── 3. Create a draft GrantProgram ─────────────────────────────
+        user = request.user
+        now = timezone.now()
+
+        # Use the requesting user's agency, or fall back to first active agency
+        agency = user.agency
+        if not agency:
+            agency = Agency.objects.filter(is_active=True).first()
+        if not agency:
+            return Response(
+                {'error': 'No agency configured. Create an agency in Harbor first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        award_floor = _to_decimal(data.get('award_floor')) or Decimal('0')
+        award_ceiling = _to_decimal(data.get('award_ceiling')) or Decimal('0')
+        total = _to_decimal(data.get('total_funding')) or award_ceiling or Decimal('0')
+
+        program = GrantProgram.objects.create(
+            agency=agency,
+            title=f"[Federal Intake] {title[:480]}",
+            description=data.get('description', ''),
+            funding_source=funding_source,
+            grant_type=GrantProgram.GrantType.OTHER,
+            eligibility_criteria=data.get('eligible_applicants', ''),
+            total_funding=total,
+            min_award=award_floor,
+            max_award=award_ceiling,
+            fiscal_year=f"{now.year}-{now.year + 1}",
+            duration_months=12,
+            application_deadline=now + timezone.timedelta(days=90),
+            posting_date=now,
+            status=GrantProgram.Status.DRAFT,
+            is_published=False,
+            created_by=user,
+        )
+
+        return Response(
+            {'program_id': str(program.pk)},
+            status=status.HTTP_201_CREATED,
+        )
