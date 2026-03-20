@@ -18,6 +18,7 @@ urlpatterns = [
     path('notifications/', include('keel.notifications.urls')),
     path('', include('signatures.urls')),
     path('keel/requests/', include('keel.requests.urls')),
+    path('keel/', include('keel.core.foia_urls')),
 ]
 
 if settings.DEBUG:

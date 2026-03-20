@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('i18n/', include('django.conf.urls.i18n')),
     path('keel/requests/', include('keel.requests.urls')),
+    path('keel/', include('keel.core.foia_urls')),
 ]
 
 if settings.DEBUG:
