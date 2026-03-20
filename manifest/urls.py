@@ -1,17 +1,14 @@
 """Manifest standalone URL configuration."""
 from django.contrib import admin
 from django.contrib.auth.views import LoginView
-from django.http import JsonResponse
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-
-
-def health_check(request):
-    return JsonResponse({'status': 'ok'})
+from keel.core.views import health_check, robots_txt
 
 
 urlpatterns = [
+    path('robots.txt', robots_txt, name='robots_txt'),
     path('health/', health_check),
     path('admin/', admin.site.urls),
     path('accounts/login/', LoginView.as_view(template_name='manifest/login.html'), name='login'),

@@ -6,29 +6,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
-from django.http import HttpResponse, JsonResponse
-
 from core import views as core_views
-
-
-def health_check(request):
-    """Lightweight health check endpoint for Railway."""
-    return JsonResponse({"status": "ok"})
-
-
-def robots_txt(request):
-    """Serve robots.txt as a plain text response."""
-    lines = [
-        "User-agent: *",
-        "Disallow: /admin/",
-        "Disallow: /api/",
-        "Disallow: /auth/",
-        "Disallow: /accounts/",
-        "Allow: /",
-        "",
-        f"Sitemap: {request.scheme}://{request.get_host()}/sitemap.xml",
-    ]
-    return HttpResponse("\n".join(lines), content_type="text/plain")
+from keel.core.views import health_check, robots_txt
 
 from django.utils.translation import gettext_lazy as _
 

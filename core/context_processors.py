@@ -1,18 +1,2 @@
-from django.conf import settings
-from django.utils import timezone
-
-
-def site_context(request):
-    """Inject site-wide template variables into every template context."""
-    context = {
-        'SITE_NAME': 'Harbor',
-        'CURRENT_YEAR': timezone.now().year,
-        'DEMO_MODE': getattr(settings, 'DEMO_MODE', False),
-    }
-
-    if hasattr(request, 'user') and request.user.is_authenticated:
-        context['unread_notification_count'] = (
-            request.user.notifications.filter(is_read=False).count()
-        )
-
-    return context
+"""Context processors for Harbor."""
+from keel.core.context_processors import site_context  # noqa: F401

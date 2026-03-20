@@ -216,3 +216,8 @@ if not DEBUG:
 MIGRATION_MODULES = {
     'signatures': 'manifest.migrations.signatures',
 }
+
+# ---------------------------------------------------------------------------
+# Keel shared platform
+# ---------------------------------------------------------------------------
+KEEL_PRODUCT_NAME = 'Manifest'

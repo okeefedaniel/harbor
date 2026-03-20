@@ -7,73 +7,20 @@ failures are logged but never break the caller's workflow.
 """
 
 import logging
-import os
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from core.models import Notification, User
+from keel.core.notifications import (
+    build_absolute_url,
+    create_notification,
+    send_notification_email,
+)
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-def _build_absolute_url(path):
-    """Build a fully-qualified URL from a path.
-
-    Uses RAILWAY_PUBLIC_DOMAIN in production, falls back to localhost.
-    """
-    domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:8000')
-    scheme = 'https' if 'localhost' not in domain else 'http'
-    return f'{scheme}://{domain}{path}'
-
-
-def _send_notification_email(recipient_email, subject, template_name, context):
-    """Render an HTML email template and send it.  Fails silently with logging.
-
-    Automatically looks for a matching .txt template (same base name) to use as
-    the plain-text body.  This multipart approach (text + HTML) improves
-    deliverability and prevents emails from being flagged as spam.
-    """
-    try:
-        html_body = render_to_string(template_name, context)
-        # Derive the plain-text template path from the HTML template name
-        txt_template = template_name.rsplit('.', 1)[0] + '.txt'
-        try:
-            text_body = render_to_string(txt_template, context)
-        except Exception:
-            text_body = ''  # Graceful fallback if .txt template is missing
-        send_mail(
-            subject=subject,
-            message=text_body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient_email],
-            html_message=html_body,
-            fail_silently=False,
-        )
-    except Exception:
-        logger.exception(
-            'Failed to send notification email to %s (subject: %s)',
-            recipient_email,
-            subject,
-        )
-
-
-def _create_notification(recipient, title, message, link='', priority='medium'):
-    """Create an in-app Notification record."""
-    return Notification.objects.create(
-        recipient=recipient,
-        title=title,
-        message=message,
-        link=link,
-        priority=priority,
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -88,7 +35,7 @@ def notify_application_submitted(application):
         application.organization.name if application.organization else 'Unknown'
     )
     detail_path = reverse('applications:detail', kwargs={'pk': application.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     # Find staff to notify: users linked to this program's agency
     staff_qs = User.objects.filter(
@@ -115,7 +62,7 @@ def notify_application_submitted(application):
     ) % {'name': applicant.get_full_name(), 'org': org_name, 'program': program.title}
 
     for staff_user in staff_qs.distinct():
-        _create_notification(
+        create_notification(
             recipient=staff_user,
             title=_('New Application Submitted'),
             message=message,
@@ -123,7 +70,7 @@ def notify_application_submitted(application):
             priority='medium',
         )
         if staff_user.email:
-            _send_notification_email(
+            send_notification_email(
                 recipient_email=staff_user.email,
                 subject=subject,
                 template_name='emails/application_submitted.html',
@@ -144,7 +91,7 @@ def notify_application_status_changed(application, old_status, new_status, comme
     status_display = dict(application.Status.choices).get(new_status, new_status)
     old_status_display = dict(application.Status.choices).get(old_status, old_status)
     detail_path = reverse('applications:detail', kwargs={'pk': application.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     priority_map = {
         'approved': 'high',
@@ -162,7 +109,7 @@ def notify_application_status_changed(application, old_status, new_status, comme
     if comment:
         message += _(' Comment: %(comment)s') % {'comment': comment}
 
-    _create_notification(
+    create_notification(
         recipient=applicant,
         title=_('Application %(status)s') % {'status': status_display},
         message=message,
@@ -171,7 +118,7 @@ def notify_application_status_changed(application, old_status, new_status, comme
     )
 
     if applicant.email:
-        _send_notification_email(
+        send_notification_email(
             recipient_email=applicant.email,
             subject=subject,
             template_name='emails/application_status_changed.html',
@@ -190,7 +137,7 @@ def notify_award_created(award):
     """Notify the recipient that an award has been created."""
     recipient = award.recipient
     detail_path = reverse('awards:detail', kwargs={'pk': award.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('Award Created: %(title)s (%(number)s)') % {'title': award.title, 'number': award.award_number}
     message = _(
@@ -199,7 +146,7 @@ def notify_award_created(award):
         'Amount: $%(amount)s.'
     ) % {'number': award.award_number, 'amount': f'{award.award_amount:,.2f}'}
 
-    _create_notification(
+    create_notification(
         recipient=recipient,
         title=_('Award Created'),
         message=message,
@@ -208,7 +155,7 @@ def notify_award_created(award):
     )
 
     if recipient.email:
-        _send_notification_email(
+        send_notification_email(
             recipient_email=recipient.email,
             subject=subject,
             template_name='emails/award_created.html',
@@ -228,7 +175,7 @@ def notify_drawdown_status_changed(drawdown, new_status):
     detail_path = reverse(
         'financial:drawdown-detail', kwargs={'pk': drawdown.pk}
     )
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('Drawdown Request Update: %(award)s - %(status)s') % {'award': award.award_number, 'status': status_display}
     message = _(
@@ -237,7 +184,7 @@ def notify_drawdown_status_changed(drawdown, new_status):
     ) % {'request': drawdown.request_number, 'award': award.award_number, 'status': status_display}
 
     try:
-        _create_notification(
+        create_notification(
             recipient=recipient,
             title=_('Drawdown %(status)s') % {'status': status_display},
             message=message,
@@ -273,7 +220,7 @@ def notify_report_review_complete(report, action):
     }
     action_display = action_labels.get(action, action)
     detail_path = reverse('reporting:detail', kwargs={'pk': report.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('Report Review: %(award)s - %(action)s') % {'award': award.award_number, 'action': action_display}
     message = _(
@@ -282,7 +229,7 @@ def notify_report_review_complete(report, action):
     ) % {'type': report.get_report_type_display(), 'award': award.award_number, 'action': action_display.lower()}
 
     try:
-        _create_notification(
+        create_notification(
             recipient=recipient,
             title=_('Report %(action)s') % {'action': action_display},
             message=message,
@@ -311,7 +258,7 @@ def notify_amendment_created(amendment):
     detail_path = reverse(
         'awards:amendment-detail', kwargs={'pk': amendment.pk}
     )
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('New Amendment Request: %(award)s - Amendment #%(number)s') % {
         'award': award.award_number, 'number': amendment.amendment_number,
@@ -341,7 +288,7 @@ def notify_amendment_created(amendment):
 
     try:
         for staff_user in staff_qs.distinct():
-            _create_notification(
+            create_notification(
                 recipient=staff_user,
                 title=_('New Amendment Request'),
                 message=message,
@@ -366,7 +313,7 @@ def notify_amendment_created(amendment):
 def notify_signature_requested(award, signature_request):
     """Notify the signer that an award agreement is ready for signature."""
     detail_path = reverse('awards:detail', kwargs={'pk': award.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('Signature Requested: %(title)s (%(number)s)') % {
         'title': award.title,
@@ -383,7 +330,7 @@ def notify_signature_requested(award, signature_request):
 
     # Notify the award recipient (in-app)
     recipient = award.recipient
-    _create_notification(
+    create_notification(
         recipient=recipient,
         title=_('Signature Requested'),
         message=message,
@@ -393,7 +340,7 @@ def notify_signature_requested(award, signature_request):
 
     # Send email notification to the signer
     if signature_request.signer_email:
-        _send_notification_email(
+        send_notification_email(
             recipient_email=signature_request.signer_email,
             subject=subject,
             template_name='emails/signature_requested.html',
@@ -409,7 +356,7 @@ def notify_signature_requested(award, signature_request):
 def notify_signature_completed(award, signature_request):
     """Notify the award sender that the agreement has been signed."""
     detail_path = reverse('awards:detail', kwargs={'pk': award.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('Agreement Signed: %(title)s (%(number)s)') % {
         'title': award.title,
@@ -426,7 +373,7 @@ def notify_signature_completed(award, signature_request):
 
     # Notify the person who sent the signature request
     if signature_request.sent_by:
-        _create_notification(
+        create_notification(
             recipient=signature_request.sent_by,
             title=_('Agreement Signed'),
             message=message,
@@ -434,7 +381,7 @@ def notify_signature_completed(award, signature_request):
             priority='high',
         )
         if signature_request.sent_by.email:
-            _send_notification_email(
+            send_notification_email(
                 recipient_email=signature_request.sent_by.email,
                 subject=subject,
                 template_name='emails/signature_requested.html',
@@ -468,7 +415,7 @@ def notify_signature_completed(award, signature_request):
         for staff_user in staff_qs.distinct():
             if signature_request.sent_by and staff_user.pk == signature_request.sent_by.pk:
                 continue  # Already notified above
-            _create_notification(
+            create_notification(
                 recipient=staff_user,
                 title=_('Agreement Signed'),
                 message=message,
@@ -487,7 +434,7 @@ def notify_closeout_initiated(closeout):
     award = closeout.award
     recipient = award.recipient
     detail_path = reverse('closeout:detail', kwargs={'pk': closeout.pk})
-    detail_url = _build_absolute_url(detail_path)
+    detail_url = build_absolute_url(detail_path)
 
     subject = _('Closeout Initiated: %(award)s') % {'award': award.award_number}
     message = _(
@@ -497,7 +444,7 @@ def notify_closeout_initiated(closeout):
     ) % {'award': award.award_number, 'title': award.title}
 
     try:
-        _create_notification(
+        create_notification(
             recipient=recipient,
             title=_('Closeout Initiated'),
             message=message,
@@ -539,7 +486,7 @@ def notify_organization_claim_submitted(organization, claimant):
     ) % {'name': full_name, 'org': organization.name}
 
     for staff_user in staff_qs.distinct():
-        _create_notification(
+        create_notification(
             recipient=staff_user,
             title=_('New Organization Claim'),
             message=message,
@@ -557,7 +504,7 @@ def notify_organization_claim_reviewed(claim):
     if claim.reviewer_notes:
         message += _(' Notes: %(notes)s') % {'notes': claim.reviewer_notes}
 
-    _create_notification(
+    create_notification(
         recipient=claim.user,
         title=_('Organization Claim %(status)s') % {'status': status_display},
         message=message,
@@ -583,7 +530,7 @@ def notify_new_user_registered(user):
     ) % {'name': full_name, 'email': user.email or 'no email', 'role': role_label}
 
     for admin in admins:
-        _create_notification(
+        create_notification(
             recipient=admin,
             title=_('New User Registration'),
             message=message,

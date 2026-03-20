@@ -366,3 +366,8 @@ DOCUSIGN_RSA_KEY_FILE = os.environ.get('DOCUSIGN_RSA_KEY_FILE', 'docusign_privat
 DOCUSIGN_BASE_URL = os.environ.get('DOCUSIGN_BASE_URL', 'https://demo.docusign.net/restapi')
 DOCUSIGN_OAUTH_BASE = os.environ.get('DOCUSIGN_OAUTH_BASE', 'https://account-d.docusign.com')
 DOCUSIGN_USER_ID = os.environ.get('DOCUSIGN_USER_ID', '')  # DocuSign user GUID
+
+# ---------------------------------------------------------------------------
+# Keel shared platform
+# ---------------------------------------------------------------------------
+KEEL_PRODUCT_NAME = 'Harbor'
