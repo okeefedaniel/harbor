@@ -1,6 +1,7 @@
 """Tests for the signatures app: models, services, views, and permission checks."""
 
 import json
+import os
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -9,6 +10,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.models import Agency
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
 
 from .models import (
     SignatureDocument,
@@ -44,7 +47,7 @@ def _agency(**kw):
 
 def _user(username, role, agency=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, **kw,
     )
 
@@ -387,17 +390,17 @@ class FlowAdminViewTest(TestCase):
         self.applicant = _user('applicant', 'applicant', self.agency)
 
     def test_flow_list_requires_grant_manager(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('signatures:flow-list'))
         self.assertNotEqual(resp.status_code, 200)
 
     def test_flow_list_accessible_by_officer(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('signatures:flow-list'))
         self.assertEqual(resp.status_code, 200)
 
     def test_flow_create(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.post(reverse('signatures:flow-create'), {
             'name': 'New Flow',
             'description': 'Test flow',
@@ -410,7 +413,7 @@ class FlowAdminViewTest(TestCase):
         flow = SignatureFlow.objects.create(
             name='Detail Flow', created_by=self.admin,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('signatures:flow-detail', kwargs={'pk': flow.pk}))
         self.assertEqual(resp.status_code, 200)
 
@@ -418,7 +421,7 @@ class FlowAdminViewTest(TestCase):
         flow = SignatureFlow.objects.create(
             name='Old Name', created_by=self.admin,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.post(
             reverse('signatures:flow-edit', kwargs={'pk': flow.pk}),
             {'name': 'Updated Name', 'description': '', 'is_active': True},
@@ -431,7 +434,7 @@ class FlowAdminViewTest(TestCase):
         flow = SignatureFlow.objects.create(
             name='Delete Me', created_by=self.admin,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.post(
             reverse('signatures:flow-delete', kwargs={'pk': flow.pk}),
         )
@@ -449,7 +452,7 @@ class StepAdminViewTest(TestCase):
         )
 
     def test_create_step(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.post(
             reverse('signatures:step-create', kwargs={'flow_id': self.flow.pk}),
             {
@@ -468,7 +471,7 @@ class StepAdminViewTest(TestCase):
             flow=self.flow, order=1, label='Old Label',
             assignment_type='role', assigned_role='program_officer',
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.post(
             reverse('signatures:step-edit', kwargs={'pk': step.pk}),
             {
@@ -509,7 +512,7 @@ class PlacementEditorViewTest(TestCase):
 
     def test_placement_editor_accessible_by_any_user(self):
         """Any authenticated user should access the placement editor."""
-        self.client.login(username='regular', password='testpass123!')
+        self.client.force_login(self.regular_user)
         resp = self.client.get(
             reverse('signatures:placement-editor', kwargs={'document_id': self.document.pk}),
         )
@@ -517,7 +520,7 @@ class PlacementEditorViewTest(TestCase):
         self.assertIn('steps_json', resp.context)
 
     def test_placement_api_save(self):
-        self.client.login(username='regular', password='testpass123!')
+        self.client.force_login(self.regular_user)
         data = {
             'placements': [
                 {
@@ -573,14 +576,14 @@ class SigningViewTest(TestCase):
     def test_signing_view_accessible_by_signer(self):
         packet = self._create_active_packet()
         step = packet.steps.first()
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.signer)
         resp = self.client.get(reverse('signatures:sign', kwargs={'step_id': step.pk}))
         self.assertEqual(resp.status_code, 200)
 
     def test_signing_view_blocked_for_other_user(self):
         packet = self._create_active_packet()
         step = packet.steps.first()
-        self.client.login(username='other', password='testpass123!')
+        self.client.force_login(self.other_user)
         resp = self.client.get(reverse('signatures:sign', kwargs={'step_id': step.pk}))
         self.assertEqual(resp.status_code, 302)
 
@@ -590,7 +593,7 @@ class SigningViewTest(TestCase):
     def test_sign_complete_typed(self, mock_pdf, mock_completed, mock_active):
         packet = self._create_active_packet()
         step = packet.steps.first()
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.signer)
         resp = self.client.post(
             reverse('signatures:sign-complete', kwargs={'step_id': step.pk}),
             {
@@ -607,7 +610,7 @@ class SigningViewTest(TestCase):
     def test_sign_decline(self, mock_declined, mock_active):
         packet = self._create_active_packet()
         step = packet.steps.first()
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.signer)
         resp = self.client.post(
             reverse('signatures:sign-decline', kwargs={'step_id': step.pk}),
             {'decline_reason': 'Terms are unacceptable.'},
@@ -631,12 +634,12 @@ class PacketViewTest(TestCase):
         self.flow, self.steps = _create_flow_with_steps(self.admin, step_count=1)
 
     def test_packet_list_requires_agency_staff(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('signatures:packet-list'))
         self.assertNotEqual(resp.status_code, 200)
 
     def test_packet_list_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('signatures:packet-list'))
         self.assertEqual(resp.status_code, 200)
 
@@ -647,7 +650,7 @@ class PacketViewTest(TestCase):
             flow=self.flow, title='Detail Test', initiated_by=self.admin,
             signer_assignments={self.steps[0].pk: signer},
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('signatures:packet-detail', kwargs={'pk': packet.pk}))
         self.assertEqual(resp.status_code, 200)
 
@@ -658,7 +661,7 @@ class PacketViewTest(TestCase):
             flow=self.flow, title='Cancel Test', initiated_by=self.admin,
             signer_assignments={self.steps[0].pk: signer},
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.post(
             reverse('signatures:packet-cancel', kwargs={'pk': packet.pk}),
             {'cancel_reason': 'Changed plans.'},
@@ -674,7 +677,7 @@ class PacketViewTest(TestCase):
             flow=self.flow, title='API Test', initiated_by=self.admin,
             signer_assignments={self.steps[0].pk: signer},
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(
             reverse('signatures:packet-status-api', kwargs={'pk': packet.pk}),
         )
@@ -699,7 +702,7 @@ class MySignaturesViewTest(TestCase):
         self.assertEqual(resp.status_code, 302)
 
     def test_my_signatures_accessible(self):
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.signer)
         resp = self.client.get(reverse('signatures:my-signatures'))
         self.assertEqual(resp.status_code, 200)
 
@@ -711,7 +714,7 @@ class UserSignatureViewTest(TestCase):
         self.user = _user('signer', 'program_officer', self.agency)
 
     def test_create_typed_signature(self):
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.user)
         resp = self.client.post(
             reverse('signatures:user-signature-create'),
             {
@@ -729,7 +732,7 @@ class UserSignatureViewTest(TestCase):
         sig = UserSignature.objects.create(
             user=self.user, label='Sig 1', signature_type='typed', typed_name='Name',
         )
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.user)
         resp = self.client.post(
             reverse('signatures:user-signature-set-default', kwargs={'pk': sig.pk}),
         )
@@ -742,7 +745,7 @@ class UserSignatureViewTest(TestCase):
         other_sig = UserSignature.objects.create(
             user=other_user, label='Other', signature_type='typed', typed_name='Other',
         )
-        self.client.login(username='signer', password='testpass123!')
+        self.client.force_login(self.user)
         resp = self.client.post(
             reverse('signatures:user-signature-delete', kwargs={'pk': other_sig.pk}),
         )

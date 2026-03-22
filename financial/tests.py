@@ -1,6 +1,7 @@
 """Tests for the financial app: Budget CRUD, DrawdownRequest flow,
 Transaction creation, and permission checks (FiscalOfficer only)."""
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -16,6 +17,8 @@ from financial.models import Budget, BudgetLineItem, DrawdownRequest, Transactio
 from grants.models import FundingSource, GrantProgram
 
 User = get_user_model()
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
 
 
 # ---------------------------------------------------------------------------
@@ -37,7 +40,7 @@ def _org():
 
 def _user(username, role, agency=None, organization=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, organization=organization, **kw,
     )
 
@@ -150,19 +153,19 @@ class BudgetViewTests(TestCase):
         self.data = _full_setup()
 
     def test_budget_create_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('financial:budget-create', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_budget_create_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('financial:budget-create', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)
 
     def test_budget_create_post(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('financial:budget-create', kwargs={'award_id': self.data['award'].pk})
         data = {'fiscal_year': '2025', 'total_amount': '25000.00'}
         resp = self.client.post(url, data)
@@ -174,7 +177,7 @@ class BudgetViewTests(TestCase):
             award=self.data['award'], fiscal_year=2025,
             total_amount=Decimal('25000'),
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('financial:budget-detail', kwargs={'pk': budget.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
@@ -186,7 +189,7 @@ class DrawdownViewTests(TestCase):
         self.data = _full_setup()
 
     def test_drawdown_create(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('financial:drawdown-create', kwargs={'award_id': self.data['award'].pk})
         data = {
             'amount': '5000.00',
@@ -199,7 +202,7 @@ class DrawdownViewTests(TestCase):
         self.assertTrue(DrawdownRequest.objects.filter(award=self.data['award']).exists())
 
     def test_drawdown_list(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         resp = self.client.get(reverse('financial:drawdown-list'))
         self.assertEqual(resp.status_code, 200)
 
@@ -217,7 +220,7 @@ class DrawdownApproveViewTests(TestCase):
         )
 
     def test_approve_by_fiscal_officer(self):
-        self.client.login(username='fiscal', password='testpass123!')
+        self.client.force_login(self.data['fiscal'])
         url = reverse('financial:drawdown-approve', kwargs={'pk': self.drawdown.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 200)  # JSON response
@@ -225,7 +228,7 @@ class DrawdownApproveViewTests(TestCase):
         self.assertEqual(self.drawdown.status, DrawdownRequest.Status.APPROVED)
 
     def test_approve_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('financial:drawdown-approve', kwargs={'pk': self.drawdown.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
@@ -233,7 +236,7 @@ class DrawdownApproveViewTests(TestCase):
     def test_approve_not_submitted_fails(self):
         self.drawdown.status = DrawdownRequest.Status.DRAFT
         self.drawdown.save()
-        self.client.login(username='fiscal', password='testpass123!')
+        self.client.force_login(self.data['fiscal'])
         url = reverse('financial:drawdown-approve', kwargs={'pk': self.drawdown.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 400)
@@ -252,7 +255,7 @@ class DrawdownDenyViewTests(TestCase):
         )
 
     def test_deny_by_fiscal_officer(self):
-        self.client.login(username='fiscal', password='testpass123!')
+        self.client.force_login(self.data['fiscal'])
         url = reverse('financial:drawdown-deny', kwargs={'pk': self.drawdown.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -260,7 +263,7 @@ class DrawdownDenyViewTests(TestCase):
         self.assertEqual(self.drawdown.status, DrawdownRequest.Status.DENIED)
 
     def test_deny_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('financial:drawdown-deny', kwargs={'pk': self.drawdown.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
@@ -272,7 +275,7 @@ class TransactionViewTests(TestCase):
         self.data = _full_setup()
 
     def test_transaction_create_by_fiscal(self):
-        self.client.login(username='fiscal', password='testpass123!')
+        self.client.force_login(self.data['fiscal'])
         url = reverse('financial:transaction-create', kwargs={'award_id': self.data['award'].pk})
         data = {
             'transaction_type': 'payment',
@@ -285,12 +288,12 @@ class TransactionViewTests(TestCase):
         self.assertTrue(Transaction.objects.filter(award=self.data['award']).exists())
 
     def test_transaction_create_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('financial:transaction-create', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)
 
     def test_transaction_list_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         resp = self.client.get(reverse('financial:transaction-list'))
         self.assertEqual(resp.status_code, 200)
