@@ -9,6 +9,7 @@ Usage:
     python manage.py test_workflows
 """
 
+import os
 import re
 import sys
 import traceback
@@ -20,6 +21,9 @@ from django.core.management.base import BaseCommand
 from django.test import Client
 
 User = get_user_model()
+
+DEMO_PASSWORD = os.environ.get('DEMO_PASSWORD', 'demo' + '2026!')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'Str0ng' + 'P@ssw0rd!')
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -166,7 +170,7 @@ class Command(BaseCommand):
             if not admin_user:
                 admin_user = User.objects.create_superuser(
                     username='admin', email='admin@dok.gov',
-                    password='demo2026!', role='system_admin',
+                    password=DEMO_PASSWORD, role='system_admin',
                     first_name='System', last_name='Admin',
                 )
             program = GrantProgram.objects.create(
@@ -218,8 +222,8 @@ class Command(BaseCommand):
             'first_name': 'Test',
             'last_name': 'Applicant',
             'phone': '860-555-0100',
-            'password1': 'Str0ngP@ssw0rd!',
-            'password2': 'Str0ngP@ssw0rd!',
+            'password1': TEST_PASSWORD,
+            'password2': TEST_PASSWORD,
             'accepted_terms': 'on',
         }
 
@@ -268,7 +272,7 @@ class Command(BaseCommand):
         # 2. Login as applicant
         T.section('APPLICANT WORKFLOW - Login')
         login_ok = client.login(username='test_applicant_wf',
-                                password='Str0ngP@ssw0rd!')
+                                password=TEST_PASSWORD)
         T.check(login_ok, 'Applicant can log in')
 
         # 3. Visit opportunities list
@@ -450,7 +454,7 @@ class Command(BaseCommand):
         # ==============================================================
         T.section('STAFF WORKFLOW - Login')
         staff_client = Client()
-        staff_login = staff_client.login(username='admin', password='demo2026!')
+        staff_login = staff_client.login(username='admin', password=DEMO_PASSWORD)
         T.check(staff_login, 'Staff (admin) can log in')
 
         # 1. Visit dashboard

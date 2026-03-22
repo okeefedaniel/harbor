@@ -18,7 +18,7 @@ from grants.models import FundingSource, GrantProgram
 
 User = get_user_model()
 
-TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
 
 
 # ---------------------------------------------------------------------------

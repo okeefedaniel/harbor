@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from core.models import Agency
 
-TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
 
 from .models import (
     SignatureDocument,

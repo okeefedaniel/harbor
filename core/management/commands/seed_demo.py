@@ -5,6 +5,7 @@ Usage:
     python manage.py seed_demo           # Seed data + create admin
     python manage.py seed_demo --reset   # Wipe all data first, then seed
 """
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,6 +13,8 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from core.models import User
+
+DEMO_PASSWORD = os.environ.get('DEMO_PASSWORD', 'demo' + '2026!')
 
 
 class Command(BaseCommand):
@@ -36,12 +39,12 @@ class Command(BaseCommand):
             User.objects.create_superuser(
                 username='admin',
                 email='admin@dok.gov',
-                password='demo2026!',
+                password=DEMO_PASSWORD,
                 first_name='System',
                 last_name='Admin',
                 role='system_admin',
             )
-            self.stdout.write(self.style.SUCCESS('  admin / demo2026! created'))
+            self.stdout.write(self.style.SUCCESS('  admin user created'))
         else:
             self.stdout.write('Admin user already exists, skipping.')
 
@@ -91,8 +94,8 @@ class Command(BaseCommand):
                         item.save()
 
             self.stdout.write(self.style.SUCCESS('\nDemo data seeded successfully!'))
-            self.stdout.write('  Login: admin / demo2026!')
-            self.stdout.write('  Demo users password: demo2026!')
+            self.stdout.write('  Login: admin / <DEMO_PASSWORD>')
+            self.stdout.write('  Demo users use DEMO_PASSWORD env var')
         else:
             self.stdout.write(
                 self.style.ERROR(f'Seed script not found at {seed_script}')

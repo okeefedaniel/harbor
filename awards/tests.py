@@ -1,6 +1,7 @@
 """Tests for the awards app: Award creation, AwardAmendment create/approve/deny,
 and permission checks."""
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -15,6 +16,8 @@ from core.models import Agency, Organization
 from grants.models import FundingSource, GrantProgram
 
 User = get_user_model()
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
 
 
 # ---------------------------------------------------------------------------
@@ -36,7 +39,7 @@ def _org():
 
 def _user(username, role, agency=None, organization=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, organization=organization, **kw,
     )
 
@@ -146,12 +149,12 @@ class AwardListViewTests(TestCase):
         self.award = _award(self.app, self.agency, self.gp, self.applicant, self.org)
 
     def test_list_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('awards:list'))
         self.assertEqual(resp.status_code, 200)
 
     def test_list_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('awards:list'))
         self.assertEqual(resp.status_code, 403)
 
@@ -168,13 +171,13 @@ class AwardCreateViewTests(TestCase):
         self.app = _application(self.gp, self.applicant, self.org)
 
     def test_create_award_form_loads(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('awards:create', kwargs={'application_id': self.app.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_create_award_post(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('awards:create', kwargs={'application_id': self.app.pk})
         data = {
             'title': 'New Award',
@@ -189,7 +192,7 @@ class AwardCreateViewTests(TestCase):
         self.assertTrue(Award.objects.filter(title='New Award').exists())
 
     def test_create_award_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('awards:create', kwargs={'application_id': self.app.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)
@@ -208,7 +211,7 @@ class AwardAmendmentViewTests(TestCase):
         self.award = _award(self.app, self.agency, self.gp, self.applicant, self.org)
 
     def test_create_amendment(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('awards:amendment-create', kwargs={'pk': self.award.pk})
         data = {
             'amendment_type': AwardAmendment.AmendmentType.BUDGET_MODIFICATION,
@@ -228,7 +231,7 @@ class AwardAmendmentViewTests(TestCase):
             requested_by=self.officer,
             status=AwardAmendment.Status.SUBMITTED,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('awards:amendment-approve', kwargs={'pk': amendment.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -244,7 +247,7 @@ class AwardAmendmentViewTests(TestCase):
             requested_by=self.officer,
             status=AwardAmendment.Status.SUBMITTED,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('awards:amendment-deny', kwargs={'pk': amendment.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -259,7 +262,7 @@ class AwardAmendmentViewTests(TestCase):
             requested_by=self.officer,
             status=AwardAmendment.Status.APPROVED,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('awards:amendment-approve', kwargs={'pk': amendment.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)

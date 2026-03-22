@@ -14,10 +14,12 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 DEMO_MODE = os.environ.get('DEMO_MODE', 'False').lower() in ('true', '1', 'yes')
 DEMO_ROLES = ['admin', 'signer']
 
+import secrets as _secrets
+
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
 if not SECRET_KEY:
     if DEBUG:
-        SECRET_KEY = 'django-insecure-manifest-dev-key-change-in-production'
+        SECRET_KEY = _secrets.token_hex(25)
     else:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set in production')

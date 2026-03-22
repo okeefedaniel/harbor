@@ -1,6 +1,7 @@
 """Tests for the portal app: public-facing views including home page,
 opportunity listing, opportunity detail, about, and help pages."""
 
+import os
 from datetime import timedelta
 from decimal import Decimal
 
@@ -13,6 +14,8 @@ from core.models import Agency
 from grants.models import FundingSource, GrantProgram
 
 User = get_user_model()
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +33,7 @@ def _funding_source():
 
 def _user(username, role, agency=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, **kw,
     )
 

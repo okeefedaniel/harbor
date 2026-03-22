@@ -12,10 +12,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
+import secrets as _secrets
+
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
 if not SECRET_KEY:
     if DEBUG:
-        SECRET_KEY = 'django-insecure-dev-key-change-in-production'
+        SECRET_KEY = _secrets.token_hex(25)
     else:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set in production')

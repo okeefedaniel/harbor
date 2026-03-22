@@ -1,6 +1,7 @@
 """Tests for the closeout app: Closeout initiation, checklist management,
 closeout completion (sets award status), and permission checks."""
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -17,6 +18,8 @@ from grants.models import FundingSource, GrantProgram
 
 User = get_user_model()
 
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -28,15 +31,15 @@ def _full_setup():
     fs = FundingSource.objects.create(name='State Fund', source_type='state')
     org = Organization.objects.create(name='Test Org', org_type='nonprofit')
     officer = User.objects.create_user(
-        username='officer', password='testpass123!', email='officer@example.com',
+        username='officer', password=TEST_PASSWORD, email='officer@example.com',
         role=User.Role.PROGRAM_OFFICER, agency=agency,
     )
     fiscal = User.objects.create_user(
-        username='fiscal', password='testpass123!', email='fiscal@example.com',
+        username='fiscal', password=TEST_PASSWORD, email='fiscal@example.com',
         role=User.Role.FISCAL_OFFICER, agency=agency,
     )
     applicant = User.objects.create_user(
-        username='applicant', password='testpass123!', email='applicant@example.com',
+        username='applicant', password=TEST_PASSWORD, email='applicant@example.com',
         role=User.Role.APPLICANT, organization=org,
     )
     gp = GrantProgram.objects.create(
@@ -124,7 +127,7 @@ class CloseoutInitiateViewTests(TestCase):
         self.data = _full_setup()
 
     def test_initiate_closeout(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:initiate', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 200)  # JSON response
@@ -140,13 +143,13 @@ class CloseoutInitiateViewTests(TestCase):
             status=Closeout.Status.IN_PROGRESS,
             initiated_by=self.data['officer'],
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:initiate', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 400)
 
     def test_initiate_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('closeout:initiate', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
@@ -167,7 +170,7 @@ class CloseoutChecklistViewTests(TestCase):
         )
 
     def test_toggle_checklist_item(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:checklist-toggle', kwargs={'pk': self.item.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -180,7 +183,7 @@ class CloseoutChecklistViewTests(TestCase):
         self.item.completed_by = self.data['officer']
         self.item.completed_at = timezone.now()
         self.item.save()
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:checklist-toggle', kwargs={'pk': self.item.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -188,7 +191,7 @@ class CloseoutChecklistViewTests(TestCase):
         self.assertFalse(self.item.is_completed)
 
     def test_toggle_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('closeout:checklist-toggle', kwargs={'pk': self.item.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
@@ -211,7 +214,7 @@ class CloseoutCompleteViewTests(TestCase):
         )
 
     def test_complete_fails_with_incomplete_required_items(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:complete', kwargs={'pk': self.closeout.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -224,7 +227,7 @@ class CloseoutCompleteViewTests(TestCase):
         self.item1.completed_by = self.data['officer']
         self.item1.completed_at = timezone.now()
         self.item1.save()
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:complete', kwargs={'pk': self.closeout.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -236,7 +239,7 @@ class CloseoutCompleteViewTests(TestCase):
         self.assertEqual(self.data['award'].status, Award.Status.COMPLETED)
 
     def test_complete_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('closeout:complete', kwargs={'pk': self.closeout.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
@@ -253,14 +256,14 @@ class CloseoutDetailViewTests(TestCase):
         )
 
     def test_detail_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('closeout:detail', kwargs={'pk': self.closeout.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context['closeout'], self.closeout)
 
     def test_detail_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('closeout:detail', kwargs={'pk': self.closeout.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)

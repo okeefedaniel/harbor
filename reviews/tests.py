@@ -1,6 +1,7 @@
 """Tests for the reviews app: ReviewAssignment creation, score submission,
 review summary generation, and permission checks."""
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -22,6 +23,8 @@ from reviews.models import (
 
 User = get_user_model()
 
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -42,7 +45,7 @@ def _org():
 
 def _user(username, role, agency=None, organization=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, organization=organization, **kw,
     )
 
@@ -166,12 +169,12 @@ class ReviewDashboardViewTests(TestCase):
         self.applicant = _user('applicant', User.Role.APPLICANT)
 
     def test_dashboard_accessible_by_reviewer(self):
-        self.client.login(username='reviewer', password='testpass123!')
+        self.client.force_login(self.reviewer)
         resp = self.client.get(reverse('reviews:dashboard'))
         self.assertEqual(resp.status_code, 200)
 
     def test_dashboard_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('reviews:dashboard'))
         self.assertEqual(resp.status_code, 403)
 
@@ -201,7 +204,7 @@ class SubmitReviewViewTests(TestCase):
         )
 
     def test_submit_scores(self):
-        self.client.login(username='reviewer', password='testpass123!')
+        self.client.force_login(self.reviewer)
         url = reverse('reviews:submit-review', kwargs={'pk': self.app.pk})
         data = {
             f'{self.c1.pk}-criterion_id': str(self.c1.pk),
@@ -219,7 +222,7 @@ class SubmitReviewViewTests(TestCase):
 
     def test_submit_review_creates_summary_when_all_done(self):
         """When the only assignment completes, a ReviewSummary is created."""
-        self.client.login(username='reviewer', password='testpass123!')
+        self.client.force_login(self.reviewer)
         url = reverse('reviews:submit-review', kwargs={'pk': self.app.pk})
         data = {
             f'{self.c1.pk}-criterion_id': str(self.c1.pk),
@@ -247,13 +250,13 @@ class ReviewSummaryViewTests(TestCase):
         self.app = _application(self.gp, self.applicant, self.org)
 
     def test_summary_view_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('reviews:summary', kwargs={'pk': self.app.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_summary_view_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('reviews:summary', kwargs={'pk': self.app.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)

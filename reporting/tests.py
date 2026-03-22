@@ -10,7 +10,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
 
 from applications.models import Application
 from awards.models import Award

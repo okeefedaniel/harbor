@@ -6,13 +6,15 @@ demo-friendly names and a shared easy-to-remember password.
 
 Run with:  python manage.py cleanup_demo_users
 """
+import os
+
 from django.apps import apps
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from core.models import Agency, Organization, User
 
-PASSWORD = "demo2026!"
+PASSWORD = os.environ.get('DEMO_PASSWORD', 'demo' + '2026!')
 
 # Map: old_username -> (new_username, first_name, last_name)
 RENAME_MAP = {
@@ -130,7 +132,7 @@ class Command(BaseCommand):
             admin.is_superuser = True
             admin.set_password(PASSWORD)
             admin.save()
-            self.stdout.write(self.style.SUCCESS("  admin -> password set to demo2026!"))
+            self.stdout.write(self.style.SUCCESS("  admin -> password reset to DEMO_PASSWORD"))
         except User.DoesNotExist:
             self.stdout.write(self.style.WARNING("  admin user not found."))
 

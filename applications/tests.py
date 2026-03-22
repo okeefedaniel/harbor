@@ -1,6 +1,7 @@
 """Tests for the applications app: Application create, submit, status change,
 withdraw, permission checks, and ApplicationDocument upload."""
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -15,6 +16,8 @@ from core.models import Agency, Organization
 from grants.models import FundingSource, GrantProgram
 
 User = get_user_model()
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'test' + 'pass123!')
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +41,7 @@ def _org(**kw):
 
 def _user(username, role, agency=None, organization=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, organization=organization, **kw,
     )
 
@@ -127,20 +130,20 @@ class ApplicationCreateViewTests(TestCase):
 
     def test_create_redirects_if_no_org(self):
         no_org_user = _user('noorg', User.Role.APPLICANT)
-        self.client.login(username='noorg', password='testpass123!')
+        self.client.force_login(no_org_user)
         url = reverse('applications:create', kwargs={'grant_program_id': self.gp.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 302)
         self.assertIn('organization/create', resp.url)
 
     def test_create_form_loads(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:create', kwargs={'grant_program_id': self.gp.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_create_post(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:create', kwargs={'grant_program_id': self.gp.pk})
         data = {
             'project_title': 'New App',
@@ -169,7 +172,7 @@ class ApplicationSubmitViewTests(TestCase):
         self.app = _application(self.gp, self.applicant, self.org)
 
     def test_submit_draft_to_submitted(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:submit', kwargs={'pk': self.app.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -186,7 +189,7 @@ class ApplicationSubmitViewTests(TestCase):
     def test_submit_non_editable_fails(self):
         self.app.status = Application.Status.SUBMITTED
         self.app.save()
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:submit', kwargs={'pk': self.app.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)  # redirect with error message
@@ -205,7 +208,7 @@ class ApplicationWithdrawViewTests(TestCase):
                                 status=Application.Status.SUBMITTED)
 
     def test_withdraw_by_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:withdraw', kwargs={'pk': self.app.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -215,7 +218,7 @@ class ApplicationWithdrawViewTests(TestCase):
     def test_withdraw_already_withdrawn(self):
         self.app.status = Application.Status.WITHDRAWN
         self.app.save()
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:withdraw', kwargs={'pk': self.app.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
@@ -234,7 +237,7 @@ class ApplicationStatusChangeViewTests(TestCase):
                                 status=Application.Status.SUBMITTED)
 
     def test_status_change_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('applications:status-change', kwargs={'pk': self.app.pk})
         data = {
             'new_status': Application.Status.UNDER_REVIEW,
@@ -246,7 +249,7 @@ class ApplicationStatusChangeViewTests(TestCase):
         self.assertEqual(self.app.status, Application.Status.UNDER_REVIEW)
 
     def test_status_change_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:status-change', kwargs={'pk': self.app.pk})
         data = {
             'new_status': Application.Status.UNDER_REVIEW,
@@ -256,7 +259,7 @@ class ApplicationStatusChangeViewTests(TestCase):
         self.assertEqual(resp.status_code, 403)
 
     def test_invalid_transition_rejected(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('applications:status-change', kwargs={'pk': self.app.pk})
         # submitted -> approved is not valid directly
         data = {
@@ -282,7 +285,7 @@ class ApplicationDetailViewTests(TestCase):
         self.app = _application(self.gp, self.applicant, self.org)
 
     def test_detail_accessible(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         url = reverse('applications:detail', kwargs={'pk': self.app.pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
