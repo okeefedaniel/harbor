@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.validators import validate_document_file
+
 
 # ---------------------------------------------------------------------------
 # Award
@@ -180,7 +182,7 @@ class AwardDocument(models.Model):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to='awards/docs/')
+    file = models.FileField(upload_to='awards/docs/', validators=[validate_document_file])
     document_type = models.CharField(
         max_length=20,
         choices=DocumentType.choices,
@@ -304,7 +306,7 @@ class SignatureRequest(models.Model):
     )
     sent_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    signed_document = models.FileField(upload_to='awards/signed/', null=True, blank=True)
+    signed_document = models.FileField(upload_to='awards/signed/', null=True, blank=True, validators=[validate_document_file])
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

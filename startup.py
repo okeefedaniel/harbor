@@ -56,7 +56,7 @@ def main():
     log(f"DJANGO_SETTINGS_MODULE = {settings_module}")
     log(f"PORT = {port}")
     log(f"DATABASE_URL = {db_url}")
-    log(f"DJANGO_SECRET_KEY = {secret}")
+    log(f"Secret key configured: {secret}")
     log(f"Python: {sys.executable} {sys.version}")
     log(f"CWD: {os.getcwd()}")
     log(f"PATH: {os.environ.get('PATH', 'NOT SET')}")

@@ -1,6 +1,7 @@
 """Tests for the reporting app: Report CRUD, submit/review flow,
 SF425 generation, and permission checks."""
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -8,6 +9,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
 
 from applications.models import Application
 from awards.models import Award
@@ -32,11 +35,11 @@ def _full_setup():
     fs = FundingSource.objects.create(name='State Fund', source_type='state')
     org = Organization.objects.create(name='Test Org', org_type='nonprofit')
     officer = User.objects.create_user(
-        username='officer', password='testpass123!', email='officer@example.com',
+        username='officer', password=TEST_PASSWORD, email='officer@example.com',
         role=User.Role.PROGRAM_OFFICER, agency=agency,
     )
     applicant = User.objects.create_user(
-        username='applicant', password='testpass123!', email='applicant@example.com',
+        username='applicant', password=TEST_PASSWORD, email='applicant@example.com',
         role=User.Role.APPLICANT, organization=org,
     )
     gp = GrantProgram.objects.create(
@@ -136,7 +139,7 @@ class ReportListViewTests(TestCase):
         self.data = _full_setup()
 
     def test_list_accessible(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         resp = self.client.get(reverse('reporting:list'))
         self.assertEqual(resp.status_code, 200)
 
@@ -147,13 +150,13 @@ class ReportCreateViewTests(TestCase):
         self.data = _full_setup()
 
     def test_create_form_loads(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('reporting:create', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_create_report_post(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('reporting:create', kwargs={'award_id': self.data['award'].pk})
         data = {
             'report_type': 'progress',
@@ -181,7 +184,7 @@ class ReportSubmitViewTests(TestCase):
         )
 
     def test_submit_report(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('reporting:submit', kwargs={'pk': self.report.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 200)  # JSON response
@@ -192,7 +195,7 @@ class ReportSubmitViewTests(TestCase):
     def test_submit_non_draft_fails(self):
         self.report.status = Report.Status.APPROVED
         self.report.save()
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('reporting:submit', kwargs={'pk': self.report.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 400)
@@ -212,7 +215,7 @@ class ReportReviewViewTests(TestCase):
         )
 
     def test_approve_report(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('reporting:review', kwargs={'pk': self.report.pk})
         data = {'action': 'approve', 'comments': 'Looks good.'}
         resp = self.client.post(url, data)
@@ -221,7 +224,7 @@ class ReportReviewViewTests(TestCase):
         self.assertEqual(self.report.status, Report.Status.APPROVED)
 
     def test_request_revision(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('reporting:review', kwargs={'pk': self.report.pk})
         data = {'action': 'revision', 'comments': 'Needs more detail.'}
         resp = self.client.post(url, data)
@@ -230,7 +233,7 @@ class ReportReviewViewTests(TestCase):
         self.assertEqual(self.report.status, Report.Status.REVISION_REQUESTED)
 
     def test_review_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.data['applicant'])
         url = reverse('reporting:review', kwargs={'pk': self.report.pk})
         data = {'action': 'approve', 'comments': 'Sneaky.'}
         resp = self.client.post(url, data)
@@ -243,7 +246,7 @@ class SF425ViewTests(TestCase):
         self.data = _full_setup()
 
     def test_sf425_generate_page_loads(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('reporting:sf425', kwargs={'award_id': self.data['award'].pk})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
@@ -257,7 +260,7 @@ class SF425ViewTests(TestCase):
             generated_by=self.data['officer'],
             status=SF425Report.Status.DRAFT,
         )
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.data['officer'])
         url = reverse('reporting:sf425-submit', kwargs={'pk': sf425.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)

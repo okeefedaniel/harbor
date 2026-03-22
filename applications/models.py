@@ -5,6 +5,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from core.validators import validate_document_file
+
 
 class Application(models.Model):
     """A grant application submitted by an organization for a grant program."""
@@ -142,7 +144,7 @@ class ApplicationDocument(models.Model):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
-    file = models.FileField(upload_to='applications/docs/')
+    file = models.FileField(upload_to='applications/docs/', validators=[validate_document_file])
     document_type = models.CharField(
         max_length=25,
         choices=DocumentType.choices,
@@ -288,7 +290,7 @@ class StaffDocument(models.Model):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
-    file = models.FileField(upload_to='applications/staff_docs/')
+    file = models.FileField(upload_to='applications/staff_docs/', validators=[validate_document_file])
     document_type = models.CharField(
         max_length=25,
         choices=DocumentType.choices,

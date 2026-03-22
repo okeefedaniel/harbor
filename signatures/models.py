@@ -9,6 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from keel.core.models import AbstractAuditLog, AbstractNotification
 from keel.notifications.models import AbstractNotificationPreference
 
+from core.validators import validate_document_file, validate_image_file
+
 # Detect whether the grants app is installed so we can conditionally
 # define the grant_program FK.  This runs at class-definition time
 # (after Django settings are loaded) and affects both the model AND
@@ -152,7 +154,7 @@ class SignatureDocument(models.Model):
     )
     title = models.CharField(_('title'), max_length=255)
     description = models.TextField(_('description'), blank=True, default='')
-    file = models.FileField(_('file'), upload_to='signatures/templates/')
+    file = models.FileField(_('file'), upload_to='signatures/templates/', validators=[validate_document_file])
     page_count = models.PositiveIntegerField(
         _('page count'),
         default=0,
@@ -312,6 +314,7 @@ class SigningPacket(models.Model):
         upload_to='signatures/signed/',
         null=True,
         blank=True,
+        validators=[validate_document_file],
     )
 
     completed_at = models.DateTimeField(_('completed at'), null=True, blank=True)
@@ -431,6 +434,7 @@ class SigningStep(models.Model):
         null=True,
         blank=True,
         help_text=_('Uploaded or drawn signature image (PNG).'),
+        validators=[validate_image_file],
     )
 
     signed_at = models.DateTimeField(_('signed at'), null=True, blank=True)
@@ -506,6 +510,7 @@ class UserSignature(models.Model):
         upload_to='signatures/saved/',
         null=True,
         blank=True,
+        validators=[validate_image_file],
     )
     is_default = models.BooleanField(_('default'), default=False)
 

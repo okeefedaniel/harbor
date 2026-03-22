@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.validators import validate_document_file
+
 
 # ---------------------------------------------------------------------------
 # Closeout
@@ -115,7 +117,7 @@ class CloseoutDocument(models.Model):
         choices=DocumentType.choices,
         default=DocumentType.OTHER,
     )
-    file = models.FileField(upload_to='closeout/docs/')
+    file = models.FileField(upload_to='closeout/docs/', validators=[validate_document_file])
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

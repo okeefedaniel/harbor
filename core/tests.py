@@ -1,10 +1,14 @@
 """Tests for the core app: User model, Organization, Agency, AuditLog,
 Notification, and views (dashboard, login, logout, register)."""
 
+import os
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
 
 from core.models import Agency, AuditLog, Notification, Organization
 
@@ -42,7 +46,7 @@ def _create_user(username, role, agency=None, organization=None, **kwargs):
         'organization': organization,
     }
     defaults.update(kwargs)
-    return User.objects.create_user(password='testpass123!', **defaults)
+    return User.objects.create_user(password=TEST_PASSWORD, **defaults)
 
 
 # ===========================================================================
@@ -55,7 +59,7 @@ class UserModelTests(TestCase):
         self.agency = _create_agency()
 
     def test_create_user_with_default_role(self):
-        user = User.objects.create_user(username='newuser', password='testpass123!')
+        user = User.objects.create_user(username='newuser', password=TEST_PASSWORD)
         self.assertEqual(user.role, User.Role.APPLICANT)
 
     def test_is_agency_staff_true_for_staff_roles(self):
@@ -215,7 +219,7 @@ class LoginLogoutViewTests(TestCase):
 
     def test_login_success(self):
         resp = self.client.post(reverse('core:login'), {
-            'username': 'loginuser', 'password': 'testpass123!',
+            'username': 'loginuser', 'password': TEST_PASSWORD,
         })
         self.assertEqual(resp.status_code, 302)
 
@@ -226,7 +230,7 @@ class LoginLogoutViewTests(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_logout(self):
-        self.client.login(username='loginuser', password='testpass123!')
+        self.client.force_login(self.user)
         resp = self.client.post(reverse('core:logout'))
         self.assertIn(resp.status_code, [200, 302])
 
@@ -246,21 +250,21 @@ class DashboardViewTests(TestCase):
         self.assertEqual(resp.status_code, 302)
 
     def test_dashboard_agency_staff(self):
-        self.client.login(username='admin', password='testpass123!')
+        self.client.force_login(self.admin)
         resp = self.client.get(reverse('dashboard'))
         self.assertEqual(resp.status_code, 200)
         self.assertIn('pending_applications', resp.context)
         self.assertIn('total_funding', resp.context)
 
     def test_dashboard_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('dashboard'))
         self.assertEqual(resp.status_code, 200)
         self.assertIn('recent_applications', resp.context)
         self.assertIn('applications_count', resp.context)
 
     def test_dashboard_reviewer(self):
-        self.client.login(username='reviewer', password='testpass123!')
+        self.client.force_login(self.reviewer)
         resp = self.client.get(reverse('dashboard'))
         self.assertEqual(resp.status_code, 200)
         self.assertIn('pending_applications', resp.context)
@@ -274,7 +278,7 @@ class NotificationViewTests(TestCase):
         self.notification = Notification.objects.create(
             recipient=self.user, title='Test Notification', message='Content here',
         )
-        self.client.login(username='nuser', password='testpass123!')
+        self.client.force_login(self.user)
 
     def test_notification_list(self):
         resp = self.client.get(reverse('keel_notifications:list'))

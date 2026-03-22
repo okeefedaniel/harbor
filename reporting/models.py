@@ -5,6 +5,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from core.validators import validate_document_file
+
 
 # ---------------------------------------------------------------------------
 # ReportTemplate
@@ -177,7 +179,7 @@ class ReportDocument(models.Model):
         related_name='documents',
     )
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='reports/docs/')
+    file = models.FileField(upload_to='reports/docs/', validators=[validate_document_file])
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

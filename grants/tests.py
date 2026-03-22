@@ -1,6 +1,7 @@
 """Tests for the grants app: GrantProgram CRUD, permission checks,
 publish/unpublish toggle, and is_accepting_applications property."""
 
+import os
 from datetime import timedelta
 from decimal import Decimal
 
@@ -8,6 +9,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'testpass123!')
 
 from core.models import Agency, Organization
 from grants.models import FundingSource, GrantProgram
@@ -32,7 +35,7 @@ def _funding_source(**kw):
 
 def _user(username, role, agency=None, **kw):
     return User.objects.create_user(
-        username=username, password='testpass123!', email=f'{username}@example.com',
+        username=username, password=TEST_PASSWORD, email=f'{username}@example.com',
         role=role, agency=agency, **kw,
     )
 
@@ -123,12 +126,12 @@ class GrantProgramListViewTests(TestCase):
         _grant_program(self.agency, self.fs, self.officer)
 
     def test_list_requires_agency_staff(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('grants:program-list'))
         self.assertEqual(resp.status_code, 403)
 
     def test_list_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('grants:program-list'))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.context['programs']), 1)
@@ -144,22 +147,22 @@ class GrantProgramCreateViewTests(TestCase):
         self.fiscal = _user('fiscal', User.Role.FISCAL_OFFICER, agency=self.agency)
 
     def test_create_denied_for_applicant(self):
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(self.applicant)
         resp = self.client.get(reverse('grants:program-create'))
         self.assertEqual(resp.status_code, 403)
 
     def test_create_denied_for_fiscal_officer(self):
-        self.client.login(username='fiscal', password='testpass123!')
+        self.client.force_login(self.fiscal)
         resp = self.client.get(reverse('grants:program-create'))
         self.assertEqual(resp.status_code, 403)
 
     def test_create_accessible_by_grant_manager(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(reverse('grants:program-create'))
         self.assertEqual(resp.status_code, 200)
 
     def test_create_grant_program_post(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         deadline = (timezone.now() + timedelta(days=30)).strftime('%Y-%m-%dT%H:%M')
         posting = timezone.now().strftime('%Y-%m-%dT%H:%M')
         data = {
@@ -189,7 +192,7 @@ class GrantProgramDetailViewTests(TestCase):
         self.program = _grant_program(self.agency, self.fs, self.officer)
 
     def test_detail_accessible_by_staff(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         resp = self.client.get(
             reverse('grants:program-detail', kwargs={'pk': self.program.pk})
         )
@@ -206,7 +209,7 @@ class PublishGrantProgramViewTests(TestCase):
         self.program = _grant_program(self.agency, self.fs, self.officer)
 
     def test_publish_toggle(self):
-        self.client.login(username='officer', password='testpass123!')
+        self.client.force_login(self.officer)
         url = reverse('grants:program-publish', kwargs={'pk': self.program.pk})
         # Publish
         resp = self.client.post(url)
@@ -223,7 +226,7 @@ class PublishGrantProgramViewTests(TestCase):
 
     def test_publish_denied_for_applicant(self):
         applicant = _user('applicant', User.Role.APPLICANT)
-        self.client.login(username='applicant', password='testpass123!')
+        self.client.force_login(applicant)
         url = reverse('grants:program-publish', kwargs={'pk': self.program.pk})
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)

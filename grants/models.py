@@ -5,6 +5,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from core.validators import validate_document_file
+
 
 class FundingSource(models.Model):
     """Federal, state, or private funding source for grant programs."""
@@ -210,7 +212,7 @@ class GrantProgramDocument(models.Model):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
-    file = models.FileField(upload_to='grant_programs/docs/')
+    file = models.FileField(upload_to='grant_programs/docs/', validators=[validate_document_file])
     document_type = models.CharField(
         max_length=20,
         choices=DocumentType.choices,
