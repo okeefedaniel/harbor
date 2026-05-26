@@ -651,9 +651,34 @@ class PacketViewTest(TestCase):
             flow=self.flow, title='Detail Test', initiated_by=self.admin,
             signer_assignments={self.steps[0].pk: signer},
         )
-        self.client.force_login(self.officer)
+        # Initiator can view the packet.
+        self.client.force_login(self.admin)
         resp = self.client.get(reverse('signatures:packet-detail', kwargs={'pk': packet.pk}))
         self.assertEqual(resp.status_code, 200)
+
+    @patch('keel.signatures.services._notify_signer_active')
+    def test_packet_detail_signer_access(self, mock_notify):
+        signer = _user('signer2', 'program_officer', self.agency)
+        packet = services.initiate_packet(
+            flow=self.flow, title='Signer Access Test', initiated_by=self.admin,
+            signer_assignments={self.steps[0].pk: signer},
+        )
+        # Assigned signer can view the packet.
+        self.client.force_login(signer)
+        resp = self.client.get(reverse('signatures:packet-detail', kwargs={'pk': packet.pk}))
+        self.assertEqual(resp.status_code, 200)
+
+    @patch('keel.signatures.services._notify_signer_active')
+    def test_packet_detail_idor_blocked(self, mock_notify):
+        signer = _user('signer3', 'program_officer', self.agency)
+        packet = services.initiate_packet(
+            flow=self.flow, title='IDOR Test', initiated_by=self.admin,
+            signer_assignments={self.steps[0].pk: signer},
+        )
+        # A staff user who is neither the initiator nor a signer must be 404'd.
+        self.client.force_login(self.officer)
+        resp = self.client.get(reverse('signatures:packet-detail', kwargs={'pk': packet.pk}))
+        self.assertEqual(resp.status_code, 404)
 
     @patch('keel.signatures.services._notify_signer_active')
     def test_packet_cancel(self, mock_notify):
