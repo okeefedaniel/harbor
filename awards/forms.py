@@ -202,4 +202,9 @@ class AwardLocalSignForm(forms.Form):
         f = self.cleaned_data['signed_pdf']
         if not f.name.lower().endswith('.pdf'):
             raise forms.ValidationError(_lazy('Only PDF files are accepted.'))
+        try:
+            from keel.security.scanning import FileSecurityValidator
+            FileSecurityValidator()(f)
+        except ImportError:
+            pass
         return f
