@@ -506,7 +506,25 @@ class AddCommentView(LoginRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        # Scope the lookup to records this user is allowed to see:
+        # - agency staff see applications belonging to their agency
+        # - applicants see only their own applications
+        # Without this, any authenticated user could post comments to arbitrary
+        # applications (IDOR).
+        user = request.user
+        if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+            application = get_object_or_404(Application, pk=pk)
+        elif user.is_agency_staff and user.agency:
+            assigned_app_ids = ApplicationAssignment.objects.filter(
+                assigned_to=user,
+            ).values_list('application_id', flat=True)
+            application = get_object_or_404(
+                Application,
+                models.Q(grant_program__agency=user.agency) | models.Q(pk__in=assigned_app_ids),
+                pk=pk,
+            )
+        else:
+            application = get_object_or_404(Application, pk=pk, applicant=user)
         form = ApplicationCommentForm(request.POST)
 
         if form.is_valid():
@@ -542,7 +560,22 @@ class UploadDocumentView(LoginRequiredMixin, View):
         return redirect('applications:detail', pk=pk)
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        # Scope the lookup identically to ApplicationDetailView / AddCommentView
+        # so applicants cannot attach documents to arbitrary applications (IDOR).
+        user = request.user
+        if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+            application = get_object_or_404(Application, pk=pk)
+        elif user.is_agency_staff and user.agency:
+            assigned_app_ids = ApplicationAssignment.objects.filter(
+                assigned_to=user,
+            ).values_list('application_id', flat=True)
+            application = get_object_or_404(
+                Application,
+                models.Q(grant_program__agency=user.agency) | models.Q(pk__in=assigned_app_ids),
+                pk=pk,
+            )
+        else:
+            application = get_object_or_404(Application, pk=pk, applicant=user)
         form = ApplicationDocumentForm(request.POST, request.FILES)
 
         if form.is_valid():
