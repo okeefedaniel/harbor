@@ -99,6 +99,11 @@ def main():
     log("=== Ensuring dokadmin user ===")
     run(f"{manage_cmd} ensure_dokadmin")
 
+    # Sync keel.scheduling registry with declared @scheduled_job decorations.
+    # Idempotent; preserves admin-edited enabled + notes fields.
+    log("=== Syncing scheduled-job registry ===")
+    run(f"{manage_cmd} sync_scheduled_jobs")
+
     # Ensure django.contrib.sites has the correct Site record (required by allauth)
     log("=== Configuring Site object ===")
     try:

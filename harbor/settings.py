@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'keel.settings',
     'keel.activity',  # Phase 1A Week 5 / Phase 1C — fifth product peer (Harbor)
     'keel.mentions',  # @-mentions on application comments (keel >= 0.42.0)
+    'keel.scheduling',  # observability for scheduled mgmt commands (canary `cron_silent_24h`)
     # Third party
     'rest_framework',
     'rest_framework.authtoken',
@@ -442,6 +443,10 @@ from keel.core.fleet import FLEET as KEEL_FLEET_PRODUCTS  # noqa: E402,F401
 KEEL_API_URL = os.environ.get('KEEL_API_URL', 'https://keel.docklabs.ai')
 KEEL_API_KEY = os.environ.get('KEEL_API_KEY', '')
 HELM_FEED_API_KEY = os.environ.get('HELM_FEED_API_KEY', '')
+# keel.ops canary bearer-token for external pollers (GH Actions canary.yml
+# pings /api/v1/metrics/ every 15min). Leave unset for dev — the staff-
+# session auth path on the view still works.
+KEEL_METRICS_TOKEN = os.environ.get('HARBOR_METRICS_TOKEN', '')
 
 # Manifest cross-product signing handoff — the keel.signatures scaffolding
 # lives alongside harbor's existing bespoke signatures app. Both are

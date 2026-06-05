@@ -5,7 +5,7 @@ All endpoints are registered through a DRF ``DefaultRouter`` and served
 under the ``/api/`` prefix (configured in the project-level ``urls.py``).
 """
 
-from django.urls import path
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import views
@@ -35,4 +35,8 @@ urlpatterns = [
     path('v1/helm-feed/inbox/', harbor_helm_feed_inbox, name='helm-feed-inbox'),
     path('v1/helm-feed/activity/', harbor_helm_activity, name='helm-feed-activity'),
     path('v1/audit-feed/', harbor_audit_feed, name='audit-feed'),
+    # keel.ops canary — JSON metrics for external pollers (4 flag chips +
+    # counters). Auth: staff session OR Authorization: Bearer
+    # HARBOR_METRICS_TOKEN (resolves via KEEL_METRICS_TOKEN setting).
+    path('v1/metrics/', include('keel.ops.urls')),
 ] + router.urls
