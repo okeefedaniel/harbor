@@ -154,10 +154,31 @@ def send_notification_email(recipient_email, subject, template_name, context):
 # ---------------------------------------------------------------------------
 
 class _StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Standalone fallback: require ``is_staff``."""
+    """Standalone fallback: require superuser OR a privileged ProductAccess role.
+
+    CSO 2026-06-03 Week 3 audit: was previously ``return user.is_staff``,
+    which leaks suite-wide on demo (``seed_keel_users`` force-sets
+    ``is_staff=True`` on every demo user). The proper harbor mixin
+    ``AgencyStaffRequiredMixin`` from ``core.mixins`` is the canonical
+    gate for harbor's signature management views; this fallback only
+    fires when harbor's ``core`` package is unavailable (e.g. a future
+    standalone signatures-only deployment). Tighten the fallback to
+    role-based — superuser or system_admin / admin / agency_admin /
+    grant_manager — instead of the leaky is_staff path.
+    """
+
+    _STAFF_ROLES = frozenset({
+        'system_admin', 'admin', 'agency_admin', 'grant_manager',
+    })
 
     def test_func(self):
-        return self.request.user.is_staff
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        role = getattr(user, 'role', '') or ''
+        return role in self._STAFF_ROLES
 
 
 # Import mixins at module level.  We cannot rely on try/except ImportError
