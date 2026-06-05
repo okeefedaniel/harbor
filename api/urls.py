@@ -6,6 +6,9 @@ under the ``/api/`` prefix (configured in the project-level ``urls.py``).
 """
 
 from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView,
+)
 from rest_framework.routers import DefaultRouter
 
 from . import views
@@ -39,4 +42,10 @@ urlpatterns = [
     # counters). Auth: staff session OR Authorization: Bearer
     # HARBOR_METRICS_TOKEN (resolves via KEEL_METRICS_TOKEN setting).
     path('v1/metrics/', include('keel.ops.urls')),
+    # drf-spectacular — OpenAPI 3 schema (raw) + Swagger UI + ReDoc.
+    # Full path: /api/v1/schema/  /api/v1/docs/  /api/v1/redoc/
+    # No app_name on this urls.py, so reference plain name 'schema'.
+    path('v1/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),
+    path('v1/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ] + router.urls

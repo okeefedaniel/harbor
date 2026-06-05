@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'rest_framework.authtoken',
+    'drf_spectacular',  # OpenAPI 3 schema for /api/v1/ (suite convention; ref: beacon)
     'crispy_forms',
     'crispy_bootstrap5',
     'django_filters',
@@ -324,6 +325,17 @@ REST_FRAMEWORK = {
         'anon': '30/minute',
         'user': '120/minute',
     },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# drf-spectacular — OpenAPI 3 schema served at /api/v1/schema/, /api/v1/docs/, /api/v1/redoc/.
+# Per CLAUDE.md "Programmatic API" section: schema is the contract integrators
+# read against. Beacon is the reference impl.
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Harbor API',
+    'DESCRIPTION': 'Programmatic API for Harbor (grant programs, applications, awards, drawdowns, closeout).',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 # Allowed file upload extensions
