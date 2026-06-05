@@ -107,7 +107,7 @@
                             <td><span class="pill pill-muted">{{ doc.doc_category|default:"—"|title }}</span></td>
                             <td class="text-muted small">{{ doc.uploaded_at|date:"M d, Y" }}</td>
                             <td>
-                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <a href="{% url 'applications:attachment-download' doc.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">
                                     <i class="bi bi-download me-1"></i>{% trans "Download" %}
                                 </a>
                             </td>

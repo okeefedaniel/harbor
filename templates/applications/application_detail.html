@@ -183,7 +183,7 @@
                                 <td class="small text-muted">{{ doc.uploaded_by.get_full_name|default:doc.uploaded_by.username }}</td>
                                 <td class="small text-muted">{{ doc.uploaded_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <a href="{% url 'applications:attachment-download' doc.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
                                         <i class="bi bi-download"></i>
                                     </a>
                                 </td>
@@ -400,7 +400,7 @@
                                 <td class="small text-muted">{{ doc.uploaded_by.get_full_name|default:doc.uploaded_by.username }}</td>
                                 <td class="small text-muted">{{ doc.uploaded_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <a href="{% url 'applications:attachment-download' doc.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
                                         <i class="bi bi-download"></i>
                                     </a>
                                 </td>

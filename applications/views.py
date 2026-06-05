@@ -3,7 +3,7 @@ import logging
 from django.db import models
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404, HttpResponseForbidden, JsonResponse
+from django.http import FileResponse, Http404, HttpResponseForbidden, JsonResponse
 
 from core.audit import log_audit
 from core.export import CSVExportMixin
@@ -44,6 +44,78 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# CSO 2026-06-03 HIGH F-001: gated attachment download.
+#
+# The detail template previously linked staff-only and applicant-visible
+# attachments via ``{{ doc.file.url }}``, which resolves to
+# ``/media/...``. In dev (DEBUG=True) Django's static-media handler serves
+# /media/ unauthenticated; in prod that route isn't mounted, so the link
+# 404s — broken downloads AND latent breach risk if anyone later wires
+# WhiteNoise or a CDN to /media/.
+#
+# Replace with a Django view that checks the application ACL on every
+# request, gates INTERNAL attachments to agency staff, and streams the
+# file via FileResponse. Templates resolve via
+# {% url 'applications:attachment-download' attachment.pk %} and the
+# AbstractAttachment exposes a helper ``get_download_url()`` we mirror
+# here to keep templates concise.
+# ---------------------------------------------------------------------------
+def _user_can_see_application(user, application):
+    """Mirror of ``ApplicationDetailView.get_queryset`` ACL.
+
+    Returns True if the user can view the application's detail page —
+    superuser, system_admin, agency staff in the program's agency,
+    explicitly-assigned reviewer, or the applicant themselves.
+    """
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+        return True
+    if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+        if application.grant_program.agency_id == user.agency_id:
+            return True
+        if ApplicationAssignment.objects.filter(
+            application=application, assigned_to=user,
+        ).exists():
+            return True
+    return application.applicant_id == user.pk
+
+
+class AttachmentDownloadView(LoginRequiredMixin, View):
+    """Stream an ApplicationAttachment file behind the application ACL.
+
+    Authoritative ACL for /media/ access — do not link to ``file.url``
+    directly. INTERNAL-visibility attachments are gated to agency staff
+    (matches the template's existing staff-only block).
+    """
+
+    def get(self, request, pk):
+        attachment = get_object_or_404(
+            ApplicationAttachment.objects.select_related('application__grant_program'),
+            pk=pk,
+        )
+        application = attachment.application
+        if not _user_can_see_application(request.user, application):
+            raise Http404  # 404, not 403 — don't confirm existence
+        # INTERNAL-visibility attachments are staff-only.
+        if attachment.visibility == ApplicationAttachment.Visibility.INTERNAL:
+            is_staff_actor = (
+                request.user.is_superuser
+                or getattr(request.user, 'role', '') == 'system_admin'
+                or getattr(request.user, 'is_agency_staff', False)
+            )
+            if not is_staff_actor:
+                raise Http404
+        if not attachment.file:
+            raise Http404
+        return FileResponse(
+            attachment.file.open('rb'),
+            as_attachment=True,
+            filename=attachment.filename or attachment.file.name.rsplit('/', 1)[-1],
+        )
 
 
 # ---------------------------------------------------------------------------

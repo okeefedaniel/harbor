@@ -48,6 +48,14 @@ urlpatterns = [
         views.UploadStaffDocumentView.as_view(),
         name='upload-staff-document',
     ),
+    # CSO 2026-06-03 HIGH F-001: gated /media/ access for attachments.
+    # Templates link via {% url 'applications:attachment-download' att.pk %}
+    # instead of {{ doc.file.url }}.
+    path(
+        'attachment/<uuid:pk>/download/',
+        views.AttachmentDownloadView.as_view(),
+        name='attachment-download',
+    ),
     # Staff application assignments
     path('my-assignments/', views.MyAssignmentsView.as_view(), name='my-assignments'),
     path('<uuid:pk>/claim/', views.ClaimApplicationView.as_view(), name='claim'),
