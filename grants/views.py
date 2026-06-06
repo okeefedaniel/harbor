@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Exists, IntegerField, OuterRef, Value, When
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -27,6 +27,7 @@ from .models import (
     FundingSource,
     GrantPreference,
     GrantProgram,
+    GrantProgramDocument,
     OpportunityCollaborator,
     OpportunityMatch,
     SavedProgram,
@@ -161,6 +162,26 @@ class GrantProgramUpdateView(GrantManagerRequiredMixin, AgencyObjectMixin, Updat
 
     def get_success_url(self):
         return reverse_lazy('grants:program-detail', kwargs={'pk': self.object.pk})
+
+
+class GrantProgramDocumentDownloadView(AgencyStaffRequiredMixin, View):
+    """Stream a GrantProgramDocument via FileResponse.
+
+    CSO Wave 4: detail template was linking ``{{ doc.file.url }}`` which
+    404s in prod and would bypass the staff gate on the detail view if
+    /media/ ever started serving. Match the parent
+    ``GrantProgramDetailView``'s staff-only ACL.
+    """
+
+    def get(self, request, pk):
+        doc = get_object_or_404(GrantProgramDocument, pk=pk)
+        if not doc.file:
+            raise Http404
+        return FileResponse(
+            doc.file.open('rb'),
+            as_attachment=True,
+            filename=doc.title or doc.file.name.rsplit('/', 1)[-1],
+        )
 
 
 class GrantProgramDetailView(AgencyStaffRequiredMixin, DetailView):

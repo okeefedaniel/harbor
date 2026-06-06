@@ -75,4 +75,11 @@ urlpatterns = [
         views.SignatureStatusView.as_view(),
         name='signature_status',
     ),
+
+    # CSO Wave 4: gated download for AwardAttachment files.
+    path(
+        'attachment/<uuid:pk>/download/',
+        views.AwardAttachmentDownloadView.as_view(),
+        name='attachment-download',
+    ),
 ]

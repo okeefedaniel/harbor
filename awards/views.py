@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.base import ContentFile
 from django.db.models import Sum
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -147,6 +147,50 @@ class MyAwardsView(LoginRequiredMixin, ListView):
 # ---------------------------------------------------------------------------
 # Award Detail
 # ---------------------------------------------------------------------------
+class AwardAttachmentDownloadView(LoginRequiredMixin, View):
+    """Stream an AwardAttachment via FileResponse behind the award ACL.
+
+    CSO Wave 4: detail template was linking ``{{ doc.file.url }}`` which
+    404s in prod (no /media/ handler) and would bypass the
+    AwardDetailView ACL if /media/ ever started serving. Mirror the
+    same ACL the parent detail view uses, plus an INTERNAL-visibility
+    staff gate (matching the ApplicationAttachmentDownloadView pattern
+    from Week 1).
+    """
+
+    def get(self, request, pk):
+        doc = get_object_or_404(
+            AwardAttachment.objects.select_related('award__agency'),
+            pk=pk,
+        )
+        user = request.user
+        award = doc.award
+        allowed = (
+            user.is_superuser
+            or getattr(user, 'role', '') == 'system_admin'
+            or (getattr(user, 'is_agency_staff', False) and award.agency_id == getattr(user, 'agency_id', None))
+            or award.recipient_id == user.pk
+        )
+        if not allowed:
+            raise Http404
+        # INTERNAL-visibility attachments are staff-only.
+        if doc.visibility == AwardAttachment.Visibility.INTERNAL:
+            is_staff_actor = (
+                user.is_superuser
+                or getattr(user, 'role', '') == 'system_admin'
+                or getattr(user, 'is_agency_staff', False)
+            )
+            if not is_staff_actor:
+                raise Http404
+        if not doc.file:
+            raise Http404
+        return FileResponse(
+            doc.file.open('rb'),
+            as_attachment=True,
+            filename=doc.title or doc.filename or doc.file.name.rsplit('/', 1)[-1],
+        )
+
+
 class AwardDetailView(LoginRequiredMixin, DetailView):
     """Detailed view of a single award, including related objects."""
 

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -18,7 +18,41 @@ from core.models import AuditLog
 from core.notifications import notify_report_review_complete
 
 from .forms import ReportForm
-from .models import Report, SF425Report
+from .models import Report, ReportDocument, SF425Report
+
+
+class ReportDocumentDownloadView(LoginRequiredMixin, View):
+    """Stream a ReportDocument via FileResponse behind the report ACL.
+
+    CSO Wave 4: the detail template was linking ``{{ doc.file.url }}``
+    which 404s in prod (no /media/ handler) and would expose docs if
+    one were ever added. Gate every download through the same ACL as
+    ReportDetailView (system_admin / agency staff in award's agency /
+    award recipient).
+    """
+
+    def get(self, request, pk):
+        doc = get_object_or_404(
+            ReportDocument.objects.select_related('report__award'),
+            pk=pk,
+        )
+        user = request.user
+        award = doc.report.award
+        allowed = (
+            user.is_superuser
+            or getattr(user, 'role', '') == 'system_admin'
+            or (getattr(user, 'is_agency_staff', False) and award.agency_id == getattr(user, 'agency_id', None))
+            or award.recipient_id == user.pk
+        )
+        if not allowed:
+            raise Http404
+        if not doc.file:
+            raise Http404
+        return FileResponse(
+            doc.file.open('rb'),
+            as_attachment=True,
+            filename=doc.title or doc.file.name.rsplit('/', 1)[-1],
+        )
 
 
 # ---------------------------------------------------------------------------

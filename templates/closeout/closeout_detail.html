@@ -181,7 +181,7 @@
                         <td>{{ doc.uploaded_by.get_full_name }}</td>
                         <td>{{ doc.created_at|date:"M d, Y" }}</td>
                         <td class="text-center">
-                            <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <a href="{% url 'closeout:document-download' doc.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
                                 <i class="bi bi-download me-1"></i>{% trans "Download" %}
                             </a>
                         </td>

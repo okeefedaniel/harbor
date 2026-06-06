@@ -30,4 +30,10 @@ urlpatterns = [
         views.SF425ApproveView.as_view(),
         name='sf425-approve',
     ),
+    # CSO Wave 4: gated download for ReportDocument files.
+    path(
+        'documents/<uuid:pk>/download/',
+        views.ReportDocumentDownloadView.as_view(),
+        name='document-download',
+    ),
 ]

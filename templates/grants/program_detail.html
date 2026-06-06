@@ -131,7 +131,7 @@
                                 <td><span class="pill pill-muted">{{ doc.get_document_type_display }}</span></td>
                                 <td class="text-muted small">{{ doc.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <a href="{% url 'grants:document-download' doc.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
                                         <i class="bi bi-download"></i>
                                     </a>
                                 </td>

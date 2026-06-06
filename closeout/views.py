@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -17,6 +17,25 @@ from core.notifications import notify_closeout_initiated
 
 from .forms import CloseoutChecklistForm, CloseoutDocumentForm, FundReturnForm
 from .models import Closeout, CloseoutChecklist, CloseoutDocument, FundReturn
+
+
+class CloseoutDocumentDownloadView(AgencyStaffRequiredMixin, View):
+    """Stream a CloseoutDocument via FileResponse.
+
+    CSO Wave 4: detail template was linking ``{{ doc.file.url }}``
+    which 404s in prod (no /media/ handler). Match the parent
+    CloseoutDetailView's staff-only ACL.
+    """
+
+    def get(self, request, pk):
+        doc = get_object_or_404(CloseoutDocument, pk=pk)
+        if not doc.file:
+            raise Http404
+        return FileResponse(
+            doc.file.open('rb'),
+            as_attachment=True,
+            filename=doc.title or doc.file.name.rsplit('/', 1)[-1],
+        )
 
 
 # ---------------------------------------------------------------------------

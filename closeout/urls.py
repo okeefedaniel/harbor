@@ -37,4 +37,11 @@ urlpatterns = [
         views.CloseoutCompleteView.as_view(),
         name='complete',
     ),
+
+    # CSO Wave 4: gated download for CloseoutDocument files.
+    path(
+        'documents/<uuid:pk>/download/',
+        views.CloseoutDocumentDownloadView.as_view(),
+        name='document-download',
+    ),
 ]

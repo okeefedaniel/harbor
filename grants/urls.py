@@ -42,4 +42,11 @@ urlpatterns = [
     path('matching/dismiss/<uuid:pk>/', views.DismissMatchView.as_view(), name='dismiss-match'),
     path('matching/track-dismiss/<uuid:pk>/', views.TrackAndDismissView.as_view(), name='track-and-dismiss'),
     path('matching/feedback/<uuid:pk>/', views.MatchFeedbackView.as_view(), name='match-feedback'),
+
+    # CSO Wave 4: gated download for GrantProgramDocument files.
+    path(
+        'documents/<uuid:pk>/download/',
+        views.GrantProgramDocumentDownloadView.as_view(),
+        name='document-download',
+    ),
 ]
