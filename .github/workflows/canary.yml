@@ -1,0 +1,90 @@
+name: Canary
+
+# Scheduled polling disabled while pre-beta to conserve GitHub Actions
+# minutes. Re-enable for production by uncommenting the schedule block
+# below — runs every 15 minutes, fails the workflow on non-200 or
+# `healthy != true`, and opens (or de-dupes) a `canary`-labeled issue.
+#
+# Reference: helm/.github/workflows/canary.yml — same shape, different
+# host + secret name. Wired by CSO 2026-06-06 Wave 4.
+#
+# To enable:
+# 1. Mint a 32+ char token. Use the same value for both:
+#    - GitHub Actions secret: HARBOR_METRICS_TOKEN
+#    - Railway env var: HARBOR_METRICS_TOKEN (on the harbor service only,
+#      not -demo — canary polls production)
+# 2. Uncomment the schedule block below.
+
+on:
+  # schedule:
+  #   - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll /api/v1/metrics/
+        env:
+          HARBOR_METRICS_TOKEN: ${{ secrets.HARBOR_METRICS_TOKEN }}
+        run: |
+          set -euo pipefail
+          response=$(mktemp)
+          status=$(curl -sS -o "$response" -w '%{http_code}' \
+            -H "Authorization: Bearer $HARBOR_METRICS_TOKEN" \
+            https://harbor.docklabs.ai/api/v1/metrics/)
+
+          echo "HTTP $status"
+          cat "$response" | jq . || { echo "non-JSON response"; cat "$response"; exit 1; }
+
+          if [ "$status" != "200" ]; then
+            echo "::error::metrics endpoint returned $status"
+            exit 1
+          fi
+
+          if ! jq -e '.healthy == true' "$response" > /dev/null; then
+            echo "::error::healthy is not true"
+            jq '{healthy: .healthy, flags: .flags}' "$response"
+            exit 1
+          fi
+
+  notify:
+    needs: metrics
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Canary: harbor /api/v1/metrics/ unhealthy';
+            const body = [
+              `Scheduled canary run failed.`,
+              ``,
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ``,
+              `Check the run log for which flag tripped, then:`,
+              `- \`audit_silent_24h\` → no AuditLog rows in 24h`,
+              `- \`cron_silent_24h\` → no CommandRun rows in 24h`,
+              `- \`cron_failures_24h\` → at least one scheduled job errored`,
+              `- \`notifications_failing\` → at least one delivery failed`,
+            ].join('\n');
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'canary',
+            });
+            if (existing.data.some(i => i.title === title)) {
+              core.info('Open canary issue already exists; not duplicating.');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['canary'],
+            });
