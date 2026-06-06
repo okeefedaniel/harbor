@@ -129,6 +129,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.site_context',
                 'signatures.context_processors.manifest_context',
+                'keel.core.context_processors.csp_nonce_context',
                 'keel.core.context_processors.fleet_context',
                 'keel.core.context_processors.breadcrumb_context',
             ],
@@ -491,7 +492,7 @@ KEEL_WATCHER_MODEL = 'applications.Watcher'
 KEEL_PRODUCT_BASE_URL = os.environ.get('KEEL_PRODUCT_BASE_URL', 'https://harbor.docklabs.ai')
 KEEL_FEED_USER_TOKEN_SECRET = os.environ.get('KEEL_FEED_USER_TOKEN_SECRET', '')
 
-KEEL_CSP_POLICY = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://keel.docklabs.ai https://demo-keel.docklabs.ai"  # Start permissive, tighten later
+KEEL_CSP_POLICY = "default-src 'self'; script-src 'self' 'nonce-{nonce}' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'nonce-{nonce}' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://keel.docklabs.ai https://demo-keel.docklabs.ai"  # Start permissive, tighten later
 KEEL_FILE_SCANNING_ENABLED = not DEBUG
 KEEL_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 KEEL_ALLOWED_UPLOAD_EXTENSIONS = [
