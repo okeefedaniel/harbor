@@ -16,8 +16,8 @@ name: Canary
 # 2. Uncomment the schedule block below.
 
 on:
-  # schedule:
-  #   - cron: '*/15 * * * *'
+  schedule:
+    - cron: '6/15 * * * *'
   workflow_dispatch:
 
 jobs:
