@@ -1,12 +1,19 @@
 from django.db.models import Q, Sum
-from django.shortcuts import redirect
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404, redirect
+from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.contrib.humanize.templatetags.humanize import intcomma
 
 from keel.core.views import LandingView
 
 from applications.models import Application
-from grants.models import FederalOpportunity, GrantProgram, TrackedOpportunity
+from grants.models import (
+    FederalOpportunity,
+    GrantProgram,
+    GrantProgramDocument,
+    TrackedOpportunity,
+)
 
 
 class HomeView(LandingView):
@@ -158,6 +165,39 @@ class OpportunityDetailView(DetailView):
             context['is_saved'] = False
 
         return context
+
+
+class OpportunityDocumentDownloadView(View):
+    """Public stream of a published GrantProgramDocument.
+
+    CSO Wave 5: the portal opportunity detail page historically linked
+    ``{{ doc.file.url }}`` directly, which (a) bypassed view-level ACL
+    if /media/ ever started serving and (b) would happily serve a doc
+    attached to an *unpublished* GrantProgram. This view re-runs the
+    ``is_published=True`` gate per-request and streams via FileResponse.
+
+    Intentionally NOT LoginRequired — the portal is anonymous-accessible
+    by design (it's the public face of Harbor). Anonymity stops at the
+    publication gate.
+    """
+
+    def get(self, request, pk):
+        doc = get_object_or_404(
+            GrantProgramDocument.objects.select_related('grant_program'),
+            pk=pk,
+        )
+        # Same gate as OpportunityDetailView.get_queryset(). Published
+        # opportunities are public; everything else 404s — don't confirm
+        # whether the doc exists at all.
+        if not doc.grant_program.is_published:
+            raise Http404
+        if not doc.file:
+            raise Http404
+        return FileResponse(
+            doc.file.open('rb'),
+            as_attachment=True,
+            filename=doc.title or doc.file.name.rsplit('/', 1)[-1],
+        )
 
 
 class FederalOpportunityListView(ListView):

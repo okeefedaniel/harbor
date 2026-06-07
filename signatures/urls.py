@@ -141,4 +141,12 @@ urlpatterns = [
         views.StepRemindAPIView.as_view(),
         name='step-remind-api',
     ),
+
+    # CSO Wave 5: gated download for SignatureDocument PDFs. Replaces
+    # ``data-pdf-url="{{ doc.file.url }}"`` in sign.html + placement_editor.html.
+    path(
+        'documents/<uuid:pk>/download/',
+        views.SignatureDocumentDownloadView.as_view(),
+        name='document-download',
+    ),
 ]

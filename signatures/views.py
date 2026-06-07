@@ -3,7 +3,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext as _
@@ -255,6 +255,67 @@ class DocumentDeleteView(GrantManagerRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse('signatures:flow-detail', kwargs={'pk': self.object.flow.pk})
+
+
+class SignatureDocumentDownloadView(LoginRequiredMixin, View):
+    """Stream a SignatureDocument PDF behind the same ACL the consuming
+    view enforces.
+
+    CSO Wave 5: ``sign.html`` and ``placement_editor.html`` historically
+    wrote ``data-pdf-url="{{ doc.file.url }}"`` straight into the page,
+    which bypassed view-level ACL the moment Django's /media/ handler
+    started serving (or anyone with a URL leaked from logs / Slack /
+    DevTools could fetch the PDF). Templates now reference this view
+    instead, which re-checks the gate per-request:
+
+    - Signer in an ACTIVE step on a packet whose flow owns the doc, OR
+    - Agency staff (placement editor / template designers)
+
+    404 (not 403) on rejection so callers can't probe doc existence.
+    """
+
+    def get(self, request, pk):
+        doc = get_object_or_404(SignatureDocument, pk=pk)
+        if not doc.file:
+            raise Http404
+
+        user = request.user
+        # Agency staff (template designers, packet operators) can always
+        # read the template PDF — they need this for the placement editor
+        # AND for reviewing packets they're operating.
+        is_staff_like = _user_is_agency_staff(user)
+        if not is_staff_like:
+            # Non-staff signers: only allowed if they have an ACTIVE
+            # SigningStep on a packet that references this document's flow.
+            has_active_step = SigningStep.objects.filter(
+                signer=user,
+                status=SigningStep.Status.ACTIVE,
+                packet__flow=doc.flow,
+            ).exists()
+            if not has_active_step:
+                raise Http404
+        return FileResponse(
+            doc.file.open('rb'),
+            as_attachment=False,
+            filename=doc.title or doc.file.name.rsplit('/', 1)[-1],
+        )
+
+
+def _user_is_agency_staff(user):
+    """True when ``user`` has the agency-staff role harbor uses everywhere
+    else (system_admin, agency_admin, grant_manager, analyst).
+
+    Pulled out of the mixin so the download view can apply the same
+    predicate without instantiating a CBV.
+    """
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    role = getattr(user, 'role', '') or ''
+    return role in {
+        'system_admin', 'agency_admin', 'grant_manager', 'analyst',
+    }
 
 
 # ===========================================================================

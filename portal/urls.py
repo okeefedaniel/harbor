@@ -12,6 +12,13 @@ urlpatterns = [
         views.OpportunityDetailView.as_view(),
         name='opportunity-detail',
     ),
+    # CSO Wave 5: gated download for portal opportunity attachments.
+    # Replaces ``{{ doc.file.url }}`` in opportunity_detail.html.
+    path(
+        'opportunities/documents/<uuid:pk>/download/',
+        views.OpportunityDocumentDownloadView.as_view(),
+        name='opportunity-document-download',
+    ),
     path(
         'federal-opportunities/',
         views.FederalOpportunityListView.as_view(),

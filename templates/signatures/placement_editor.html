@@ -104,7 +104,7 @@
 <div id="placement-editor"
      data-document-id="{{ document.pk }}"
      data-api-url="{% url 'signatures:placement-api' document.pk %}"
-     data-pdf-url="{{ document.file.url }}"
+     data-pdf-url="{% url 'signatures:document-download' document.pk %}"
      data-placements="{{ placements_json }}"
      data-steps="{{ steps_json }}">
 </div>

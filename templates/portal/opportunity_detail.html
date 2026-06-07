@@ -107,7 +107,7 @@
                             <p class="text-muted small mb-0 ms-4">{{ doc.description }}</p>
                             {% endif %}
                         </div>
-                        <a href="{{ doc.file.url }}" class="btn btn-outline-primary btn-sm"
+                        <a href="{% url 'portal:opportunity-document-download' doc.pk %}" class="btn btn-outline-primary btn-sm"
                            target="_blank" rel="noopener">
                             <i class="bi bi-download me-1"></i>{% trans "Download" %}
                         </a>
