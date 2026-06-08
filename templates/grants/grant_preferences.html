@@ -16,7 +16,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
     function updateLabel(btn, boxes) {
         var allChecked = Array.from(boxes).every(function (cb) { return cb.checked; });

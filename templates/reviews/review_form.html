@@ -180,7 +180,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
     function calculateTotal() {
         var total = 0;

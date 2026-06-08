@@ -63,7 +63,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     var assignmentTypeField = document.querySelector('[name="assignment_type"]');
     var userField = document.querySelector('[name="assigned_user"]');

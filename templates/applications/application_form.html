@@ -151,7 +151,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
     // Auto-format currency inputs
     document.querySelectorAll('input[name="requested_amount"], input[name="match_amount"]').forEach(function(input) {
         input.setAttribute('step', '0.01');

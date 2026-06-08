@@ -159,7 +159,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
     // Chart placeholder -- integrate with Chart.js if available
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof Chart !== 'undefined') {

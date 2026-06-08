@@ -17,7 +17,7 @@
     <link href="{% static 'css/signatures.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
     <!-- WCAG 2.1 AA: Focus-visible styles for keyboard navigation -->
-    <style>
+    <style nonce="{{ csp_nonce }}">
       *:focus-visible { outline: 3px solid #F27124 !important; outline-offset: 2px; }
       .btn:focus-visible { box-shadow: 0 0 0 0.25rem rgba(242, 113, 36, 0.5) !important; }
     </style>

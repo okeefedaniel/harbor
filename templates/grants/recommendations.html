@@ -268,7 +268,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
     if (!csrfInput) return;

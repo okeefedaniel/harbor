@@ -6,7 +6,7 @@
 {% block title %}{{ packet.title }}{% endblock %}
 
 {% block extra_css %}
-<style>
+<style nonce="{{ csp_nonce }}">
     .signing-timeline {
         position: relative;
         padding-left: 2.5rem;

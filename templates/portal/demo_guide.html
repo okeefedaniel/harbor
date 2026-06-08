@@ -6,7 +6,7 @@
 {% block main_class %}{% endblock %}
 
 {% block extra_css %}
-<style>
+<style nonce="{{ csp_nonce }}">
     .lifecycle-step {
         text-align: center;
         position: relative;

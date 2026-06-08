@@ -4,7 +4,7 @@
 {% block title %}{% trans "User Manual" %}{% endblock %}
 
 {% block extra_css %}
-<style>
+<style nonce="{{ csp_nonce }}">
     .manual-nav {
         position: sticky;
         top: 80px;
@@ -987,7 +987,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 // Highlight active section in sidebar on scroll
 document.addEventListener('DOMContentLoaded', function() {
     const sections = document.querySelectorAll('.manual-section');

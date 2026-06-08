@@ -18,7 +18,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
+<style nonce="{{ csp_nonce }}">
     .sf425-form {
         font-family: 'Courier New', monospace;
         font-size: 0.85rem;

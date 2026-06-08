@@ -18,7 +18,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
+<style nonce="{{ csp_nonce }}">
     .progress-tracker {
         display: flex;
         justify-content: space-between;
@@ -836,7 +836,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
     // Activate tab from URL hash
     document.addEventListener('DOMContentLoaded', function() {
         var hash = window.location.hash;

@@ -256,7 +256,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     // Add Bootstrap form-control class to all form inputs that don't already have it
     const formInputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea');
