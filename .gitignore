@@ -46,3 +46,4 @@ Thumbs.db
 dev.db
 dev.db-journal
 .gstack/
+dev.sqlite3
