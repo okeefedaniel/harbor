@@ -574,12 +574,31 @@ class SignatureRequestView(LoginRequiredMixin, View):
 
     Standalone-mode fallback: when Manifest isn't configured, the UI
     routes users to ``AwardLocalSignView`` to upload a locally-signed PDF.
+
+    CSO 2026-06-08: added agency-staff ACL gate — mirrors AwardLocalSignView
+    fix; bare get_object_or_404 without ownership check was an IDOR path.
     """
 
     http_method_names = ['get', 'post']
 
-    def get(self, request, pk):
+    def _get_award_or_403(self, request, pk):
+        """Return the award if the user is agency staff for it, otherwise Http404."""
         award = get_object_or_404(Award, pk=pk)
+        user = request.user
+        allowed = (
+            user.is_superuser
+            or getattr(user, 'role', '') == 'system_admin'
+            or (
+                getattr(user, 'is_agency_staff', False)
+                and award.agency_id == getattr(user, 'agency_id', None)
+            )
+        )
+        if not allowed:
+            raise Http404
+        return award
+
+    def get(self, request, pk):
+        award = self._get_award_or_403(request, pk)
         form = SignatureRequestForm(initial={
             'signer_name': award.recipient.get_full_name(),
             'signer_email': award.recipient.email,
@@ -591,7 +610,7 @@ class SignatureRequestView(LoginRequiredMixin, View):
         })
 
     def post(self, request, pk):
-        award = get_object_or_404(Award, pk=pk)
+        award = self._get_award_or_403(request, pk)
         form = SignatureRequestForm(request.POST)
 
         if not form.is_valid():
@@ -687,19 +706,42 @@ class AwardLocalSignView(LoginRequiredMixin, View):
     same ``packet_approved`` signal the real Manifest roundtrip does,
     so the award transitions to ``EXECUTED`` and the signed PDF is
     filed identically.
+
+    CSO 2026-06-08: previously used a bare get_object_or_404(Award, pk=pk)
+    with no ACL — any authenticated user could navigate to
+    /awards/<any-pk>/local-sign/ and upload a PDF for an award they do not
+    own, triggering the EXECUTED transition on an arbitrary award.  Gated
+    to agency staff scoped to the award's agency (mirrors
+    SignatureRequestView's implicit expectation and AwardDetailView's ACL).
     """
 
     http_method_names = ['get', 'post']
 
-    def get(self, request, pk):
+    def _get_award_or_403(self, request, pk):
+        """Return the award if the user may act on it, otherwise Http404."""
         award = get_object_or_404(Award, pk=pk)
+        user = request.user
+        allowed = (
+            user.is_superuser
+            or getattr(user, 'role', '') == 'system_admin'
+            or (
+                getattr(user, 'is_agency_staff', False)
+                and award.agency_id == getattr(user, 'agency_id', None)
+            )
+        )
+        if not allowed:
+            raise Http404
+        return award
+
+    def get(self, request, pk):
+        award = self._get_award_or_403(request, pk)
         return render(request, 'awards/local_sign.html', {
             'award': award,
             'form': AwardLocalSignForm(),
         })
 
     def post(self, request, pk):
-        award = get_object_or_404(Award, pk=pk)
+        award = self._get_award_or_403(request, pk)
         form = AwardLocalSignForm(request.POST, request.FILES)
         if not form.is_valid():
             return render(request, 'awards/local_sign.html', {

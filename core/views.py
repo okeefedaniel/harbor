@@ -25,7 +25,7 @@ from core.forms import (
 from core.mixins import SortableListMixin
 from core.models import (
     Agency, AGENCY_STAFF_ROLES, GRANT_MANAGER_ROLES, Notification,
-    Organization, OrganizationClaim, OrganizationContact, users_with_roles,
+    Organization, OrganizationClaim, OrganizationContact, is_agency_staff, users_with_roles,
 )
 from core.utils import rate_limit, safe_redirect_url
 
@@ -749,9 +749,24 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 # Statewide Analytics Dashboard
 # ---------------------------------------------------------------------------
 class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
-    """Statewide analytics dashboard for system administrators."""
+    """Statewide analytics dashboard for agency staff and system administrators.
+
+    CSO 2026-06-08: previously only had LoginRequiredMixin — any applicant
+    could hit /analytics/ and read aggregate statewide financial data
+    (total_funding, per-agency breakdowns, per-program budget utilization,
+    all application/award counts).  Gated to agency staff here so the
+    view is consistent with its sidebar placement and docstring intent.
+    """
 
     template_name = 'core/analytics.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated or not is_agency_staff(request.user):
+            from django.contrib import messages as _messages
+            from django.utils.translation import gettext as _tl
+            _messages.error(request, _tl('Access denied. Agency staff only.'))
+            return redirect('dashboard')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
