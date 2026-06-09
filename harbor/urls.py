@@ -9,6 +9,11 @@ from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from core import views as core_views
 from keel.accounts.forms import LoginForm
+from keel.accounts.views import (
+    accept_invitation,
+    accept_invitation_complete,
+    accept_invitation_signout,
+)
 from keel.core.views import health_check, robots_txt, favicon_view, SuiteLogoutView
 from keel.core.demo import demo_login_view
 from keel.core.search_views import search_view
@@ -71,6 +76,14 @@ urlpatterns = [
     path('keel/signatures/', include('keel.signatures.urls')),
     path('keel/mentions/', include('keel.mentions.urls')),
     path('keel/', include('keel.core.foia_urls')),
+    # Invitation acceptance lives at /invite/ for clean URLs — the keel
+    # package's urls.py docstring instructs consumers to mount this at
+    # the top level. Without it, links built by
+    # keel.accounts.views.send_invitation via
+    # request.build_absolute_uri('/invite/<token>/') 404 on this host.
+    path('invite/<str:token>/', accept_invitation, name='accept_invitation'),
+    path('invite/<str:token>/sign-out/', accept_invitation_signout, name='accept_invitation_signout'),
+    path('invite/<str:token>/complete/', accept_invitation_complete, name='accept_invitation_complete'),
     path('keel/', include('keel.accounts.urls')),
 ]
 
