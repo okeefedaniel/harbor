@@ -680,26 +680,37 @@ class SignatureRequestView(LoginRequiredMixin, View):
         return redirect('awards:detail', pk=award.pk)
 
 
-class AwardLocalSignView(LoginRequiredMixin, View):
+class AwardLocalSignView(GrantManagerRequiredMixin, View):
     """Upload a locally-signed award agreement when Manifest isn't deployed.
 
     Records a ``ManifestHandoff`` with status=LOCAL_SIGNED and fires the
     same ``packet_approved`` signal the real Manifest roundtrip does,
     so the award transitions to ``EXECUTED`` and the signed PDF is
     filed identically.
+
+    Requires GrantManagerRequiredMixin — same role gate as AwardUpdateView.
+    Non-system-admins are additionally restricted to their own agency's
+    awards so a grant manager at Agency A cannot execute Agency B's award.
     """
 
     http_method_names = ['get', 'post']
 
+    def _get_award(self, request, pk):
+        qs = Award.objects.select_related('agency')
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and user.agency_id:
+            qs = qs.filter(agency=user.agency)
+        return get_object_or_404(qs, pk=pk)
+
     def get(self, request, pk):
-        award = get_object_or_404(Award, pk=pk)
+        award = self._get_award(request, pk)
         return render(request, 'awards/local_sign.html', {
             'award': award,
             'form': AwardLocalSignForm(),
         })
 
     def post(self, request, pk):
-        award = get_object_or_404(Award, pk=pk)
+        award = self._get_award(request, pk)
         form = AwardLocalSignForm(request.POST, request.FILES)
         if not form.is_valid():
             return render(request, 'awards/local_sign.html', {
