@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -132,7 +132,23 @@ class DrawdownCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financial/drawdown_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        self.award = get_object_or_404(
+            Award.objects.select_related('grant_program'),
+            pk=kwargs['award_id'],
+        )
+        user = request.user
+        is_same_agency_staff = (
+            getattr(user, 'is_agency_staff', False)
+            and getattr(user, 'agency', None)
+            and self.award.grant_program.agency_id == user.agency_id
+        )
+        if not (
+            getattr(user, 'is_superuser', False)
+            or getattr(user, 'role', '') == 'system_admin'
+            or is_same_agency_staff
+            or self.award.recipient_id == user.pk
+        ):
+            raise Http404
         return super().dispatch(request, *args, **kwargs)
 
     def _generate_request_number(self):

@@ -462,9 +462,13 @@ class AwardAmendmentDetailView(AgencyStaffRequiredMixin, DetailView):
     context_object_name = 'amendment'
 
     def get_queryset(self):
-        return AwardAmendment.objects.select_related(
-            'award', 'requested_by', 'approved_by',
-        )
+        qs = AwardAmendment.objects.select_related('award', 'award__grant_program', 'requested_by', 'approved_by')
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+            return qs
+        if getattr(user, 'agency', None):
+            return qs.filter(award__grant_program__agency=user.agency)
+        return qs.none()
 
 
 # ---------------------------------------------------------------------------
@@ -506,7 +510,19 @@ class AwardAmendmentApproveView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        amendment = get_object_or_404(AwardAmendment, pk=pk)
+        amendment = get_object_or_404(
+            AwardAmendment.objects.select_related('award__grant_program'), pk=pk,
+        )
+        user = request.user
+        if not (
+            user.is_superuser
+            or getattr(user, 'role', '') == 'system_admin'
+            or (
+                getattr(user, 'agency', None)
+                and amendment.award.grant_program.agency_id == user.agency_id
+            )
+        ):
+            raise Http404
 
         if amendment.status not in (
             AwardAmendment.Status.DRAFT,
@@ -538,7 +554,19 @@ class AwardAmendmentDenyView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        amendment = get_object_or_404(AwardAmendment, pk=pk)
+        amendment = get_object_or_404(
+            AwardAmendment.objects.select_related('award__grant_program'), pk=pk,
+        )
+        user = request.user
+        if not (
+            user.is_superuser
+            or getattr(user, 'role', '') == 'system_admin'
+            or (
+                getattr(user, 'agency', None)
+                and amendment.award.grant_program.agency_id == user.agency_id
+            )
+        ):
+            raise Http404
 
         if amendment.status not in (
             AwardAmendment.Status.DRAFT,
