@@ -579,6 +579,8 @@ class AddCommentView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk)
+        if not _user_can_see_application(request.user, application):
+            raise Http404
         form = ApplicationCommentForm(request.POST)
 
         if form.is_valid():
@@ -615,6 +617,8 @@ class UploadDocumentView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk)
+        if not _user_can_see_application(request.user, application):
+            raise Http404
         form = ApplicationDocumentForm(request.POST, request.FILES)
 
         if form.is_valid():
