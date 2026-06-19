@@ -205,6 +205,22 @@ class SigningForm(forms.Form):
         required=False,
     )
 
+    def clean_signature_image(self):
+        f = self.cleaned_data.get('signature_image')
+        if not f:
+            return f
+        allowed_exts = ('.png', '.jpg', '.jpeg')
+        if not any(f.name.lower().endswith(ext) for ext in allowed_exts):
+            raise forms.ValidationError(_('Only PNG or JPG files are accepted.'))
+        max_bytes = 5 * 1024 * 1024  # 5 MB
+        if f.size and f.size > max_bytes:
+            raise forms.ValidationError(_('Signature image exceeds the 5 MB size limit.'))
+        head = f.read(4)
+        f.seek(0)
+        if not (head[:4] == b'\x89PNG' or head[:3] == b'\xff\xd8\xff'):
+            raise forms.ValidationError(_('Uploaded file is not a valid PNG or JPG image.'))
+        return f
+
     def clean(self):
         cleaned_data = super().clean()
         sig_type = cleaned_data.get('signature_type')
