@@ -35,7 +35,13 @@ class BudgetDetailView(AgencyStaffRequiredMixin, DetailView):
     context_object_name = 'budget'
 
     def get_queryset(self):
-        return Budget.objects.select_related('award', 'approved_by')
+        user = self.request.user
+        qs = Budget.objects.select_related('award', 'approved_by')
+        if user.is_superuser or getattr(user, 'role', None) == 'system_admin':
+            return qs
+        if getattr(user, 'agency', None):
+            return qs.filter(award__agency=user.agency)
+        return qs.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -54,7 +60,14 @@ class BudgetCreateView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'financial/budget_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        user = request.user
+        qs = Award.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', None) == 'system_admin'):
+            if getattr(user, 'agency', None):
+                qs = qs.filter(agency=user.agency)
+            else:
+                qs = qs.none()
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -132,7 +145,14 @@ class DrawdownCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financial/drawdown_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        user = request.user
+        qs = Award.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', None) == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(agency=user.agency)
+            else:
+                qs = qs.filter(recipient=user)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def _generate_request_number(self):
@@ -202,7 +222,14 @@ class DrawdownApproveView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        user = request.user
+        qs = DrawdownRequest.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', None) == 'system_admin'):
+            if getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.none()
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status != DrawdownRequest.Status.SUBMITTED:
             return JsonResponse(
@@ -293,7 +320,13 @@ class BudgetUpdateView(AgencyStaffRequiredMixin, UpdateView):
     template_name = 'financial/budget_form.html'
 
     def get_queryset(self):
-        return Budget.objects.select_related('award')
+        user = self.request.user
+        qs = Budget.objects.select_related('award')
+        if user.is_superuser or getattr(user, 'role', None) == 'system_admin':
+            return qs
+        if getattr(user, 'agency', None):
+            return qs.filter(award__agency=user.agency)
+        return qs.none()
 
     def form_valid(self, form):
         messages.success(self.request, _('Budget updated successfully.'))
@@ -349,9 +382,15 @@ class DrawdownUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'financial/drawdown_form.html'
 
     def get_queryset(self):
-        return DrawdownRequest.objects.filter(
+        user = self.request.user
+        qs = DrawdownRequest.objects.filter(
             status=DrawdownRequest.Status.DRAFT,
         ).select_related('award')
+        if user.is_superuser or getattr(user, 'role', None) == 'system_admin':
+            return qs
+        if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+            return qs.filter(award__agency=user.agency)
+        return qs.filter(award__recipient=user)
 
     def form_valid(self, form):
         messages.success(self.request, _('Drawdown request updated.'))
@@ -377,7 +416,14 @@ class DrawdownDenyView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        user = request.user
+        qs = DrawdownRequest.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', None) == 'system_admin'):
+            if getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.none()
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
@@ -417,7 +463,14 @@ class DrawdownReturnView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        user = request.user
+        qs = DrawdownRequest.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', None) == 'system_admin'):
+            if getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.none()
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
@@ -450,7 +503,14 @@ class TransactionCreateView(FiscalOfficerRequiredMixin, CreateView):
     template_name = 'financial/transaction_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        user = request.user
+        qs = Award.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', None) == 'system_admin'):
+            if getattr(user, 'agency', None):
+                qs = qs.filter(agency=user.agency)
+            else:
+                qs = qs.none()
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
