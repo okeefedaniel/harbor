@@ -104,7 +104,7 @@ class Activity(AbstractActivity):
         qs = queryset if queryset is not None else cls.objects.all()
         if user is None:
             return qs.none()
-        if getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False):
+        if getattr(user, 'is_superuser', False):
             return qs
 
         # Applications the user has access to via the four channels.
@@ -150,7 +150,7 @@ class Activity(AbstractActivity):
     def is_visible_to_user(cls, user, activity) -> bool:
         if user is None:
             return False
-        if getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False):
+        if getattr(user, 'is_superuser', False):
             return True
         if activity.visibility == 'staff':
             return False
