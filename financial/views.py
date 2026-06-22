@@ -17,7 +17,7 @@ from core.audit import log_audit
 from core.export import CSVExportMixin
 from core.filters import DrawdownFilter, TransactionFilter
 from core.mixins import AgencyStaffRequiredMixin, FiscalOfficerRequiredMixin, SortableListMixin
-from core.models import AuditLog
+from core.models import AuditLog, is_agency_staff
 from core.notifications import notify_drawdown_status_changed
 
 from .forms import BudgetForm, BudgetLineItemForm, DrawdownRequestForm, TransactionForm
@@ -35,7 +35,12 @@ class BudgetDetailView(AgencyStaffRequiredMixin, DetailView):
     context_object_name = 'budget'
 
     def get_queryset(self):
-        return Budget.objects.select_related('award', 'approved_by')
+        qs = Budget.objects.select_related('award', 'approved_by')
+        user = self.request.user
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if user.agency_id:
+                qs = qs.filter(award__agency=user.agency)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -293,7 +298,12 @@ class BudgetUpdateView(AgencyStaffRequiredMixin, UpdateView):
     template_name = 'financial/budget_form.html'
 
     def get_queryset(self):
-        return Budget.objects.select_related('award')
+        qs = Budget.objects.select_related('award')
+        user = self.request.user
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if user.agency_id:
+                qs = qs.filter(award__agency=user.agency)
+        return qs
 
     def form_valid(self, form):
         messages.success(self.request, _('Budget updated successfully.'))
@@ -311,7 +321,7 @@ class BudgetUpdateView(AgencyStaffRequiredMixin, UpdateView):
 # ---------------------------------------------------------------------------
 # Budget Line Item Create
 # ---------------------------------------------------------------------------
-class BudgetLineItemCreateView(LoginRequiredMixin, CreateView):
+class BudgetLineItemCreateView(AgencyStaffRequiredMixin, CreateView):
     """Add a line item to a budget."""
 
     model = BudgetLineItem
@@ -319,9 +329,19 @@ class BudgetLineItemCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financial/lineitem_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.budget = get_object_or_404(
-            Budget.objects.select_related('award'), pk=kwargs['budget_id'],
-        )
+        # Guard: check auth before any DB access so unauthenticated / non-staff
+        # requests cannot probe budget IDs from other agencies.
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        from django.core.exceptions import PermissionDenied
+        if not is_agency_staff(request.user):
+            raise PermissionDenied
+        budget_qs = Budget.objects.select_related('award')
+        user = request.user
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if user.agency_id:
+                budget_qs = budget_qs.filter(award__agency=user.agency)
+        self.budget = get_object_or_404(budget_qs, pk=kwargs['budget_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -349,9 +369,15 @@ class DrawdownUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'financial/drawdown_form.html'
 
     def get_queryset(self):
-        return DrawdownRequest.objects.filter(
+        qs = DrawdownRequest.objects.filter(
             status=DrawdownRequest.Status.DRAFT,
         ).select_related('award')
+        user = self.request.user
+        if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
+            return qs
+        if user.is_agency_staff and user.agency:
+            return qs.filter(award__agency=user.agency)
+        return qs.filter(submitted_by=user)
 
     def form_valid(self, form):
         messages.success(self.request, _('Drawdown request updated.'))
