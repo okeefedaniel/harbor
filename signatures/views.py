@@ -511,7 +511,7 @@ class PacketInitiateView(AgencyStaffRequiredMixin, View):
         })
 
 
-class PacketDetailView(LoginRequiredMixin, DetailView):
+class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
     model = SigningPacket
     template_name = 'signatures/packet_detail.html'
     context_object_name = 'packet'
