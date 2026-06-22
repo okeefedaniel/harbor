@@ -615,6 +615,8 @@ class UploadDocumentView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk)
+        if application.applicant != request.user and not request.user.is_agency_staff:
+            raise Http404
         form = ApplicationDocumentForm(request.POST, request.FILES)
 
         if form.is_valid():
