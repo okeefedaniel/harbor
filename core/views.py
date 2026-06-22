@@ -22,7 +22,7 @@ from core.forms import (
     ClaimReviewForm, OrganizationContactForm, OrganizationForm,
     ProfileForm, RegistrationForm, UserRoleForm,
 )
-from core.mixins import SortableListMixin
+from core.mixins import SortableListMixin, SystemAdminRequiredMixin
 from core.models import (
     Agency, AGENCY_STAFF_ROLES, GRANT_MANAGER_ROLES, Notification,
     Organization, OrganizationClaim, OrganizationContact, users_with_roles,
@@ -748,7 +748,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 # ---------------------------------------------------------------------------
 # Statewide Analytics Dashboard
 # ---------------------------------------------------------------------------
-class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
+class AnalyticsDashboardView(SystemAdminRequiredMixin, TemplateView):
     """Statewide analytics dashboard for system administrators."""
 
     template_name = 'core/analytics.html'
@@ -985,7 +985,7 @@ class DeadlineCalendarView(LoginRequiredMixin, TemplateView):
 # ---------------------------------------------------------------------------
 # Map View — Choropleth of grant distribution by CT municipality
 # ---------------------------------------------------------------------------
-class MapView(LoginRequiredMixin, TemplateView):
+class MapView(SystemAdminRequiredMixin, TemplateView):
     """Interactive Mapbox GL JS map showing grant distribution across CT."""
 
     template_name = 'core/map_view.html'
@@ -1005,7 +1005,7 @@ class MapView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class MapDataAPIView(LoginRequiredMixin, View):
+class MapDataAPIView(SystemAdminRequiredMixin, View):
     """JSON endpoint returning per-municipality award aggregates."""
 
     def get(self, request):
@@ -1041,7 +1041,7 @@ class MapDataAPIView(LoginRequiredMixin, View):
         return JsonResponse({'municipalities': result})
 
 
-class MunicipalityDetailView(LoginRequiredMixin, SortableListMixin, ListView):
+class MunicipalityDetailView(SystemAdminRequiredMixin, SortableListMixin, ListView):
     """Tear sheet listing all awards for a specific CT municipality."""
 
     template_name = 'core/municipality_detail.html'

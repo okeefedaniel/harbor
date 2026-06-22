@@ -53,6 +53,16 @@ class FederalCoordinatorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
         return can_manage_federal(self.request.user)
 
 
+class SystemAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Restrict view to system administrators only."""
+
+    def test_func(self):
+        return (
+            getattr(self.request.user, 'is_superuser', False)
+            or getattr(self.request.user, 'role', '') == 'system_admin'
+        )
+
+
 class AgencyObjectMixin:
     """Mixin that filters querysets by the user's agency for non-system-admins.
 
