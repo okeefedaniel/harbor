@@ -63,8 +63,15 @@ class CloseoutListView(LoginRequiredMixin, SortableListMixin, ListView):
             'award__organization', 'initiated_by',
         )
         user = self.request.user
-        if user.role != 'system_admin' and user.agency_id:
+        from core.models import is_agency_staff
+        if user.role == 'system_admin':
+            pass  # system_admin sees all
+        elif is_agency_staff(user) and user.agency_id:
             qs = qs.filter(award__agency=user.agency)
+        else:
+            # Non-staff users (applicants, reviewers, auditors) see only
+            # closeouts for awards where they are the recipient.
+            qs = qs.filter(award__recipient=user)
 
         status = self.request.GET.get('status')
         if status:
@@ -73,13 +80,26 @@ class CloseoutListView(LoginRequiredMixin, SortableListMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Awards that need closeout (expired, no closeout record)
-        context['awards_needing_closeout'] = Award.objects.filter(
-            end_date__lt=timezone.now().date(),
-            status__in=['active', 'executed'],
-        ).exclude(
-            closeout__isnull=False,
-        ).select_related('grant_program', 'agency', 'organization')[:10]
+        user = self.request.user
+        from core.models import is_agency_staff
+        # Awards needing closeout — staff-only ops view; scope to current user's
+        # agency so non-staff users don't see cross-agency internal records.
+        if user.role == 'system_admin':
+            anc_qs = Award.objects.filter(
+                end_date__lt=timezone.now().date(),
+                status__in=['active', 'executed'],
+            ).exclude(closeout__isnull=False)
+        elif is_agency_staff(user) and user.agency_id:
+            anc_qs = Award.objects.filter(
+                end_date__lt=timezone.now().date(),
+                status__in=['active', 'executed'],
+                agency=user.agency,
+            ).exclude(closeout__isnull=False)
+        else:
+            anc_qs = Award.objects.none()
+        context['awards_needing_closeout'] = anc_qs.select_related(
+            'grant_program', 'agency', 'organization',
+        )[:10]
         context['status_choices'] = Closeout.Status.choices
         return context
 
