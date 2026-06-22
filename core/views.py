@@ -753,6 +753,12 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
 
     template_name = 'core/analytics.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        if getattr(request.user, 'role', '') != 'system_admin' and not getattr(request.user, 'is_superuser', False):
+            messages.error(request, _('Access denied. System administrators only.'))
+            return redirect('dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from grants.models import GrantProgram
