@@ -66,7 +66,7 @@ class CloseoutListView(LoginRequiredMixin, SortableListMixin, ListView):
         from core.models import is_agency_staff
         if user.role == 'system_admin':
             pass  # system_admin sees all
-        elif is_agency_staff(user) and user.agency_id:
+        elif is_agency_staff(user):
             qs = qs.filter(award__agency=user.agency)
         else:
             # Non-staff users (applicants, reviewers, auditors) see only
@@ -89,7 +89,7 @@ class CloseoutListView(LoginRequiredMixin, SortableListMixin, ListView):
                 end_date__lt=timezone.now().date(),
                 status__in=['active', 'executed'],
             ).exclude(closeout__isnull=False)
-        elif is_agency_staff(user) and user.agency_id:
+        elif is_agency_staff(user):
             anc_qs = Award.objects.filter(
                 end_date__lt=timezone.now().date(),
                 status__in=['active', 'executed'],

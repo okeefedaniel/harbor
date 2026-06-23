@@ -464,7 +464,7 @@ class AwardAmendmentDetailView(AgencyStaffRequiredMixin, DetailView):
     def get_queryset(self):
         qs = AwardAmendment.objects.select_related('award', 'requested_by', 'approved_by')
         user = self.request.user
-        if getattr(user, 'role', '') != 'system_admin' and user.agency_id:
+        if getattr(user, 'role', '') != 'system_admin':
             qs = qs.filter(award__agency=user.agency)
         return qs
 

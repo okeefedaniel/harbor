@@ -53,7 +53,7 @@ class BulkApplicationStatusChangeView(GrantManagerRequiredMixin, View):
         applications = Application.objects.filter(pk__in=app_ids)
         # Agency scoping: non-system-admins may only modify applications belonging
         # to their own agency's grant programs.
-        if getattr(request.user, 'role', '') != 'system_admin' and request.user.agency_id:
+        if getattr(request.user, 'role', '') != 'system_admin':
             applications = applications.filter(grant_program__agency=request.user.agency)
 
         success_count = 0
@@ -124,7 +124,7 @@ class BulkDrawdownApproveView(FiscalOfficerRequiredMixin, View):
         )
         # Agency scoping: non-system-admins may only approve drawdowns for their
         # own agency's awards.
-        if getattr(request.user, 'role', '') != 'system_admin' and request.user.agency_id:
+        if getattr(request.user, 'role', '') != 'system_admin':
             drawdowns = drawdowns.filter(award__agency=request.user.agency)
 
         count = 0
