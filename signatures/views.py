@@ -516,6 +516,24 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
     template_name = 'signatures/packet_detail.html'
     context_object_name = 'packet'
 
+    def get_queryset(self):
+        """Scope to packets the requesting user is entitled to see.
+
+        Packet UUIDs are disclosed to signers via notification emails, so
+        relying on UUID obscurity alone is insufficient (#110-mirror from
+        manifest's PacketDetailView fix). A signed document should not be
+        visible to an arbitrary authenticated Harbor user who knows the UUID.
+        """
+        user = self.request.user
+        qs = super().get_queryset()
+        if getattr(user, 'is_superuser', False):
+            return qs
+        from django.db.models import Q
+        return qs.filter(
+            Q(initiated_by=user)
+            | Q(steps__signer=user)
+        ).distinct()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['steps'] = self.object.steps.select_related(
