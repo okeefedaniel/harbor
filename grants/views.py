@@ -174,7 +174,12 @@ class GrantProgramDocumentDownloadView(AgencyStaffRequiredMixin, View):
     """
 
     def get(self, request, pk):
-        doc = get_object_or_404(GrantProgramDocument, pk=pk)
+        doc = get_object_or_404(GrantProgramDocument.objects.select_related('grant_program'), pk=pk)
+        # Agency ownership check: non-system-admins may only download documents
+        # belonging to programs from their own agency.
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and user.agency_id != doc.grant_program.agency_id:
+            raise PermissionDenied
         if not doc.file:
             raise Http404
         return FileResponse(

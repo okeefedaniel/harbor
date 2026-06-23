@@ -462,9 +462,11 @@ class AwardAmendmentDetailView(AgencyStaffRequiredMixin, DetailView):
     context_object_name = 'amendment'
 
     def get_queryset(self):
-        return AwardAmendment.objects.select_related(
-            'award', 'requested_by', 'approved_by',
-        )
+        qs = AwardAmendment.objects.select_related('award', 'requested_by', 'approved_by')
+        user = self.request.user
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(award__agency=user.agency)
+        return qs
 
 
 # ---------------------------------------------------------------------------
