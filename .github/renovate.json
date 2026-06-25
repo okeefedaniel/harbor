@@ -1,0 +1,34 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "description": "Keep this app on the latest keel tag automatically. Scoped to keel only — a custom regex manager bumps both the requirements.txt pin and the reusable-workflow pin in .github/workflows/, then auto-merges once this repo's own CI is green.",
+  "enabledManagers": ["custom.regex"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "(^|/)requirements\\.txt$",
+        "(^|/)\\.github/workflows/[^/]+\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "(?<depName>okeefedaniel/keel)(?:\\.git)?(?:/[^@\\s'\"]*)?@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "git-tags",
+      "packageNameTemplate": "https://github.com/okeefedaniel/keel",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group both keel pins (requirements + workflow) into one PR. Renovate merges it itself once this repo's CI is green. platformAutomerge is OFF on purpose: these are private repos on a free plan with no branch protection, so GitHub-native auto-merge would merge before CI runs. Renovate's own automerge waits for green checks (ignoreTests defaults false).",
+      "matchDatasources": ["git-tags"],
+      "matchPackageNames": ["https://github.com/okeefedaniel/keel"],
+      "groupName": "keel",
+      "commitMessageTopic": "keel",
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
+      "platformAutomerge": false
+    }
+  ]
+}
