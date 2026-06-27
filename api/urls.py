@@ -12,6 +12,7 @@ from drf_spectacular.views import (
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from .activity_feed import build_activity
 from .audit_feed import harbor_audit_feed
 from .helm_activity import harbor_helm_activity
 from .helm_feed import harbor_helm_feed
@@ -38,6 +39,7 @@ urlpatterns = [
     path('v1/helm-feed/inbox/', harbor_helm_feed_inbox, name='helm-feed-inbox'),
     path('v1/helm-feed/activity/', harbor_helm_activity, name='helm-feed-activity'),
     path('v1/audit-feed/', harbor_audit_feed, name='audit-feed'),
+    path('v1/activity-feed/', build_activity, name='activity-feed'),
     # keel.ops canary — JSON metrics for external pollers (4 flag chips +
     # counters). Auth: staff session OR Authorization: Bearer
     # HARBOR_METRICS_TOKEN (resolves via KEEL_METRICS_TOKEN setting).
