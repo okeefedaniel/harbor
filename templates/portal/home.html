@@ -3,6 +3,16 @@
 {% load humanize %}
 {% load i18n %}
 
+{% comment %}
+Harbor is the only public-facing DockLabs product, so its landing is the
+showcase surface. The feature section overrides the shared keel _features.html
+3-column numbered grid with a Harbor-only editorial spread (alternating
+left/right blocks, each paired with a CSS-rendered product preview). Scoped via
+.harbor-features in static/css/harbor.css — loaded here through product_css so
+the change touches Harbor's landing only and never the shared keel layout.
+{% endcomment %}
+{% block product_css %}<link href="{% static 'css/harbor.css' %}" rel="stylesheet">{% endblock %}
+
 {% block landing_hero_description %}
 {% trans "Streamlining grant management for state agencies, municipalities, nonprofits, and businesses. Discover funding opportunities, apply online, and track your grants in one place." %}
 {% endblock %}
@@ -34,7 +44,103 @@
 {% endblock %}
 
 {% block landing_features %}
-{% include "keel/landing/_features.html" with title="Built for Grant Management" features=landing_features %}
+<section class="landing-section harbor-features">
+  <div class="container">
+    <header class="harbor-features__head">
+      <span class="harbor-features__kicker">{% trans "The grant lifecycle, end to end" %}</span>
+      <h2>{% trans "Built for Grant Management" %}</h2>
+      <p>{% trans "From the first funding search to a closed-out award, Harbor carries the work in one place — no spreadsheets, no scattered email threads, no lost paperwork." %}</p>
+    </header>
+
+    {# 01 — Discover: media left, copy right #}
+    <article class="hf-row">
+      <div class="hf-media" aria-hidden="true">
+        <div class="hf-search"><i class="bi bi-search"></i><span>Search funding opportunities</span></div>
+        <div class="hf-opp">
+          <div class="hf-opp__main">
+            <span class="hf-opp__title">Small Business Express</span>
+            <span class="hf-opp__agency">Economic &amp; Community Development</span>
+          </div>
+          <span class="hf-opp__amount">$2.5M</span>
+        </div>
+        <div class="hf-opp">
+          <div class="hf-opp__main">
+            <span class="hf-opp__title">Brownfield Remediation</span>
+            <span class="hf-opp__agency">Energy &amp; Environmental Protection</span>
+          </div>
+          <span class="hf-opp__amount">$900K</span>
+        </div>
+        <div class="hf-opp">
+          <div class="hf-opp__main">
+            <span class="hf-opp__title">Workforce Training Grant</span>
+            <span class="hf-opp__agency">U.S. Dept. of Labor</span>
+          </div>
+          <span class="hf-opp__amount">$1.2M</span>
+        </div>
+      </div>
+      <div class="hf-row__body">
+        <span class="hf-num">01</span>
+        <h3>{% trans "Discover opportunities" %}</h3>
+        <p>{% trans "Browse and search state and federal funding in one feed — filtered by agency, grant type, and status, so the right programs surface before their deadlines pass." %}</p>
+        <a class="hf-link" href="{% url 'portal:opportunities' %}">
+          {% trans "Browse opportunities" %} <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </article>
+
+    {# 02 — Apply: copy left, media right #}
+    <article class="hf-row hf-row--reverse">
+      <div class="hf-media" aria-hidden="true">
+        <div class="hf-field">
+          <span class="hf-field__label">Organization</span>
+          <span class="hf-field__input">Mystic Innovations LLC</span>
+        </div>
+        <div class="hf-field">
+          <span class="hf-field__label">Requested amount</span>
+          <span class="hf-field__input">$180,000</span>
+        </div>
+        <div class="hf-upload">
+          <i class="bi bi-paperclip"></i><span>project-budget.pdf</span>
+          <i class="bi bi-check-circle-fill hf-upload__ok"></i>
+        </div>
+        <div class="hf-progress"><div class="hf-progress__bar"></div></div>
+        <div class="hf-formfoot">
+          <span><i class="bi bi-cloud-check"></i> Draft saved</span>
+          <span class="hf-pill">Step 4 of 5</span>
+        </div>
+      </div>
+      <div class="hf-row__body">
+        <span class="hf-num">02</span>
+        <h3>{% trans "Apply online" %}</h3>
+        <p>{% trans "Complete applications in the browser with document uploads, inline validation, and autosaved drafts — pick up exactly where you left off, no PDFs to mail." %}</p>
+        <a class="hf-link" href="{% url 'core:register' %}">
+          {% trans "Start an application" %} <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </article>
+
+    {# 03 — Track: media left, copy right #}
+    <article class="hf-row">
+      <div class="hf-media" aria-hidden="true">
+        <ol class="hf-track">
+          <li class="is-done"><span class="hf-track__dot"></span>Submitted</li>
+          <li class="is-done"><span class="hf-track__dot"></span>Under review</li>
+          <li class="is-current"><span class="hf-track__dot"></span>Awarded</li>
+          <li><span class="hf-track__dot"></span>Reporting</li>
+        </ol>
+        <div class="hf-track__note"><i class="bi bi-calendar-event"></i> Next progress report due Aug 15</div>
+      </div>
+      <div class="hf-row__body">
+        <span class="hf-num">03</span>
+        <h3>{% trans "Track awards" %}</h3>
+        <p>{% trans "Follow every application from submission to closeout — monitor status, manage active awards, submit required reports, and request drawdowns from a single record." %}</p>
+        <a class="hf-link" href="{% url 'portal:opportunities' %}">
+          {% trans "See how it works" %} <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </article>
+  </div>
+</section>
 {% endblock %}
 
 {% block landing_extra %}

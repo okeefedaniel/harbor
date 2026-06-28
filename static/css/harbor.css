@@ -54,3 +54,253 @@
 .opportunity-card:hover { box-shadow: var(--shadow-md); }
 .opportunity-card .deadline { color: var(--error); font-weight: 600; }
 .opportunity-card .funding { color: var(--success); font-weight: 700; font-size: 1.1rem; }
+
+/* ============================================
+   Harbor — public landing "Built for Grant Management"
+   Editorial alternating feature spread. Replaces keel's shared
+   3-column numbered grid (_features.html) for Harbor's public
+   showcase ONLY. Scoped to .harbor-features so peer products keep
+   the shared layout. Uses the navy/cream/brass system + sharp
+   corners; each capability is paired with a CSS-rendered product
+   preview instead of an icon-in-a-circle.
+   ============================================ */
+.harbor-features { padding: 6rem 0 7rem; }
+
+.harbor-features__head {
+    max-width: 620px;
+    margin-bottom: 4.5rem;
+}
+.harbor-features__kicker {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--brass-text);
+    margin-bottom: 0.9rem;
+}
+.harbor-features__head h2 {
+    text-align: left;
+    margin: 0 0 1rem;
+}
+.harbor-features__head p {
+    text-align: left;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* -- Alternating feature rows -- */
+.harbor-features .hf-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 4.5rem;
+    padding: 4rem 0;
+    border-top: 1px solid var(--border-light);
+}
+.harbor-features .hf-row:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+}
+.harbor-features .hf-row--reverse .hf-media { order: 2; }
+.harbor-features .hf-row--reverse .hf-row__body { order: 1; }
+
+.harbor-features .hf-row__body { max-width: 440px; }
+.harbor-features .hf-num {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--brass);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0.85rem;
+}
+.harbor-features .hf-row__body h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--ct-blue);
+    font-size: 1.65rem;
+    line-height: 1.2;
+    margin: 0 0 0.85rem;
+}
+.harbor-features .hf-row__body p {
+    color: var(--text-secondary);
+    line-height: 1.65;
+    font-size: 1rem;
+    margin: 0 0 1.3rem;
+}
+.harbor-features .hf-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ct-blue);
+    text-decoration: none;
+}
+.harbor-features .hf-link i { transition: transform 0.15s ease; }
+.harbor-features .hf-link:hover { color: var(--ct-blue-hover); }
+.harbor-features .hf-link:hover i { transform: translateX(3px); }
+
+/* -- Shared media-panel chrome -- */
+.harbor-features .hf-media {
+    background: var(--bg-warm);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-lg);
+    padding: 1.5rem;
+    font-family: var(--font-sans);
+}
+
+/* 01 Discover — opportunity feed */
+.harbor-features .hf-search {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.85rem;
+    background: #fff;
+    border: 1px solid var(--border-light);
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+.harbor-features .hf-search i { color: var(--ct-blue); }
+.harbor-features .hf-opp {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0.85rem;
+    background: #fff;
+    border-left: 3px solid var(--ct-blue);
+    margin-bottom: 0.6rem;
+}
+.harbor-features .hf-opp:last-child { margin-bottom: 0; }
+.harbor-features .hf-opp__main { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.harbor-features .hf-opp__title { font-weight: 600; color: var(--text-primary); font-size: 0.92rem; }
+.harbor-features .hf-opp__agency { color: var(--text-secondary); font-size: 0.78rem; }
+.harbor-features .hf-opp__amount { font-weight: 700; color: var(--success); font-size: 0.95rem; white-space: nowrap; }
+
+/* 02 Apply — application form */
+.harbor-features .hf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.85rem;
+}
+.harbor-features .hf-field__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+.harbor-features .hf-field__input {
+    padding: 0.55rem 0.75rem;
+    background: #fff;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+.harbor-features .hf-upload {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    background: #fff;
+    border: 1px dashed var(--ct-blue);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+.harbor-features .hf-upload__ok { color: var(--success); margin-left: auto; }
+.harbor-features .hf-progress {
+    height: 6px;
+    background: var(--ct-blue-light);
+    margin-bottom: 0.85rem;
+}
+.harbor-features .hf-progress__bar { height: 100%; width: 80%; background: var(--brass); }
+.harbor-features .hf-formfoot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+.harbor-features .hf-pill {
+    background: var(--ct-blue);
+    color: #fff;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+/* 03 Track — award status ladder */
+.harbor-features .hf-track {
+    list-style: none;
+    margin: 0 0 1.1rem;
+    padding: 0;
+}
+.harbor-features .hf-track li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+}
+.harbor-features .hf-track li::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1.4rem;
+    bottom: -0.5rem;
+    width: 2px;
+    background: var(--border-light);
+}
+.harbor-features .hf-track li:last-child::before { display: none; }
+.harbor-features .hf-track__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border-light);
+    background: #fff;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.harbor-features .hf-track .is-done { color: var(--text-primary); }
+.harbor-features .hf-track .is-done .hf-track__dot { background: var(--ct-blue); border-color: var(--ct-blue); }
+.harbor-features .hf-track .is-done::before { background: var(--ct-blue); }
+.harbor-features .hf-track .is-current { color: var(--brass-text); font-weight: 700; }
+.harbor-features .hf-track .is-current .hf-track__dot { background: var(--brass); border-color: var(--brass); box-shadow: 0 0 0 4px var(--brass-soft); }
+.harbor-features .hf-track__note {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+.harbor-features .hf-track__note i { color: var(--brass-text); }
+
+/* -- Responsive: stack copy over a full-width preview -- */
+@media (max-width: 768px) {
+    .harbor-features { padding: 4rem 0 4.5rem; }
+    .harbor-features__head { margin-bottom: 3rem; }
+    .harbor-features .hf-row {
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+        padding: 2.5rem 0;
+    }
+    /* keep copy first, preview second regardless of desktop side */
+    .harbor-features .hf-row__body,
+    .harbor-features .hf-row--reverse .hf-row__body { order: 1; }
+    .harbor-features .hf-media,
+    .harbor-features .hf-row--reverse .hf-media { order: 2; }
+    .harbor-features .hf-row__body { max-width: none; }
+}
