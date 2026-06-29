@@ -51,6 +51,40 @@ class UserRoleTests(TestCase):
         self.assertFalse(can_review(applicant))
 
 
+class UserRoleViewRegressionTests(TestCase):
+    """Regression: ISSUE-001 — user-role edit page 500.
+    Found by /qa on 2026-06-28.
+    Report: .gstack/qa-reports/qa-report-suite-2026-06-28.md
+
+    UserRoleUpdateView (UpdateView) injected instance= into UserRoleForm, a
+    plain forms.Form, raising TypeError on every GET/POST of the page.
+    """
+
+    def setUp(self):
+        from django.urls import reverse
+        self.agency = _create_agency()
+        self.admin = create_test_user('roleadmin', role='system_admin',
+                                      agency=self.agency, password=TEST_PASSWORD)
+        self.target = create_test_user('roletarget', role='applicant',
+                                       password=TEST_PASSWORD)
+        self.url = reverse('core:user-role-edit', args=[self.target.pk])
+        self.client.force_login(self.admin)
+
+    def test_get_renders_without_error(self):
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_post_updates_role_on_product_access(self):
+        from keel.accounts.models import ProductAccess
+        resp = self.client.post(self.url, {
+            'role': 'reviewer', 'agency': '',
+            'is_state_user': 'on', 'is_active': 'on',
+        })
+        self.assertEqual(resp.status_code, 302)
+        access = ProductAccess.objects.get(user=self.target, product='harbor')
+        self.assertEqual(access.role, 'reviewer')
+
+
 class OrganizationModelTests(TestCase):
     def test_create_and_str(self):
         org = Organization.objects.create(name='Test Org', org_type='nonprofit')
