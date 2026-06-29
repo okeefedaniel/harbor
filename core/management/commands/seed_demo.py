@@ -43,10 +43,15 @@ class Command(BaseCommand):
                 password=None,
                 first_name='System',
                 last_name='Admin',
-                role='system_admin',
             )
             su.set_unusable_password()
             su.save()
+            # Role lives on ProductAccess, not on KeelUser.
+            from keel.accounts.models import ProductAccess
+            ProductAccess.objects.update_or_create(
+                user=su, product='harbor',
+                defaults={'role': 'system_admin', 'is_active': True},
+            )
             self.stdout.write(self.style.SUCCESS('  admin user created (passwordless demo)'))
         else:
             self.stdout.write('Admin user already exists, skipping.')
@@ -74,9 +79,13 @@ class Command(BaseCommand):
             from django.utils import timezone
             from applications.models import ApplicationComplianceItem
 
-            staff = User.objects.filter(
-                role__in=['system_admin', 'program_officer']
-            ).first()
+            from keel.accounts.models import ProductAccess
+            staff_access = ProductAccess.objects.filter(
+                product='harbor',
+                role__in=['system_admin', 'program_officer'],
+                is_active=True,
+            ).select_related('user').first()
+            staff = staff_access.user if staff_access else None
 
             if staff:
                 # Fully verify approved apps
