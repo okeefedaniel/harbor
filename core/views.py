@@ -214,6 +214,15 @@ class UserRoleUpdateView(LoginRequiredMixin, UpdateView):
             return redirect('dashboard')
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        # UserRoleForm is a plain forms.Form (role lives on ProductAccess, not
+        # on KeelUser), so it takes a ``user=`` kwarg and rejects the
+        # ``instance=`` that UpdateView injects by default.
+        kwargs = super().get_form_kwargs()
+        kwargs.pop('instance', None)
+        kwargs['user'] = self.object
+        return kwargs
+
     def get_success_url(self):
         return reverse_lazy('core:user-list')
 
