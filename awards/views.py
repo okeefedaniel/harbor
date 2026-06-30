@@ -508,7 +508,14 @@ class AwardAmendmentApproveView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        amendment = get_object_or_404(AwardAmendment, pk=pk)
+        amendment = get_object_or_404(
+            AwardAmendment.objects.select_related('award'), pk=pk,
+        )
+        # CSO 2026-06-30 HIGH H-002: non-system_admin staff must belong to
+        # the award's agency (mirrors AwardAmendmentDetailView.get_queryset).
+        if getattr(request.user, 'role', '') != 'system_admin':
+            if amendment.award.agency_id != getattr(request.user, 'agency_id', None):
+                raise Http404
 
         if amendment.status not in (
             AwardAmendment.Status.DRAFT,
@@ -540,7 +547,14 @@ class AwardAmendmentDenyView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        amendment = get_object_or_404(AwardAmendment, pk=pk)
+        amendment = get_object_or_404(
+            AwardAmendment.objects.select_related('award'), pk=pk,
+        )
+        # CSO 2026-06-30 HIGH H-003: non-system_admin staff must belong to
+        # the award's agency (mirrors AwardAmendmentDetailView.get_queryset).
+        if getattr(request.user, 'role', '') != 'system_admin':
+            if amendment.award.agency_id != getattr(request.user, 'agency_id', None):
+                raise Http404
 
         if amendment.status not in (
             AwardAmendment.Status.DRAFT,
