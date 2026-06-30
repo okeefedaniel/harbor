@@ -578,7 +578,22 @@ class AddCommentView(LoginRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        # CSO 2026-06-30 HIGH H-001: scope lookup to applications the user
+        # can already READ (mirrors ApplicationDetailView.get_queryset).
+        user = request.user
+        qs = Application.objects.all()
+        if not (user.is_superuser or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                assigned_ids = ApplicationAssignment.objects.filter(
+                    assigned_to=user,
+                ).values_list('application_id', flat=True)
+                qs = qs.filter(
+                    models.Q(grant_program__agency=user.agency)
+                    | models.Q(pk__in=assigned_ids)
+                )
+            else:
+                qs = qs.filter(applicant=user)
+        application = get_object_or_404(qs, pk=pk)
         form = ApplicationCommentForm(request.POST)
 
         if form.is_valid():
