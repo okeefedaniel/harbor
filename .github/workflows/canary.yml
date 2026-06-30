@@ -16,8 +16,11 @@ name: Canary
 # 2. Uncomment the schedule block below.
 
 on:
-  schedule:
-    - cron: '6/15 * * * *'
+  # Scheduled polling paused pre-beta to conserve GitHub Actions minutes.
+  # Canary is post-deploy monitoring for live traffic; re-enable for
+  # production by uncommenting. Manual runs remain via workflow_dispatch.
+  # schedule:
+  #   - cron: '6/15 * * * *'
   workflow_dispatch:
 
 jobs:

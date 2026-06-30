@@ -13,10 +13,10 @@ name: Renovate
 
 on:
   schedule:
-    # Every 6h. Renovate merges its own PRs (platformAutomerge is off on free
+    # Twice weekly (Mon & Thu 06:00 UTC). Renovate merges its own PRs (platformAutomerge is off on free
     # private repos), so merge latency = run frequency: a keel bump merges within
     # ~6h of its CI going green. Use workflow_dispatch for an immediate cycle.
-    - cron: "0 */6 * * *"
+    - cron: "0 6 * * 1,4"
   workflow_dispatch:
     inputs:
       dryRun:
