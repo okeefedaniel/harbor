@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
+from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -28,7 +29,16 @@ class CloseoutDocumentDownloadView(AgencyStaffRequiredMixin, View):
     """
 
     def get(self, request, pk):
-        doc = get_object_or_404(CloseoutDocument, pk=pk)
+        doc = get_object_or_404(
+            CloseoutDocument.objects.select_related('closeout__award'),
+            pk=pk,
+        )
+        # CSO: scope to user's agency — agency staff at Agency A must not be
+        # able to download closeout documents belonging to Agency B.
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and not user.is_superuser:
+            if getattr(user, 'agency_id', None) != doc.closeout.award.agency_id:
+                raise PermissionDenied
         if not doc.file:
             raise Http404
         return FileResponse(

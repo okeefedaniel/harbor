@@ -508,7 +508,13 @@ class AwardAmendmentApproveView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        amendment = get_object_or_404(AwardAmendment, pk=pk)
+        # CSO: scope lookup to user's agency so agency staff cannot approve
+        # amendments belonging to a different agency (IDOR prevention).
+        qs = AwardAmendment.objects.select_related('award')
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and not user.is_superuser:
+            qs = qs.filter(award__agency=user.agency)
+        amendment = get_object_or_404(qs, pk=pk)
 
         if amendment.status not in (
             AwardAmendment.Status.DRAFT,
@@ -540,7 +546,13 @@ class AwardAmendmentDenyView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        amendment = get_object_or_404(AwardAmendment, pk=pk)
+        # CSO: scope lookup to user's agency so agency staff cannot deny
+        # amendments belonging to a different agency (IDOR prevention).
+        qs = AwardAmendment.objects.select_related('award')
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and not user.is_superuser:
+            qs = qs.filter(award__agency=user.agency)
+        amendment = get_object_or_404(qs, pk=pk)
 
         if amendment.status not in (
             AwardAmendment.Status.DRAFT,

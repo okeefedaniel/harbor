@@ -207,7 +207,14 @@ class DrawdownApproveView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO: scope lookup to user's agency so fiscal officers cannot approve
+        # drawdowns belonging to a different agency (IDOR prevention).
+        qs = DrawdownRequest.objects.select_related('award')
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and not user.is_superuser:
+            if is_agency_staff(user) and getattr(user, 'agency_id', None):
+                qs = qs.filter(award__agency=user.agency)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status != DrawdownRequest.Status.SUBMITTED:
             return JsonResponse(
@@ -403,7 +410,14 @@ class DrawdownDenyView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO: scope lookup to user's agency so fiscal officers cannot deny
+        # drawdowns belonging to a different agency (IDOR prevention).
+        qs = DrawdownRequest.objects.select_related('award')
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and not user.is_superuser:
+            if is_agency_staff(user) and getattr(user, 'agency_id', None):
+                qs = qs.filter(award__agency=user.agency)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
@@ -443,7 +457,14 @@ class DrawdownReturnView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO: scope lookup to user's agency so fiscal officers cannot return
+        # drawdowns belonging to a different agency (IDOR prevention).
+        qs = DrawdownRequest.objects.select_related('award')
+        user = request.user
+        if getattr(user, 'role', '') != 'system_admin' and not user.is_superuser:
+            if is_agency_staff(user) and getattr(user, 'agency_id', None):
+                qs = qs.filter(award__agency=user.agency)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
