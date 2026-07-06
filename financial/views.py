@@ -129,7 +129,7 @@ class DrawdownListView(LoginRequiredMixin, SortableListMixin, CSVExportMixin, Li
 # ---------------------------------------------------------------------------
 # Drawdown Create
 # ---------------------------------------------------------------------------
-class DrawdownCreateView(LoginRequiredMixin, CreateView):
+class DrawdownCreateView(AgencyStaffRequiredMixin, CreateView):
     """Create a new drawdown request against an award."""
 
     model = DrawdownRequest
@@ -137,7 +137,11 @@ class DrawdownCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financial/drawdown_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        # CSO 2026-07-06 H-001: scope award to user's agency (system_admin bypass).
+        qs = Award.objects.all()
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(agency=request.user.agency)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def _generate_request_number(self):
@@ -207,7 +211,11 @@ class DrawdownApproveView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO 2026-07-06 H-002: scope to user's agency via award traversal.
+        qs = DrawdownRequest.objects.select_related('award')
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(award__agency=request.user.agency)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status != DrawdownRequest.Status.SUBMITTED:
             return JsonResponse(
@@ -403,7 +411,11 @@ class DrawdownDenyView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO 2026-07-06 H-003: scope to user's agency via award traversal.
+        qs = DrawdownRequest.objects.select_related('award')
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(award__agency=request.user.agency)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
@@ -443,7 +455,11 @@ class DrawdownReturnView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO 2026-07-06 H-004: scope to user's agency via award traversal.
+        qs = DrawdownRequest.objects.select_related('award')
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(award__agency=request.user.agency)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
@@ -476,7 +492,11 @@ class TransactionCreateView(FiscalOfficerRequiredMixin, CreateView):
     template_name = 'financial/transaction_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        # CSO 2026-07-06 H-005: scope award to user's agency (system_admin bypass).
+        qs = Award.objects.all()
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(agency=request.user.agency)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):

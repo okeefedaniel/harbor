@@ -28,7 +28,11 @@ class CloseoutDocumentDownloadView(AgencyStaffRequiredMixin, View):
     """
 
     def get(self, request, pk):
-        doc = get_object_or_404(CloseoutDocument, pk=pk)
+        # CSO 2026-07-06 H-010: scope to user's agency via closeout → award.
+        qs = CloseoutDocument.objects.select_related('closeout__award')
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(closeout__award__agency=request.user.agency)
+        doc = get_object_or_404(qs, pk=pk)
         if not doc.file:
             raise Http404
         return FileResponse(
@@ -168,7 +172,11 @@ class CloseoutInitiateView(AgencyStaffRequiredMixin, View):
     ]
 
     def post(self, request, award_id):
-        award = get_object_or_404(Award, pk=award_id)
+        # CSO 2026-07-06 H-011: scope award to user's agency (system_admin bypass).
+        qs = Award.objects.all()
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(agency=request.user.agency)
+        award = get_object_or_404(qs, pk=award_id)
 
         # Prevent duplicate closeout records
         if hasattr(award, 'closeout'):
@@ -278,7 +286,11 @@ class CloseoutChecklistToggleView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        item = get_object_or_404(CloseoutChecklist, pk=pk)
+        # CSO 2026-07-06 H-012: scope to user's agency via closeout → award.
+        qs = CloseoutChecklist.objects.select_related('closeout__award')
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(closeout__award__agency=request.user.agency)
+        item = get_object_or_404(qs, pk=pk)
 
         if item.is_completed:
             item.is_completed = False
