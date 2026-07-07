@@ -29,12 +29,10 @@ class CloseoutDocumentDownloadView(AgencyStaffRequiredMixin, View):
     """
 
     def get(self, request, pk):
-        # CSO 2026-07-05 H-C1: scope to user's agency so agency A staff
-        # cannot download closeout documents belonging to agency B.
-        user = request.user
+        # CSO 2026-07-06 H-010: scope to user's agency via closeout → award.
         qs = CloseoutDocument.objects.select_related('closeout__award')
-        if getattr(user, 'role', '') != 'system_admin':
-            qs = qs.filter(closeout__award__agency=user.agency)
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(closeout__award__agency=request.user.agency)
         doc = get_object_or_404(qs, pk=pk)
         if not doc.file:
             raise Http404
@@ -181,12 +179,10 @@ class CloseoutInitiateView(AgencyStaffRequiredMixin, View):
     ]
 
     def post(self, request, award_id):
-        # CSO 2026-07-05 H-C3: scope to user's agency to prevent
-        # cross-agency closeout initiation.
-        user = request.user
+        # CSO 2026-07-06 H-011: scope award to user's agency (system_admin bypass).
         qs = Award.objects.all()
-        if getattr(user, 'role', '') != 'system_admin':
-            qs = qs.filter(agency=user.agency)
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(agency=request.user.agency)
         award = get_object_or_404(qs, pk=award_id)
 
         # Prevent duplicate closeout records
@@ -312,12 +308,10 @@ class CloseoutChecklistToggleView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        # CSO 2026-07-05 H-C5: scope to user's agency to prevent
-        # cross-agency checklist item toggling.
-        user = request.user
+        # CSO 2026-07-06 H-012: scope to user's agency via closeout → award.
         qs = CloseoutChecklist.objects.select_related('closeout__award')
-        if getattr(user, 'role', '') != 'system_admin':
-            qs = qs.filter(closeout__award__agency=user.agency)
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(closeout__award__agency=request.user.agency)
         item = get_object_or_404(qs, pk=pk)
 
         if item.is_completed:
