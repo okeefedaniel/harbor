@@ -48,6 +48,8 @@ from keel.signatures.client import (
 )
 from keel.signatures.models import ManifestHandoff
 
+from core.scanning import scan_file
+
 from .forms import (
     AwardAmendmentForm, AwardDocumentForm, AwardForm,
     AwardLocalSignForm, SignatureRequestForm,
@@ -409,7 +411,13 @@ class AwardAmendmentCreateView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'awards/amendment_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['pk'])
+        # CSO 2026-07-05 H-A2: scope to user's agency so agency A staff
+        # cannot create amendments on agency B's awards.
+        user = request.user
+        qs = Award.objects.all()
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(agency=user.agency)
+        self.award = get_object_or_404(qs, pk=kwargs['pk'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -480,10 +488,26 @@ class AwardDocumentUploadView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'awards/document_upload_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        # CSO 2026-07-05 H-A1: scope to user's agency to prevent
+        # cross-agency document upload.
+        user = request.user
+        qs = Award.objects.all()
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(agency=user.agency)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
+        # CSO 2026-07-05 H-A1: scan uploaded file before saving.
+        uploaded = self.request.FILES.get('file')
+        if uploaded:
+            result = scan_file(uploaded)
+            if not result.is_clean:
+                messages.error(
+                    self.request,
+                    _('File rejected: %(reason)s') % {'reason': result.message},
+                )
+                return self.form_invalid(form)
         form.instance.award = self.award
         form.instance.uploaded_by = self.request.user
         form.instance.source = AwardAttachment.Source.UPLOAD
@@ -576,7 +600,7 @@ class AwardAmendmentDenyView(AgencyStaffRequiredMixin, View):
 # ---------------------------------------------------------------------------
 # Signature Request  (DocuSign e-Signature)
 # ---------------------------------------------------------------------------
-class SignatureRequestView(LoginRequiredMixin, View):
+class SignatureRequestView(AgencyStaffRequiredMixin, View):
     """Send an award agreement to Manifest for e-signature.
 
     Post-0.14: this view routes signing through
@@ -590,12 +614,24 @@ class SignatureRequestView(LoginRequiredMixin, View):
 
     Standalone-mode fallback: when Manifest isn't configured, the UI
     routes users to ``AwardLocalSignView`` to upload a locally-signed PDF.
+
+    CSO 2026-07-05 H-A3: upgraded from LoginRequiredMixin to
+    AgencyStaffRequiredMixin and scoped Award lookups by agency so
+    applicants / unauthenticated users cannot reach this endpoint.
     """
 
     http_method_names = ['get', 'post']
 
+    def _get_award(self, request, pk):
+        """Return the award scoped to the user's agency (404 on mismatch)."""
+        user = request.user
+        qs = Award.objects.all()
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(agency=user.agency)
+        return get_object_or_404(qs, pk=pk)
+
     def get(self, request, pk):
-        award = get_object_or_404(Award, pk=pk)
+        award = self._get_award(request, pk)
         form = SignatureRequestForm(initial={
             'signer_name': award.recipient.get_full_name(),
             'signer_email': award.recipient.email,
@@ -607,7 +643,7 @@ class SignatureRequestView(LoginRequiredMixin, View):
         })
 
     def post(self, request, pk):
-        award = get_object_or_404(Award, pk=pk)
+        award = self._get_award(request, pk)
         form = SignatureRequestForm(request.POST)
 
         if not form.is_valid():
