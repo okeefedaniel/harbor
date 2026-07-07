@@ -207,7 +207,17 @@ class DrawdownApproveView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO 2026-07-07: scope lookup to the requesting user's agency so a
+        # fiscal_officer from Agency A cannot approve Agency B's drawdowns.
+        # Mirrors DrawdownDetailView.get_queryset() (line ~189).
+        user = request.user
+        qs = DrawdownRequest.objects.select_related('award')
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.filter(submitted_by=user)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status != DrawdownRequest.Status.SUBMITTED:
             return JsonResponse(
@@ -403,7 +413,15 @@ class DrawdownDenyView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO 2026-07-07: same agency-scope guard as DrawdownApproveView.
+        user = request.user
+        qs = DrawdownRequest.objects.select_related('award')
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.filter(submitted_by=user)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
@@ -443,7 +461,15 @@ class DrawdownReturnView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        drawdown = get_object_or_404(DrawdownRequest, pk=pk)
+        # CSO 2026-07-07: same agency-scope guard as DrawdownApproveView.
+        user = request.user
+        qs = DrawdownRequest.objects.select_related('award')
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.filter(submitted_by=user)
+        drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
             DrawdownRequest.Status.SUBMITTED,
