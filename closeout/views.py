@@ -14,6 +14,7 @@ from core.audit import log_audit
 from core.mixins import AgencyStaffRequiredMixin, GrantManagerRequiredMixin, SortableListMixin
 from core.models import AuditLog
 from core.notifications import notify_closeout_initiated
+from core.scanning import scan_file
 
 from .forms import CloseoutChecklistForm, CloseoutDocumentForm, FundReturnForm
 from .models import Closeout, CloseoutChecklist, CloseoutDocument, FundReturn
@@ -120,9 +121,15 @@ class CloseoutDetailView(AgencyStaffRequiredMixin, DetailView):
     context_object_name = 'closeout'
 
     def get_queryset(self):
-        return Closeout.objects.select_related(
+        # CSO 2026-07-05 H-C4: scope to user's agency to prevent
+        # cross-agency closeout detail access.
+        qs = Closeout.objects.select_related(
             'award', 'initiated_by', 'completed_by',
         )
+        user = self.request.user
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(award__agency=user.agency)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -229,6 +236,15 @@ class CloseoutChecklistUpdateView(AgencyStaffRequiredMixin, UpdateView):
     template_name = 'closeout/checklist_form.html'
     context_object_name = 'checklist_item'
 
+    def get_queryset(self):
+        # CSO 2026-07-05 H-C7: scope to user's agency to prevent
+        # cross-agency checklist item updates.
+        qs = CloseoutChecklist.objects.select_related('closeout__award')
+        user = self.request.user
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(closeout__award__agency=user.agency)
+        return qs
+
     def form_valid(self, form):
         item = form.instance
         if item.is_completed and not item.completed_at:
@@ -258,7 +274,13 @@ class FundReturnCreateView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'closeout/fund_return_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.closeout = get_object_or_404(Closeout, pk=kwargs['closeout_id'])
+        # CSO 2026-07-05 H-C6: scope to user's agency to prevent
+        # cross-agency fund return creation.
+        user = request.user
+        qs = Closeout.objects.select_related('award')
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(award__agency=user.agency)
+        self.closeout = get_object_or_404(qs, pk=kwargs['closeout_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -317,10 +339,26 @@ class CloseoutDocumentUploadView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'closeout/document_upload_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.closeout = get_object_or_404(Closeout, pk=kwargs['closeout_id'])
+        # CSO 2026-07-05 H-C2: scope to user's agency to prevent
+        # cross-agency document upload.
+        user = request.user
+        qs = Closeout.objects.select_related('award')
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(award__agency=user.agency)
+        self.closeout = get_object_or_404(qs, pk=kwargs['closeout_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
+        # CSO 2026-07-05 H-C2: scan uploaded file before saving.
+        uploaded = self.request.FILES.get('file')
+        if uploaded:
+            result = scan_file(uploaded)
+            if not result.is_clean:
+                messages.error(
+                    self.request,
+                    _('File rejected: %(reason)s') % {'reason': result.message},
+                )
+                return self.form_invalid(form)
         form.instance.closeout = self.closeout
         form.instance.uploaded_by = self.request.user
         messages.success(self.request, _('Document uploaded successfully.'))
@@ -346,7 +384,13 @@ class CloseoutCompleteView(GrantManagerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        closeout = get_object_or_404(Closeout, pk=pk)
+        # CSO 2026-07-05: scope to user's agency so grant managers at
+        # agency A cannot complete agency B's closeouts.
+        user = request.user
+        qs = Closeout.objects.select_related('award')
+        if getattr(user, 'role', '') != 'system_admin':
+            qs = qs.filter(award__agency=user.agency)
+        closeout = get_object_or_404(qs, pk=pk)
 
         # Verify all required checklist items are completed
         required_incomplete = closeout.checklist_items.filter(
