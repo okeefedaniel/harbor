@@ -218,10 +218,16 @@ class DrawdownApproveView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        # CSO 2026-07-06 H-002: scope to user's agency via award traversal.
+        # CSO 2026-07-07: scope lookup to the requesting user's agency so a
+        # fiscal_officer from Agency A cannot approve Agency B's drawdowns.
+        # Mirrors DrawdownDetailView.get_queryset() (line ~189).
+        user = request.user
         qs = DrawdownRequest.objects.select_related('award')
-        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
-            qs = qs.filter(award__agency=request.user.agency)
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.filter(submitted_by=user)
         drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status != DrawdownRequest.Status.SUBMITTED:
@@ -418,10 +424,14 @@ class DrawdownDenyView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        # CSO 2026-07-06 H-003: scope to user's agency via award traversal.
+        # CSO 2026-07-07: same agency-scope guard as DrawdownApproveView.
+        user = request.user
         qs = DrawdownRequest.objects.select_related('award')
-        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
-            qs = qs.filter(award__agency=request.user.agency)
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.filter(submitted_by=user)
         drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
@@ -462,10 +472,14 @@ class DrawdownReturnView(FiscalOfficerRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        # CSO 2026-07-06 H-004: scope to user's agency via award traversal.
+        # CSO 2026-07-07: same agency-scope guard as DrawdownApproveView.
+        user = request.user
         qs = DrawdownRequest.objects.select_related('award')
-        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
-            qs = qs.filter(award__agency=request.user.agency)
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(award__agency=user.agency)
+            else:
+                qs = qs.filter(submitted_by=user)
         drawdown = get_object_or_404(qs, pk=pk)
 
         if drawdown.status not in (
