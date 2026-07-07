@@ -137,7 +137,18 @@ class DrawdownCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financial/drawdown_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        # CSO 2026-07-06 H-001: scope award to the requesting user as recipient
+        # so applicants cannot create drawdowns against another applicant's award.
+        # system_admin/superuser see all; agency staff see their agency's awards;
+        # everyone else is gated to awards where they are the recipient.
+        qs = Award.objects.all()
+        user = request.user
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency_id', None):
+                qs = qs.filter(agency=user.agency)
+            else:
+                qs = qs.filter(recipient=user)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def _generate_request_number(self):
@@ -502,7 +513,18 @@ class TransactionCreateView(FiscalOfficerRequiredMixin, CreateView):
     template_name = 'financial/transaction_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        # CSO 2026-07-06 H-005: perform auth check BEFORE the agency-scoped DB
+        # lookup so non-staff users receive 403 rather than 404 (MRO ordering fix).
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if not is_agency_staff(request.user):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        qs = Award.objects.all()
+        user = request.user
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            qs = qs.filter(agency=user.agency)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):

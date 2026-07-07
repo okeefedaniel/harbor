@@ -780,8 +780,12 @@ class UserSignatureSetDefaultView(LoginRequiredMixin, View):
 # AJAX endpoints
 # ===========================================================================
 
-class PacketStatusAPIView(LoginRequiredMixin, View):
+class PacketStatusAPIView(AgencyStaffRequiredMixin, View):
     def get(self, request, pk):
+        # CSO 2026-07-06 H-013: restrict to agency staff. The packet links to
+        # Award/Closeout via a generic FK so ORM-level agency scoping isn't
+        # possible here — the AgencyStaffRequiredMixin gate (minimum) prevents
+        # unauthenticated or applicant-role access to signer PII.
         packet = get_object_or_404(SigningPacket, pk=pk)
         signed, total = packet.progress
         steps = [

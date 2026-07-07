@@ -488,12 +488,10 @@ class AwardDocumentUploadView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'awards/document_upload_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        # CSO 2026-07-05 H-A1: scope to user's agency to prevent
-        # cross-agency document upload.
-        user = request.user
+        # CSO 2026-07-06 H-008: scope award to user's agency (system_admin bypass).
         qs = Award.objects.all()
-        if getattr(user, 'role', '') != 'system_admin':
-            qs = qs.filter(agency=user.agency)
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(agency=request.user.agency)
         self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
@@ -924,7 +922,7 @@ class DocuSignWebhookView(View):
 # ---------------------------------------------------------------------------
 # Signature Status  (AJAX polling)
 # ---------------------------------------------------------------------------
-class SignatureStatusView(LoginRequiredMixin, View):
+class SignatureStatusView(AgencyStaffRequiredMixin, View):
     """Return JSON with the current status of a signature request.
 
     Used by the frontend for AJAX polling to update the UI
@@ -934,10 +932,11 @@ class SignatureStatusView(LoginRequiredMixin, View):
     http_method_names = ['get']
 
     def get(self, request, pk):
-        sig_request = get_object_or_404(
-            SignatureRequest.objects.select_related('award'),
-            pk=pk,
-        )
+        # CSO 2026-07-06 H-009: restrict to agency staff and scope to user's agency.
+        qs = SignatureRequest.objects.select_related('award')
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'system_admin'):
+            qs = qs.filter(award__agency=request.user.agency)
+        sig_request = get_object_or_404(qs, pk=pk)
         return JsonResponse({
             'id': str(sig_request.pk),
             'envelope_id': sig_request.envelope_id,
