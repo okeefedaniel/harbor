@@ -84,6 +84,23 @@ def _user_can_see_application(user, application):
     return application.applicant_id == user.pk
 
 
+def _get_application_for_staff(pk, user):
+    """Fetch Application by pk, enforcing agency-scoping for non-superuser staff.
+
+    CSO 2026-07-13: bare get_object_or_404(Application, pk=pk) inside
+    staff-gated views allowed any agency staff member to toggle compliance or
+    upload internal docs on another agency's application — the mixin confirmed
+    *is* staff, not *agency match*. Superusers and system_admin see all;
+    everyone else is scoped to their own agency's grant programs.
+    """
+    if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
+        return get_object_or_404(Application, pk=pk)
+    agency = getattr(user, 'agency', None)
+    if agency is None:
+        raise Http404
+    return get_object_or_404(Application, pk=pk, grant_program__agency=agency)
+
+
 class AttachmentDownloadView(LoginRequiredMixin, View):
     """Stream an ApplicationAttachment file behind the application ACL.
 
@@ -760,7 +777,7 @@ class ToggleComplianceView(LoginRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk, item_pk):
-        application = get_object_or_404(Application, pk=pk)
+        application = _get_application_for_staff(pk, request.user)
 
         if not request.user.is_agency_staff:
             messages.error(request, _('You do not have permission to perform this action.'))
@@ -807,7 +824,7 @@ class UploadStaffDocumentView(AgencyStaffRequiredMixin, View):
         return redirect('applications:detail', pk=pk)
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        application = _get_application_for_staff(pk, request.user)
 
         if not request.user.is_agency_staff:
             messages.error(request, _('You do not have permission to perform this action.'))
