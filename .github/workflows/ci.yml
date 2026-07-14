@@ -67,6 +67,13 @@ jobs:
       - name: Collect static files
         run: python manage.py collectstatic --noinput
 
+      - name: Check for missing migrations
+        # Catches edits to models.py with no corresponding makemigrations.
+        # Drift is silent until someone else runs makemigrations and finds an
+        # unrelated migration mixed into their change — signatures/0006 went
+        # three weeks that way after e613e27 swapped in FileSecurityValidator.
+        run: python manage.py makemigrations --check --dry-run
+
       - name: Run migrations
         run: python manage.py migrate --noinput
 
