@@ -363,6 +363,20 @@ AUTHENTICATION_BACKENDS = [
 # Account settings
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
+# Never email an address that has no account. allauth's default
+# (PREVENT_ENUMERATION=True) mails a note to non-accounts that POST the
+# public /accounts/password/reset/ form, turning the endpoint into an
+# open spam relay. Off = the reset page still shows the neutral
+# "check your email" message but no mail is sent to strangers. Keel's
+# KeelAccountAdapter also drops this mail suite-wide; this is the
+# explicit, deployable-without-a-keel-bump belt-and-suspenders.
+ACCOUNT_EMAIL_UNKNOWN_ACCOUNTS = False
+# Tighten allauth's loose 20/min/ip reset default so a real account
+# can't be reset-bombed either.
+ACCOUNT_RATE_LIMITS = {
+    'reset_password': '3/m/ip,1/m/key',
+    'reset_password_from_key': '3/m/ip',
+}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_ADAPTER = 'keel.core.sso.KeelAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'keel.core.sso.KeelSocialAccountAdapter'
