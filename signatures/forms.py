@@ -206,6 +206,7 @@ class SigningForm(forms.Form):
     )
 
     def clean_signature_image(self):
+        from keel.security.scanning import FileSecurityValidator
         f = self.cleaned_data.get('signature_image')
         if not f:
             return f
@@ -219,6 +220,7 @@ class SigningForm(forms.Form):
         f.seek(0)
         if not (head[:4] == b'\x89PNG' or head[:3] == b'\xff\xd8\xff'):
             raise forms.ValidationError(_('Uploaded file is not a valid PNG or JPG image.'))
+        FileSecurityValidator()(f)
         return f
 
     def clean(self):
