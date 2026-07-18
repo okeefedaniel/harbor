@@ -1,8 +1,9 @@
 name: Renovate
 
 # Self-hosted Renovate: keeps this app on the latest keel tag.
-# Runs on a daily schedule and on demand. Opens (and auto-merges, once CI is
-# green) a single "keel" PR whenever keel publishes a newer tag — bumping both
+# Runs every 6h, on demand, and — via the workflow_run gap-closer below — right
+# after a renovate branch's CI goes green. Opens (and auto-merges, once CI is
+# green) a single "keel" PR whenever keel publishes a newer tag, bumping both
 # the requirements.txt pin and the reusable-workflow pin in ci.yml.
 #
 # Requires a repo secret RENOVATE_TOKEN: a PAT with Contents + Pull-requests +
@@ -13,16 +14,25 @@ name: Renovate
 
 on:
   schedule:
-    # Twice weekly (Mon & Thu 06:00 UTC). Renovate merges its own PRs (platformAutomerge is off on free
-    # private repos), so merge latency = run frequency: a keel bump merges within
-    # ~6h of its CI going green. Use workflow_dispatch for an immediate cycle.
-    - cron: "0 6 * * 1,4"
+    # Every 6 hours. keel releases roughly daily (sometimes twice a day), and
+    # Renovate needs a follow-up run after CI goes green to merge — so a sparse
+    # cron perpetually chases the newest tag instead of landing the prior one.
+    # 6h keeps the open→green→merge cycle ahead of keel's release cadence; the
+    # workflow_run trigger below closes the remaining gap. Use workflow_dispatch
+    # for an immediate cycle.
+    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       dryRun:
         description: "Dry run (log only, open no PRs)"
         type: boolean
         default: false
+  # Gap-closer: as soon as a renovate branch's CI completes, run Renovate so a
+  # green keel PR merges within minutes instead of waiting for the next cron.
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: ["renovate/**"]
 
 permissions:
   contents: read
@@ -33,6 +43,12 @@ concurrency:
 
 jobs:
   renovate:
+    # Schedule and manual dispatch always run. For the workflow_run trigger,
+    # only proceed when that CI run actually succeeded — Renovate re-checks full
+    # branch status before merging, but this avoids pointless runs on red CI.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Run Renovate
