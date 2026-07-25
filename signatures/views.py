@@ -322,7 +322,7 @@ def _user_is_agency_staff(user):
 # Placement editor (any authenticated user)
 # ===========================================================================
 
-class PlacementEditorView(LoginRequiredMixin, TemplateView):
+class PlacementEditorView(AgencyStaffRequiredMixin, TemplateView):
     template_name = 'signatures/placement_editor.html'
 
     def get_context_data(self, **kwargs):
