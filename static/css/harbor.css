@@ -10,7 +10,7 @@
 .badge-accepting-applications,
 .badge-accepting_applications { background-color: var(--success-bg); color: var(--success); }
 .badge-awards-pending,
-.badge-awards_pending { background-color: var(--warning-bg); color: var(--warning); }
+.badge-awards_pending { background-color: var(--warning-bg); color: var(--brass-text); }
 .badge-executed { background-color: var(--success-bg); color: var(--success); }
 .badge-claimed { background-color: var(--success-bg); color: var(--success); }
 
