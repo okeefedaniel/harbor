@@ -481,7 +481,7 @@ class ApplicationSubmitView(LoginRequiredMixin, View):
     def post(self, request, pk):
         # Staff may view all applications; applicants only their own
         if request.user.is_agency_staff:
-            application = get_object_or_404(Application, pk=pk)
+            application = _get_application_for_staff(pk, request.user)
         else:
             application = get_object_or_404(
                 Application, pk=pk, applicant=request.user,
@@ -543,7 +543,7 @@ class ApplicationWithdrawView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         if request.user.is_agency_staff:
-            application = get_object_or_404(Application, pk=pk)
+            application = _get_application_for_staff(pk, request.user)
         else:
             application = get_object_or_404(
                 Application, pk=pk, applicant=request.user,
@@ -646,9 +646,10 @@ class UploadDocumentView(LoginRequiredMixin, View):
         return redirect('applications:detail', pk=pk)
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
-        if application.applicant != request.user and not request.user.is_agency_staff:
-            raise Http404
+        if request.user.is_agency_staff:
+            application = _get_application_for_staff(pk, request.user)
+        else:
+            application = get_object_or_404(Application, pk=pk, applicant=request.user)
         form = ApplicationDocumentForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -691,12 +692,7 @@ class ApplicationStatusChangeView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
-
-        # Only agency staff may change status
-        if not request.user.is_agency_staff:
-            messages.error(request, _('You do not have permission to perform this action.'))
-            return redirect('applications:detail', pk=application.pk)
+        application = _get_application_for_staff(pk, request.user)
 
         form = StatusChangeForm(
             request.POST,
@@ -925,7 +921,7 @@ class ClaimApplicationView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        application = _get_application_for_staff(pk, request.user)
 
         existing = ApplicationAssignment.objects.filter(
             application=application,
@@ -969,7 +965,7 @@ class AssignApplicationView(AgencyStaffRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         from core.models import GRANT_MANAGER_ROLES
-        self.application = get_object_or_404(Application, pk=kwargs['pk'])
+        self.application = _get_application_for_staff(kwargs['pk'], request.user)
         if getattr(request.user, 'role', '') not in GRANT_MANAGER_ROLES:
             messages.error(request, _('Only managers can assign applications to staff.'))
             return redirect('applications:detail', pk=self.application.pk)
@@ -1100,7 +1096,7 @@ class InviteApplicationCollaboratorView(AgencyStaffRequiredMixin, LoginRequiredM
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        application = _get_application_for_staff(pk, request.user)
         identifier = request.POST.get('identifier', '').strip()
         role = request.POST.get('role', ApplicationCollaborator.Role.CONTRIBUTOR)
         if role not in dict(ApplicationCollaborator.Role.choices):
@@ -1156,7 +1152,7 @@ class RemoveApplicationCollaboratorView(AgencyStaffRequiredMixin, LoginRequiredM
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        application = _get_application_for_staff(pk, request.user)
         collab_id = request.POST.get('collaborator_id', '')
         if not collab_id:
             messages.error(request, 'collaborator_id required')
