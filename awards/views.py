@@ -32,7 +32,7 @@ from core.docusign import DocuSignService  # noqa: F401 — retained for legacy 
 from core.export import CSVExportMixin
 from core.filters import AwardFilter
 from core.mixins import AgencyObjectMixin, AgencyStaffRequiredMixin, GrantManagerRequiredMixin, SortableListMixin
-from core.models import Agency, AuditLog
+from core.models import Agency, AuditLog, can_manage_grants
 from django.contrib.auth import get_user_model; User = get_user_model()
 from django.urls import reverse
 from core.notifications import (
@@ -287,6 +287,8 @@ class AwardCreateView(GrantManagerRequiredMixin, CreateView):
     template_name = 'awards/award_form.html'
 
     def dispatch(self, request, *args, **kwargs):
+        if not can_manage_grants(request.user) and not getattr(request.user, 'is_superuser', False):
+            return super().dispatch(request, *args, **kwargs)
         qs = Application.objects.select_related(
             'grant_program', 'grant_program__agency',
             'applicant', 'organization',
