@@ -197,9 +197,11 @@ class GrantProgramDetailView(AgencyStaffRequiredMixin, DetailView):
     context_object_name = 'program'
 
     def get_queryset(self):
-        return GrantProgram.objects.select_related(
-            'agency', 'funding_source', 'created_by'
-        )
+        qs = GrantProgram.objects.select_related('agency', 'funding_source', 'created_by')
+        user = self.request.user
+        if getattr(user, 'role', '') != 'system_admin' and getattr(user, 'agency', None):
+            qs = qs.filter(agency=user.agency)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

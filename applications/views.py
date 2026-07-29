@@ -646,9 +646,10 @@ class UploadDocumentView(LoginRequiredMixin, View):
         return redirect('applications:detail', pk=pk)
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
-        if application.applicant != request.user and not request.user.is_agency_staff:
-            raise Http404
+        if getattr(request.user, 'is_agency_staff', False):
+            application = _get_application_for_staff(pk, request.user)
+        else:
+            application = get_object_or_404(Application, pk=pk, applicant=request.user)
         form = ApplicationDocumentForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -691,7 +692,7 @@ class ApplicationStatusChangeView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        application = _get_application_for_staff(pk, request.user)
 
         # Only agency staff may change status
         if not request.user.is_agency_staff:
