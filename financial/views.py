@@ -60,12 +60,13 @@ class BudgetCreateView(AgencyStaffRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         user = request.user
+        # Set self.award only for users who will pass AgencyStaffRequiredMixin.
+        # Non-staff users reach this branch too, but super().dispatch() returns
+        # 403 before get()/post() are called — so self.award is never accessed.
         if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
             self.award = get_object_or_404(Award, pk=kwargs['award_id'])
         elif getattr(user, 'agency_id', None):
             self.award = get_object_or_404(Award, pk=kwargs['award_id'], agency=user.agency)
-        else:
-            raise Http404
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
