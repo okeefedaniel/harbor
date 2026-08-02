@@ -10,6 +10,7 @@ so that the signatures app works as an independent Django package.
 
 import logging
 import os
+from urllib.parse import quote
 
 from django.apps import apps
 from django.conf import settings
@@ -240,11 +241,14 @@ class SortableListMixin:
         return self.apply_sorting(super().get_queryset())
 
     def _build_params(self, exclude):
+        # CSO 2026-08-02 F-009: URL-encode keys and values so a crafted query
+        # param cannot inject raw HTML into the pagination/filter links rendered
+        # in templates. Matches the safe pattern in core/mixins.py.
         parts = []
         for key in self.request.GET:
             if key not in exclude:
                 for val in self.request.GET.getlist(key):
-                    parts.append(f'{key}={val}')
+                    parts.append(f'{quote(key)}={quote(val)}')
         return '&'.join(parts)
 
     def get_context_data(self, **kwargs):

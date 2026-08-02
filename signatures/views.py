@@ -322,7 +322,10 @@ def _user_is_agency_staff(user):
 # Placement editor (any authenticated user)
 # ===========================================================================
 
-class PlacementEditorView(LoginRequiredMixin, TemplateView):
+# CSO 2026-08-02 F-008: was LoginRequiredMixin-only; applicants could reach the
+# placement editor and manipulate signature-field coordinates on any document.
+# Upgraded to AgencyStaffRequiredMixin, matching PlacementAPIView below.
+class PlacementEditorView(AgencyStaffRequiredMixin, LoginRequiredMixin, TemplateView):
     template_name = 'signatures/placement_editor.html'
 
     def get_context_data(self, **kwargs):
@@ -462,6 +465,15 @@ class PacketListView(AgencyStaffRequiredMixin, SortableListMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset().select_related('flow', 'initiated_by')
+        # CSO 2026-08-02 F-006: scope list to current agency so staff from
+        # agency A cannot enumerate packets belonging to agency B.
+        user = self.request.user
+        if not getattr(user, 'is_superuser', False) and getattr(user, 'role', '') != 'system_admin':
+            agency = getattr(user, 'agency', None)
+            if agency is not None:
+                qs = qs.filter(initiated_by__agency=agency)
+            else:
+                qs = qs.none()
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -545,6 +557,13 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
         packet = get_object_or_404(SigningPacket, pk=pk)
+        # CSO 2026-08-02 F-007: verify the packet belongs to the user's agency.
+        if not (
+            getattr(request.user, 'is_superuser', False)
+            or getattr(request.user, 'role', '') == 'system_admin'
+            or getattr(packet.initiated_by, 'agency_id', None) == getattr(request.user, 'agency_id', None)
+        ):
+            raise Http404
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
@@ -560,6 +579,17 @@ class PacketAuditView(AgencyStaffRequiredMixin, DetailView):
     model = SigningPacket
     template_name = 'signatures/packet_audit.html'
     context_object_name = 'packet'
+
+    def get_queryset(self):
+        """CSO 2026-08-02 F-007b: scope audit view to current agency."""
+        qs = super().get_queryset()
+        user = self.request.user
+        if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
+            return qs
+        agency = getattr(user, 'agency', None)
+        if agency is None:
+            return qs.none()
+        return qs.filter(initiated_by__agency=agency)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -782,11 +812,16 @@ class UserSignatureSetDefaultView(LoginRequiredMixin, View):
 
 class PacketStatusAPIView(AgencyStaffRequiredMixin, View):
     def get(self, request, pk):
-        # CSO 2026-07-06 H-013: restrict to agency staff. The packet links to
-        # Award/Closeout via a generic FK so ORM-level agency scoping isn't
-        # possible here — the AgencyStaffRequiredMixin gate (minimum) prevents
-        # unauthenticated or applicant-role access to signer PII.
+        # CSO 2026-07-06 H-013: restrict to agency staff.
+        # CSO 2026-08-02 F-007c: add agency ownership check so staff from
+        # agency A cannot poll the status/signer PII of agency B's packets.
         packet = get_object_or_404(SigningPacket, pk=pk)
+        if not (
+            getattr(request.user, 'is_superuser', False)
+            or getattr(request.user, 'role', '') == 'system_admin'
+            or getattr(packet.initiated_by, 'agency_id', None) == getattr(request.user, 'agency_id', None)
+        ):
+            raise Http404
         signed, total = packet.progress
         steps = [
             {

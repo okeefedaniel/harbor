@@ -34,7 +34,7 @@ jobs:
     env:
       DATABASE_URL: postgres://harbor:harbor@localhost:5432/harbor_test
       DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
-      DJANGO_DEBUG: 'True'
+      DJANGO_DEBUG: 'False'
 
     steps:
       - name: Checkout code
@@ -78,7 +78,7 @@ jobs:
         run: python manage.py migrate --noinput
 
       - name: Run Django system checks
-        run: python manage.py check --deploy 2>&1 || true
+        run: python manage.py check --deploy 2>&1
 
       - name: Run tests with coverage
         run: |

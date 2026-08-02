@@ -479,9 +479,10 @@ class ApplicationSubmitView(LoginRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        # Staff may view all applications; applicants only their own
+        # Staff may view applications within their own agency; applicants only their own.
+        # CSO 2026-08-02 F-003: agency-scope the staff branch to prevent cross-agency IDOR.
         if request.user.is_agency_staff:
-            application = get_object_or_404(Application, pk=pk)
+            application = _get_application_for_staff(pk, request.user)
         else:
             application = get_object_or_404(
                 Application, pk=pk, applicant=request.user,
@@ -542,8 +543,9 @@ class ApplicationWithdrawView(LoginRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
+        # CSO 2026-08-02 F-003b: agency-scope the staff branch to prevent cross-agency IDOR.
         if request.user.is_agency_staff:
-            application = get_object_or_404(Application, pk=pk)
+            application = _get_application_for_staff(pk, request.user)
         else:
             application = get_object_or_404(
                 Application, pk=pk, applicant=request.user,
@@ -646,9 +648,13 @@ class UploadDocumentView(LoginRequiredMixin, View):
         return redirect('applications:detail', pk=pk)
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
-        if application.applicant != request.user and not request.user.is_agency_staff:
-            raise Http404
+        # CSO 2026-08-02 F-004: replace the combined unscoped lookup + post-fetch
+        # ownership check with two properly-scoped branches so staff from agency A
+        # cannot upload documents to agency B's applications.
+        if request.user.is_agency_staff:
+            application = _get_application_for_staff(pk, request.user)
+        else:
+            application = get_object_or_404(Application, pk=pk, applicant=request.user)
         form = ApplicationDocumentForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -691,7 +697,9 @@ class ApplicationStatusChangeView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        # CSO 2026-08-02 F-001: agency-scope the lookup so staff from agency A
+        # cannot modify applications belonging to agency B's programs.
+        application = _get_application_for_staff(pk, request.user)
 
         # Only agency staff may change status
         if not request.user.is_agency_staff:
@@ -925,7 +933,9 @@ class ClaimApplicationView(AgencyStaffRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        # CSO 2026-08-02 F-002: agency-scope so staff from agency A cannot
+        # claim applications belonging to agency B's programs.
+        application = _get_application_for_staff(pk, request.user)
 
         existing = ApplicationAssignment.objects.filter(
             application=application,
@@ -1100,7 +1110,9 @@ class InviteApplicationCollaboratorView(AgencyStaffRequiredMixin, LoginRequiredM
     http_method_names = ['post']
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
+        # CSO 2026-08-02 F-005: agency-scope so staff from agency A cannot add
+        # collaborators to agency B's applications.
+        application = _get_application_for_staff(pk, request.user)
         identifier = request.POST.get('identifier', '').strip()
         role = request.POST.get('role', ApplicationCollaborator.Role.CONTRIBUTOR)
         if role not in dict(ApplicationCollaborator.Role.choices):
