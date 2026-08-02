@@ -322,7 +322,10 @@ def _user_is_agency_staff(user):
 # Placement editor (any authenticated user)
 # ===========================================================================
 
-class PlacementEditorView(LoginRequiredMixin, TemplateView):
+# CSO 2026-08-02 F-008: was LoginRequiredMixin-only; applicants could reach the
+# placement editor and manipulate signature-field coordinates on any document.
+# Upgraded to AgencyStaffRequiredMixin, matching PlacementAPIView below.
+class PlacementEditorView(AgencyStaffRequiredMixin, LoginRequiredMixin, TemplateView):
     template_name = 'signatures/placement_editor.html'
 
     def get_context_data(self, **kwargs):
@@ -462,6 +465,17 @@ class PacketListView(AgencyStaffRequiredMixin, SortableListMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset().select_related('flow', 'initiated_by')
+        # CSO 2026-08-02 F-006: scope list to current agency so staff from
+        # agency A cannot enumerate packets belonging to agency B.
+        # Use harbor_profile__agency_id (harbor's Agency) not KeelUser.agency
+        # (keel_accounts.Agency) — they are different FK targets.
+        user = self.request.user
+        if not getattr(user, 'is_superuser', False) and getattr(user, 'role', '') != 'system_admin':
+            agency_id = getattr(user, 'agency_id', None)
+            if agency_id is not None:
+                qs = qs.filter(initiated_by__harbor_profile__agency_id=agency_id)
+            else:
+                qs = qs.none()
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -544,7 +558,19 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
 
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
-        packet = get_object_or_404(SigningPacket, pk=pk)
+        # CSO 2026-08-02 F-007: scope to current agency (harbor_profile__agency_id,
+        # not KeelUser.agency_id — different FK target).
+        user = request.user
+        if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
+            packet = get_object_or_404(SigningPacket, pk=pk)
+        else:
+            agency_id = getattr(user, 'agency_id', None)
+            if not agency_id:
+                raise Http404
+            packet = get_object_or_404(
+                SigningPacket, pk=pk,
+                initiated_by__harbor_profile__agency_id=agency_id,
+            )
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
@@ -560,6 +586,17 @@ class PacketAuditView(AgencyStaffRequiredMixin, DetailView):
     model = SigningPacket
     template_name = 'signatures/packet_audit.html'
     context_object_name = 'packet'
+
+    def get_queryset(self):
+        """CSO 2026-08-02 F-007b: scope audit view to current agency."""
+        qs = super().get_queryset()
+        user = self.request.user
+        if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
+            return qs
+        agency_id = getattr(user, 'agency_id', None)
+        if agency_id is None:
+            return qs.none()
+        return qs.filter(initiated_by__harbor_profile__agency_id=agency_id)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -782,11 +819,19 @@ class UserSignatureSetDefaultView(LoginRequiredMixin, View):
 
 class PacketStatusAPIView(AgencyStaffRequiredMixin, View):
     def get(self, request, pk):
-        # CSO 2026-07-06 H-013: restrict to agency staff. The packet links to
-        # Award/Closeout via a generic FK so ORM-level agency scoping isn't
-        # possible here — the AgencyStaffRequiredMixin gate (minimum) prevents
-        # unauthenticated or applicant-role access to signer PII.
-        packet = get_object_or_404(SigningPacket, pk=pk)
+        # CSO 2026-07-06 H-013: restrict to agency staff.
+        # CSO 2026-08-02 F-007c: scope to current agency (harbor_profile__agency_id).
+        user = request.user
+        if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin':
+            packet = get_object_or_404(SigningPacket, pk=pk)
+        else:
+            agency_id = getattr(user, 'agency_id', None)
+            if not agency_id:
+                raise Http404
+            packet = get_object_or_404(
+                SigningPacket, pk=pk,
+                initiated_by__harbor_profile__agency_id=agency_id,
+            )
         signed, total = packet.progress
         steps = [
             {
