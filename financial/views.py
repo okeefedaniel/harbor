@@ -59,7 +59,15 @@ class BudgetCreateView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'financial/budget_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.award = get_object_or_404(Award, pk=kwargs['award_id'])
+        # CSO 2026-08-09: scope award to the requesting user's agency so agency
+        # staff cannot create budgets on another agency's awards by guessing the
+        # award_id. Mirrors BudgetLineItemCreateView and TransactionCreateView.
+        qs = Award.objects.all()
+        user = request.user
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'agency_id', None):
+                qs = qs.filter(agency=user.agency)
+        self.award = get_object_or_404(qs, pk=kwargs['award_id'])
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):

@@ -197,6 +197,18 @@ class ReviewSummaryView(AgencyStaffRequiredMixin, DetailView):
     template_name = 'reviews/summary.html'
     context_object_name = 'application'
 
+    def get_queryset(self):
+        # CSO 2026-08-09: scope to the requesting user's agency so agency
+        # staff cannot read review summaries for another agency's applications
+        # by guessing the application pk. Mirrors ApplicationDetailView.
+        user = self.request.user
+        qs = Application.objects.select_related('grant_program')
+        if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+            return qs
+        if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+            return qs.filter(grant_program__agency=user.agency)
+        return qs.none()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         application = self.object
@@ -231,10 +243,17 @@ class ReviewAssignmentCreateView(AgencyStaffRequiredMixin, CreateView):
     template_name = 'reviews/assign_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        self.application = get_object_or_404(
-            Application.objects.select_related('grant_program'),
-            pk=kwargs['application_pk'],
-        )
+        # CSO 2026-08-09: scope application to the requesting user's agency so
+        # agency staff cannot assign reviewers to another agency's applications
+        # by guessing the application_pk. Mirrors ReviewSummaryView.get_queryset.
+        user = request.user
+        qs = Application.objects.select_related('grant_program')
+        if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
+            if getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = qs.filter(grant_program__agency=user.agency)
+            else:
+                qs = qs.none()
+        self.application = get_object_or_404(qs, pk=kwargs['application_pk'])
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
