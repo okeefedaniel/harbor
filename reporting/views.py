@@ -94,6 +94,8 @@ class ReportListView(LoginRequiredMixin, SortableListMixin, CSVExportMixin, List
             qs = qs.filter(award__agency=user.agency)
         elif not user.is_agency_staff and user.role != 'system_admin':
             qs = qs.filter(award__recipient=user)
+        else:
+            qs = qs.none()
 
         self.filterset = ReportFilter(self.request.GET, queryset=qs)
         return self.apply_sorting(self.filterset.qs)
