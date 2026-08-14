@@ -23,11 +23,22 @@ on:
   #   - cron: '6/15 * * * *'
   workflow_dispatch:
 
+# NOTE: the poll step uses continue-on-error so the workflow ALWAYS concludes
+# success. A canary run attaches its check suite to the HEAD commit of main,
+# and a red conclusion poisons Railway's "Wait for CI" gate — deploys of that
+# commit get silently SKIPPED ("CI check suite failed") even though the canary
+# says nothing about the code. Bit admiralty + bounty 2026-07-22 during a
+# metrics-token rotation. Alerting is the de-duped `canary` issue, not the red X.
+
 jobs:
   metrics:
     runs-on: ubuntu-latest
+    outputs:
+      unhealthy: ${{ steps.poll.outcome == 'failure' }}
     steps:
       - name: Poll /api/v1/metrics/
+        id: poll
+        continue-on-error: true
         env:
           HARBOR_METRICS_TOKEN: ${{ secrets.HARBOR_METRICS_TOKEN }}
         run: |
@@ -53,7 +64,7 @@ jobs:
 
   notify:
     needs: metrics
-    if: failure()
+    if: needs.metrics.outputs.unhealthy == 'true'
     runs-on: ubuntu-latest
     permissions:
       issues: write
