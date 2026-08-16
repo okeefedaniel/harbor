@@ -985,6 +985,8 @@ class DeadlineCalendarView(LoginRequiredMixin, TemplateView):
 
         if user.is_agency_staff and user.agency_id:
             expiring_qs = expiring_qs.filter(agency=user.agency)
+        elif not user.is_agency_staff and user.role != 'system_admin':
+            expiring_qs = expiring_qs.filter(recipient=user)
 
         context['expiring_awards'] = expiring_qs[:20]
 
