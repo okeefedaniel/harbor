@@ -687,7 +687,7 @@ class PacketViewTest(TestCase):
             flow=self.flow, title='Cancel Test', initiated_by=self.admin,
             signer_assignments={self.steps[0].pk: signer},
         )
-        self.client.force_login(self.officer)
+        self.client.force_login(self.admin)
         resp = self.client.post(
             reverse('signatures:packet-cancel', kwargs={'pk': packet.pk}),
             {'cancel_reason': 'Changed plans.'},
@@ -695,6 +695,23 @@ class PacketViewTest(TestCase):
         self.assertEqual(resp.status_code, 302)
         packet.refresh_from_db()
         self.assertEqual(packet.status, SigningPacket.Status.CANCELLED)
+
+    @patch('keel.signatures.services._notify_signer_active')
+    def test_packet_cancel_idor_blocked(self, mock_notify):
+        signer = _user('signer_cancel', 'program_officer', self.agency)
+        packet = services.initiate_packet(
+            flow=self.flow, title='Cancel IDOR Test', initiated_by=self.admin,
+            signer_assignments={self.steps[0].pk: signer},
+        )
+        # Staff who is neither the initiator nor a signer must be 404'd.
+        self.client.force_login(self.officer)
+        resp = self.client.post(
+            reverse('signatures:packet-cancel', kwargs={'pk': packet.pk}),
+            {'cancel_reason': 'Should not work.'},
+        )
+        self.assertEqual(resp.status_code, 404)
+        packet.refresh_from_db()
+        self.assertNotEqual(packet.status, SigningPacket.Status.CANCELLED)
 
     @patch('keel.signatures.services._notify_signer_active')
     def test_packet_status_api(self, mock_notify):
