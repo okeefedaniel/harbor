@@ -746,10 +746,31 @@ class UserSignatureCreateView(LoginRequiredMixin, CreateView):
         if form.instance.signature_type == 'drawn' and drawn_data:
             import base64
             from django.core.files.base import ContentFile
+
             img_data = drawn_data
             if ',' in img_data:
                 img_data = img_data.split(',', 1)[1]
-            decoded = base64.b64decode(img_data)
+
+            # Decode with error handling to reject malformed base64.
+            try:
+                decoded = base64.b64decode(img_data, validate=True)
+            except Exception:
+                form.add_error(None, 'Drawn signature data is invalid.')
+                return self.form_invalid(form)
+
+            # Enforce 5 MB size cap (matches clean_signature_image on the upload path).
+            _5MB = 5 * 1024 * 1024
+            if len(decoded) > _5MB:
+                form.add_error(None, 'Drawn signature exceeds the 5 MB size limit.')
+                return self.form_invalid(form)
+
+            # Magic-byte check: must be PNG (\x89PNG) or JPEG (\xff\xd8\xff).
+            _PNG_MAGIC = b'\x89PNG'
+            _JPEG_MAGIC = b'\xff\xd8\xff'
+            if not (decoded[:4] == _PNG_MAGIC or decoded[:3] == _JPEG_MAGIC):
+                form.add_error(None, 'Drawn signature must be a valid PNG or JPEG image.')
+                return self.form_invalid(form)
+
             filename = f'saved_sig_{self.request.user.pk}.png'
             form.instance.signature_image.save(filename, ContentFile(decoded), save=False)
 
