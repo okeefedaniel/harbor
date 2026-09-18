@@ -325,9 +325,16 @@ def _user_is_agency_staff(user):
 class PlacementEditorView(AgencyStaffRequiredMixin, TemplateView):
     template_name = 'signatures/placement_editor.html'
 
+    def _get_document_or_404(self, document_id):
+        qs = SignatureDocument.objects.select_related('flow__grant_program')
+        role = getattr(self.request.user, 'role', '') or ''
+        if not (self.request.user.is_superuser or role == 'system_admin'):
+            qs = qs.filter(flow__grant_program__agency=self.request.user.agency)
+        return get_object_or_404(qs, pk=document_id)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        document = get_object_or_404(SignatureDocument, pk=self.kwargs['document_id'])
+        document = self._get_document_or_404(self.kwargs['document_id'])
         context['document'] = document
         context['flow'] = document.flow
         context['steps'] = document.flow.steps.order_by('order')
@@ -366,6 +373,13 @@ class PlacementAPIView(AgencyStaffRequiredMixin, View):
     placements as evidence of signing position and must stay immutable.
     """
 
+    def _get_document_or_404(self, document_id):
+        qs = SignatureDocument.objects.select_related('flow__grant_program')
+        role = getattr(self.request.user, 'role', '') or ''
+        if not (self.request.user.is_superuser or role == 'system_admin'):
+            qs = qs.filter(flow__grant_program__agency=self.request.user.agency)
+        return get_object_or_404(qs, pk=document_id)
+
     def _writable_or_403(self, document):
         locked_statuses = (
             SigningPacket.Status.COMPLETED,
@@ -379,7 +393,7 @@ class PlacementAPIView(AgencyStaffRequiredMixin, View):
             )
 
     def get(self, request, document_id):
-        document = get_object_or_404(SignatureDocument, pk=document_id)
+        document = self._get_document_or_404(document_id)
         placements = [
             {
                 'id': str(p.pk),
@@ -396,7 +410,7 @@ class PlacementAPIView(AgencyStaffRequiredMixin, View):
         return JsonResponse({'placements': placements})
 
     def post(self, request, document_id):
-        document = get_object_or_404(SignatureDocument, pk=document_id)
+        document = self._get_document_or_404(document_id)
         self._writable_or_403(document)
         try:
             data = json.loads(request.body)
@@ -428,7 +442,7 @@ class PlacementAPIView(AgencyStaffRequiredMixin, View):
         return JsonResponse({'created': created, 'count': len(created)})
 
     def delete(self, request, document_id):
-        document = get_object_or_404(SignatureDocument, pk=document_id)
+        document = self._get_document_or_404(document_id)
         self._writable_or_403(document)
         try:
             data = json.loads(request.body)
