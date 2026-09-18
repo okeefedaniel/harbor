@@ -3,6 +3,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -329,7 +330,10 @@ class PlacementEditorView(AgencyStaffRequiredMixin, TemplateView):
         qs = SignatureDocument.objects.select_related('flow__grant_program')
         role = getattr(self.request.user, 'role', '') or ''
         if not (self.request.user.is_superuser or role == 'system_admin'):
-            qs = qs.filter(flow__grant_program__agency=self.request.user.agency)
+            qs = qs.filter(
+                Q(flow__grant_program__agency=self.request.user.agency)
+                | Q(flow__grant_program__isnull=True)
+            )
         return get_object_or_404(qs, pk=document_id)
 
     def get_context_data(self, **kwargs):
@@ -377,7 +381,10 @@ class PlacementAPIView(AgencyStaffRequiredMixin, View):
         qs = SignatureDocument.objects.select_related('flow__grant_program')
         role = getattr(self.request.user, 'role', '') or ''
         if not (self.request.user.is_superuser or role == 'system_admin'):
-            qs = qs.filter(flow__grant_program__agency=self.request.user.agency)
+            qs = qs.filter(
+                Q(flow__grant_program__agency=self.request.user.agency)
+                | Q(flow__grant_program__isnull=True)
+            )
         return get_object_or_404(qs, pk=document_id)
 
     def _writable_or_403(self, document):
