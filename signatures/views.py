@@ -544,7 +544,14 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
 
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
-        packet = get_object_or_404(SigningPacket, pk=pk)
+        from django.db.models import Q
+        user = request.user
+        qs = SigningPacket.objects.all()
+        if not getattr(user, 'is_superuser', False):
+            qs = qs.filter(
+                Q(initiated_by=user) | Q(steps__signer=user)
+            ).distinct()
+        packet = get_object_or_404(qs, pk=pk)
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
