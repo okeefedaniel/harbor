@@ -465,6 +465,14 @@ class PacketListView(AgencyStaffRequiredMixin, SortableListMixin, ListView):
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
+        # Scope to the requesting user's agency unless they hold a global-admin
+        # role (system_admin or superuser) — prevents cross-agency packet enumeration.
+        user = self.request.user
+        role = getattr(user, 'role', '') or ''
+        if not (user.is_superuser or role == 'system_admin'):
+            user_agency = getattr(user, 'agency', None)
+            if user_agency is not None:
+                qs = qs.filter(initiated_by__agency=user_agency)
         return self.apply_sorting(qs)
 
 
