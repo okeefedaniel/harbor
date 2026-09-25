@@ -470,9 +470,9 @@ class PacketListView(AgencyStaffRequiredMixin, SortableListMixin, ListView):
         user = self.request.user
         role = getattr(user, 'role', '') or ''
         if not (user.is_superuser or role == 'system_admin'):
-            user_agency = getattr(user, 'agency', None)
-            if user_agency is not None:
-                qs = qs.filter(initiated_by__agency=user_agency)
+            user_agency_id = getattr(user, 'agency_id', None)
+            if user_agency_id is not None:
+                qs = qs.filter(initiated_by__agency_id=user_agency_id)
         return self.apply_sorting(qs)
 
 
