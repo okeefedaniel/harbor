@@ -545,6 +545,30 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
         packet = get_object_or_404(SigningPacket, pk=pk)
+        # AgencyStaffRequiredMixin only checks role, not which agency's packet
+        # this is. Without this gate any agency-staff member from ANY agency
+        # can cancel another agency's packet by UUID. Block cross-agency access:
+        # allow superusers and suite-wide system_admins to cancel anything;
+        # require other agency staff to be in the same agency as the initiator.
+        if not request.user.is_superuser:
+            role = getattr(request.user, 'role', '') or ''
+            if role != 'system_admin':
+                initiator = packet.initiated_by
+                if initiator is None:
+                    raise PermissionDenied
+                # request.user.agency_id is set by HarborProfileMiddleware.
+                # The initiator is a fresh ORM fetch — its agency must be
+                # resolved via HarborProfile, not KeelUser.agency (which can
+                # be null when the profile holds the canonical agency value).
+                user_agency_id = getattr(request.user, 'agency_id', None)
+                from .compat import is_harbor
+                if is_harbor():
+                    from core.models import get_harbor_profile
+                    initiator_agency_id = get_harbor_profile(initiator).agency_id
+                else:
+                    initiator_agency_id = getattr(initiator, 'agency_id', None)
+                if not user_agency_id or user_agency_id != initiator_agency_id:
+                    raise PermissionDenied
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
@@ -560,6 +584,23 @@ class PacketAuditView(AgencyStaffRequiredMixin, DetailView):
     model = SigningPacket
     template_name = 'signatures/packet_audit.html'
     context_object_name = 'packet'
+
+    def get_queryset(self):
+        """Mirror PacketDetailView's scope: initiator OR signer OR superuser.
+
+        Without this override Django's default returns all SigningPacket rows,
+        letting any agency-staff member read the full audit trail — including
+        signer identities and IP addresses — for another agency's packet.
+        """
+        user = self.request.user
+        qs = super().get_queryset()
+        if getattr(user, 'is_superuser', False):
+            return qs
+        from django.db.models import Q
+        return qs.filter(
+            Q(initiated_by=user)
+            | Q(steps__signer=user)
+        ).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
