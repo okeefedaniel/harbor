@@ -545,11 +545,21 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
         packet = get_object_or_404(SigningPacket, pk=pk)
-        # AgencyStaffRequiredMixin only checks role, not which agency's packet this
-        # is. Without this gate any agency-staff member can cancel a packet from a
-        # different agency by UUID. Only the initiator (or superuser) may cancel.
-        if not request.user.is_superuser and packet.initiated_by_id != request.user.pk:
-            raise PermissionDenied
+        # AgencyStaffRequiredMixin only checks role, not which agency's packet
+        # this is. Without this gate any agency-staff member from ANY agency
+        # can cancel another agency's packet by UUID. Block cross-agency access:
+        # allow superusers and suite-wide system_admins to cancel anything;
+        # require other agency staff to be in the same agency as the initiator.
+        if not request.user.is_superuser:
+            role = getattr(request.user, 'role', '') or ''
+            if role != 'system_admin':
+                initiator = packet.initiated_by
+                user_agency_id = getattr(request.user, 'agency_id', None)
+                initiator_agency_id = (
+                    getattr(initiator, 'agency_id', None) if initiator else None
+                )
+                if not user_agency_id or user_agency_id != initiator_agency_id:
+                    raise PermissionDenied
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
