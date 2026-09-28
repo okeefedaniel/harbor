@@ -554,10 +554,19 @@ class PacketCancelView(AgencyStaffRequiredMixin, View):
             role = getattr(request.user, 'role', '') or ''
             if role != 'system_admin':
                 initiator = packet.initiated_by
+                if initiator is None:
+                    raise PermissionDenied
+                # request.user.agency_id is set by HarborProfileMiddleware.
+                # The initiator is a fresh ORM fetch — its agency must be
+                # resolved via HarborProfile, not KeelUser.agency (which can
+                # be null when the profile holds the canonical agency value).
                 user_agency_id = getattr(request.user, 'agency_id', None)
-                initiator_agency_id = (
-                    getattr(initiator, 'agency_id', None) if initiator else None
-                )
+                from .compat import is_harbor
+                if is_harbor():
+                    from core.models import get_harbor_profile
+                    initiator_agency_id = get_harbor_profile(initiator).agency_id
+                else:
+                    initiator_agency_id = getattr(initiator, 'agency_id', None)
                 if not user_agency_id or user_agency_id != initiator_agency_id:
                     raise PermissionDenied
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
