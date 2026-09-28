@@ -545,6 +545,11 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
         packet = get_object_or_404(SigningPacket, pk=pk)
+        # AgencyStaffRequiredMixin only checks role, not which agency's packet this
+        # is. Without this gate any agency-staff member can cancel a packet from a
+        # different agency by UUID. Only the initiator (or superuser) may cancel.
+        if not request.user.is_superuser and packet.initiated_by_id != request.user.pk:
+            raise PermissionDenied
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
@@ -560,6 +565,23 @@ class PacketAuditView(AgencyStaffRequiredMixin, DetailView):
     model = SigningPacket
     template_name = 'signatures/packet_audit.html'
     context_object_name = 'packet'
+
+    def get_queryset(self):
+        """Mirror PacketDetailView's scope: initiator OR signer OR superuser.
+
+        Without this override Django's default returns all SigningPacket rows,
+        letting any agency-staff member read the full audit trail — including
+        signer identities and IP addresses — for another agency's packet.
+        """
+        user = self.request.user
+        qs = super().get_queryset()
+        if getattr(user, 'is_superuser', False):
+            return qs
+        from django.db.models import Q
+        return qs.filter(
+            Q(initiated_by=user)
+            | Q(steps__signer=user)
+        ).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
