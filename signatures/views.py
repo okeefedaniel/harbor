@@ -542,9 +542,32 @@ class PacketDetailView(AgencyStaffRequiredMixin, DetailView):
         return context
 
 
+def _scoped_packet_queryset(user):
+    """Return SigningPackets the requesting agency-staff user is entitled to
+    see / mutate.
+
+    Mirrors ``PacketDetailView.get_queryset`` (see commit 635bb66): packet
+    UUIDs are disclosed to signers via notification email, so relying on
+    UUID obscurity alone is insufficient. A signed document should not be
+    cancellable or auditable by an arbitrary authenticated Harbor staff
+    user at another agency who knows the UUID.
+    """
+    qs = SigningPacket.objects.all()
+    if getattr(user, 'is_superuser', False):
+        return qs
+    from django.db.models import Q
+    return qs.filter(
+        Q(initiated_by=user)
+        | Q(steps__signer=user)
+    ).distinct()
+
+
 class PacketCancelView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
-        packet = get_object_or_404(SigningPacket, pk=pk)
+        # CSO 2026-08-24: scope to packets the requesting user can actually
+        # see, matching PacketDetailView. Bare get_object_or_404 allowed any
+        # agency-staff user at Agency A to cancel Agency B's packet by pk.
+        packet = get_object_or_404(_scoped_packet_queryset(request.user), pk=pk)
         if packet.status not in [SigningPacket.Status.DRAFT, SigningPacket.Status.IN_PROGRESS]:
             messages.error(request, _('This packet cannot be cancelled.'))
             return redirect('signatures:packet-detail', pk=pk)
@@ -560,6 +583,13 @@ class PacketAuditView(AgencyStaffRequiredMixin, DetailView):
     model = SigningPacket
     template_name = 'signatures/packet_audit.html'
     context_object_name = 'packet'
+
+    def get_queryset(self):
+        # CSO 2026-08-24: scope audit-log visibility to packets the requesting
+        # user can see (initiator or signer). Without this, any agency-staff
+        # user could read another agency's packet audit log by pk. Mirrors
+        # PacketDetailView.get_queryset.
+        return _scoped_packet_queryset(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
