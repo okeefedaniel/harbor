@@ -1,39 +1,53 @@
 name: Canary
 
-# Scheduled polling disabled while pre-beta to conserve GitHub Actions
-# minutes. Re-enable for production by uncommenting the schedule block
-# below — runs every 15 minutes, fails the workflow on non-200 or
-# `healthy != true`, and opens (or de-dupes) a `canary`-labeled issue.
+# Polls harbor's /api/v1/metrics/ every 6 hours (staggered across the suite
+# at :06 past 00/06/12/18 UTC). If the response is unhealthy (a critical
+# flag tripped or HTTP non-200), opens a de-duped GitHub issue labeled
+# `canary`; when the next poll is healthy again, closes it with a comment.
+# Suite-wide pattern documented in keel/CLAUDE.md §Ops canary; reference
+# implementation helm/.github/workflows/canary.yml.
 #
-# Reference: helm/.github/workflows/canary.yml — same shape, different
-# host + secret name. Wired by CSO 2026-06-06 Wave 4.
+# Cadence rationale (2026-10-14): every 15 min across 8 private repos was
+# ~23k Actions minutes/month; 6h is ~1k. Every flag is a 24h window, so the
+# only cost is up to 6h of detection latency, which is fine pre-beta.
+# Scheduled workflows in a repo with no commits for 60 days are auto-disabled
+# by GitHub — Renovate's cadence keeps these repos active, but if a canary
+# ever goes quiet check the Actions tab for a "disabled" banner first.
 #
-# To enable:
-# 1. Mint a 32+ char token. Use the same value for both:
-#    - GitHub Actions secret: HARBOR_METRICS_TOKEN
-#    - Railway env var: HARBOR_METRICS_TOKEN (on the harbor service only,
-#      not -demo — canary polls production)
-# 2. Uncomment the schedule block below.
+# Required secret (same value on both sides):
+#   - GitHub Actions secret: HARBOR_METRICS_TOKEN
+#   - Railway env var:       HARBOR_METRICS_TOKEN on the harbor service (not -demo —
+#     the canary polls production). Read as KEEL_METRICS_TOKEN in settings.
 
 on:
-  # Scheduled polling paused pre-beta to conserve GitHub Actions minutes.
-  # Canary is post-deploy monitoring for live traffic; re-enable for
-  # production by uncommenting. Manual runs remain via workflow_dispatch.
-  # schedule:
-  #   - cron: '6/15 * * * *'
+  schedule:
+    - cron: '6 */6 * * *'
   workflow_dispatch:
+
+# NOTE: the poll step uses continue-on-error so the workflow ALWAYS concludes
+# success. A canary run attaches its check suite to the HEAD commit of main,
+# and a red conclusion poisons Railway's "Wait for CI" gate — deploys of that
+# commit get silently SKIPPED ("CI check suite failed") even though the canary
+# says nothing about the code. Bit admiralty + bounty 2026-07-22 during a
+# metrics-token rotation. Alerting is the de-duped `canary` issue, not the red X.
 
 jobs:
   metrics:
     runs-on: ubuntu-latest
+    # A wedged curl must never hold a runner for the 360-min default.
+    timeout-minutes: 5
+    outputs:
+      unhealthy: ${{ steps.poll.outcome == 'failure' }}
     steps:
       - name: Poll /api/v1/metrics/
+        id: poll
+        continue-on-error: true
         env:
           HARBOR_METRICS_TOKEN: ${{ secrets.HARBOR_METRICS_TOKEN }}
         run: |
           set -euo pipefail
           response=$(mktemp)
-          status=$(curl -sS -o "$response" -w '%{http_code}' \
+          status=$(curl -sS --max-time 60 -o "$response" -w '%{http_code}' \
             -H "Authorization: Bearer $HARBOR_METRICS_TOKEN" \
             https://harbor.docklabs.ai/api/v1/metrics/)
 
@@ -53,7 +67,7 @@ jobs:
 
   notify:
     needs: metrics
-    if: failure()
+    if: needs.metrics.outputs.unhealthy == 'true'
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -68,10 +82,12 @@ jobs:
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               ``,
               `Check the run log for which flag tripped, then:`,
-              `- \`audit_silent_24h\` → no AuditLog rows in 24h`,
-              `- \`cron_silent_24h\` → no CommandRun rows in 24h`,
-              `- \`cron_failures_24h\` → at least one scheduled job errored`,
-              `- \`notifications_failing\` → at least one delivery failed`,
+              `- \`cron_failures_24h\` → at least one scheduled job errored (see /scheduling/ for the row and its error_message)`,
+              `- \`notifications_failing\` → at least one delivery failed (NotificationLog success=False)`,
+              `- \`audit_constraint_missing\` → the AuditLog user_id column is nullable again — the Approach D schema guarantee is gone`,
+              `- \`audit_silent_24h\` / \`cron_silent_24h\` are advisory only (they do not flip healthy); if they show in the payload the app is merely quiet`,
+              ``,
+              `This issue is closed automatically by the next healthy poll.`,
             ].join('\n');
 
             const existing = await github.rest.issues.listForRepo({
@@ -91,3 +107,39 @@ jobs:
               body,
               labels: ['canary'],
             });
+
+  resolve:
+    # A stale open issue silently swallows every later alert (the notify job
+    # de-dupes on title), so a healthy poll must close whatever is open.
+    needs: metrics
+    if: needs.metrics.outputs.unhealthy == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Canary: harbor /api/v1/metrics/ unhealthy';
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'canary',
+            });
+            for (const issue of open.data.filter(i => i.title === title)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Canary healthy again — run ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}. Closing automatically.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`Closed #${issue.number}`);
+            }
