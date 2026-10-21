@@ -344,7 +344,6 @@ ALLOWED_UPLOAD_EXTENSIONS = [
     '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv',
     '.txt', '.rtf', '.odt', '.ods', '.ppt', '.pptx',
     '.png', '.jpg', '.jpeg', '.gif', '.tiff',
-    '.zip', '.gz',
 ]
 
 # ---------------------------------------------------------------------------
