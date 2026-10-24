@@ -306,6 +306,9 @@ class TransactionListView(AgencyStaffRequiredMixin, SortableListMixin, CSVExport
         user = self.request.user
         if user.is_agency_staff and user.agency_id:
             qs = qs.filter(award__agency=user.agency)
+        elif user.is_agency_staff and user.role != 'system_admin':
+            # agency staff without an assigned agency — fail closed
+            qs = qs.none()
         elif not user.is_agency_staff and user.role != 'system_admin':
             qs = qs.filter(award__recipient=user)
 
@@ -334,6 +337,8 @@ class BudgetUpdateView(AgencyStaffRequiredMixin, UpdateView):
         if not (getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'system_admin'):
             if user.agency_id:
                 qs = qs.filter(award__agency=user.agency)
+            else:
+                return qs.none()
         return qs
 
     def form_valid(self, form):
