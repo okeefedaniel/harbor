@@ -105,8 +105,11 @@ class AwardListView(AgencyStaffRequiredMixin, SortableListMixin, CSVExportMixin,
         )
 
         user = self.request.user
-        if getattr(user, 'role', '') != 'system_admin' and user.agency_id:
-            qs = qs.filter(agency=user.agency)
+        if getattr(user, 'role', '') != 'system_admin':
+            if user.agency_id:
+                qs = qs.filter(agency=user.agency)
+            else:
+                qs = qs.none()
 
         # Optional filters from query params (supports multiple values,
         # e.g. ?status=active&status=executed)
