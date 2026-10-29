@@ -319,6 +319,21 @@ def _user_is_agency_staff(user):
     }
 
 
+def _packet_visible_to(user, packet):
+    """True when *user* may inspect this packet's contents.
+
+    Superusers always pass.  Otherwise the user must be the initiator or
+    an active signer — the same predicate PacketDetailView / PacketCancelView /
+    PacketAuditView all use for HTML views.  Mirrors manifest's identical
+    helper so the two products stay in lock-step.
+    """
+    if getattr(user, 'is_superuser', False):
+        return True
+    if packet.initiated_by_id == getattr(user, 'pk', None):
+        return True
+    return packet.steps.filter(signer=user).exists()
+
+
 # ===========================================================================
 # Placement editor (any authenticated user)
 # ===========================================================================
@@ -873,11 +888,9 @@ class UserSignatureSetDefaultView(LoginRequiredMixin, View):
 
 class PacketStatusAPIView(AgencyStaffRequiredMixin, View):
     def get(self, request, pk):
-        # CSO 2026-07-06 H-013: restrict to agency staff. The packet links to
-        # Award/Closeout via a generic FK so ORM-level agency scoping isn't
-        # possible here — the AgencyStaffRequiredMixin gate (minimum) prevents
-        # unauthenticated or applicant-role access to signer PII.
         packet = get_object_or_404(SigningPacket, pk=pk)
+        if not _packet_visible_to(request.user, packet):
+            raise PermissionDenied
         signed, total = packet.progress
         steps = [
             {
@@ -899,6 +912,8 @@ class PacketStatusAPIView(AgencyStaffRequiredMixin, View):
 class StepRemindAPIView(AgencyStaffRequiredMixin, View):
     def post(self, request, pk):
         step = get_object_or_404(SigningStep, pk=pk, status=SigningStep.Status.ACTIVE)
+        if not _packet_visible_to(request.user, step.packet):
+            raise PermissionDenied
         services.send_reminder(step)
         return JsonResponse({'reminded': True})
 
