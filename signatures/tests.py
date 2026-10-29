@@ -703,7 +703,8 @@ class PacketViewTest(TestCase):
             flow=self.flow, title='API Test', initiated_by=self.admin,
             signer_assignments={self.steps[0].pk: signer},
         )
-        self.client.force_login(self.officer)
+        # Initiator should receive the status payload.
+        self.client.force_login(self.admin)
         resp = self.client.get(
             reverse('signatures:packet-status-api', kwargs={'pk': packet.pk}),
         )
@@ -711,6 +712,20 @@ class PacketViewTest(TestCase):
         data = json.loads(resp.content)
         self.assertEqual(data['status'], 'in_progress')
         self.assertEqual(data['progress']['total'], 1)
+
+    @patch('keel.signatures.services._notify_signer_active')
+    def test_packet_status_api_idor_blocked(self, mock_notify):
+        signer = _user('signer2', 'program_officer', self.agency)
+        packet = services.initiate_packet(
+            flow=self.flow, title='IDOR API Test', initiated_by=self.admin,
+            signer_assignments={self.steps[0].pk: signer},
+        )
+        # A staff user who is neither initiator nor signer must be 403'd.
+        self.client.force_login(self.officer)
+        resp = self.client.get(
+            reverse('signatures:packet-status-api', kwargs={'pk': packet.pk}),
+        )
+        self.assertEqual(resp.status_code, 403)
 
 
 # ===========================================================================
