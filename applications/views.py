@@ -203,12 +203,18 @@ class ApplicationListView(AgencyStaffRequiredMixin, SortableListMixin, CSVExport
         if status:
             qs = qs.filter(status=status)
 
-        self.filterset = ApplicationFilter(self.request.GET, queryset=qs)
+        self.filterset = ApplicationFilter(self.request.GET, queryset=qs, request=self.request)
         return self.apply_sorting(self.filterset.qs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['grant_programs'] = GrantProgram.objects.all()
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+            context['grant_programs'] = GrantProgram.objects.all()
+        elif getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+            context['grant_programs'] = GrantProgram.objects.filter(agency=user.agency)
+        else:
+            context['grant_programs'] = GrantProgram.objects.none()
         context['status_choices'] = Application.Status.choices
         context['current_program'] = self.request.GET.get('grant_program', '')
         context['current_status'] = self.request.GET.get('status', '')
