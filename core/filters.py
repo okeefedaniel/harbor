@@ -18,7 +18,7 @@ from reporting.models import Report
 class ApplicationFilter(django_filters.FilterSet):
     search = django_filters.CharFilter(method='filter_search', label='Search')
     grant_program = django_filters.ModelChoiceFilter(
-        queryset=GrantProgram.objects.all(),
+        queryset=GrantProgram.objects.none(),  # overridden in __init__
         label='Grant Program',
     )
     status = django_filters.ChoiceFilter(choices=Application.Status.choices)
@@ -38,6 +38,22 @@ class ApplicationFilter(django_filters.FilterSet):
     class Meta:
         model = Application
         fields = ['grant_program', 'status']
+
+    def __init__(self, *args, request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Scope the grant_program dropdown to the requesting user's agency so
+        # agency staff cannot enumerate program names belonging to other agencies.
+        if request is not None:
+            user = request.user
+            if user.is_superuser or getattr(user, 'role', '') == 'system_admin':
+                qs = GrantProgram.objects.all()
+            elif getattr(user, 'is_agency_staff', False) and getattr(user, 'agency', None):
+                qs = GrantProgram.objects.filter(agency=user.agency)
+            else:
+                qs = GrantProgram.objects.none()
+        else:
+            qs = GrantProgram.objects.all()
+        self.filters['grant_program'].queryset = qs
 
     def filter_search(self, queryset, name, value):
         from django.db.models import Q
