@@ -171,10 +171,16 @@ class BulkAwardExportView(AgencyStaffRequiredMixin, View):
             award_ids = [uid.strip() for uid in ids_raw.split(',') if uid.strip()]
             qs = qs.filter(pk__in=award_ids)
 
-        # Agency scoping for non-system-admins
+        # Agency scoping for non-system-admins.
+        # Explicit else-branch: a staff user with no agency must see nothing
+        # rather than falling through to the unfiltered queryset.
         user = request.user
-        if user.role != 'system_admin' and user.agency_id:
+        if user.role == 'system_admin':
+            pass  # system_admin sees all agencies
+        elif user.agency_id:
             qs = qs.filter(agency=user.agency)
+        else:
+            qs = qs.none()
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="awards_export.csv"'
