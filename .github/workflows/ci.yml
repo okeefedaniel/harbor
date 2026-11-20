@@ -78,7 +78,7 @@ jobs:
         run: python manage.py migrate --noinput
 
       - name: Run Django system checks
-        run: python manage.py check --deploy 2>&1 || true
+        run: python manage.py check --deploy
 
       - name: Run tests with coverage
         run: |
