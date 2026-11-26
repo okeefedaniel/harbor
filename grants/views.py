@@ -179,7 +179,7 @@ class GrantProgramDocumentDownloadView(AgencyStaffRequiredMixin, View):
         # belonging to programs from their own agency.
         user = request.user
         if getattr(user, 'role', '') != 'system_admin' and user.agency_id != doc.grant_program.agency_id:
-            raise PermissionDenied
+            raise Http404
         if not doc.file:
             raise Http404
         return FileResponse(
@@ -221,7 +221,7 @@ class PublishGrantProgramView(GrantManagerRequiredMixin, View):
         # Agency ownership check: non-system-admins may only publish
         # programs belonging to their own agency.
         if request.user.role != 'system_admin' and program.agency_id != request.user.agency_id:
-            raise PermissionDenied
+            raise Http404
 
         if program.is_published:
             # Un-publish: revert to draft
